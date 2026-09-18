@@ -1,47 +1,100 @@
 """
 Turbo Refer V2 - Backend API
-FastAPI + Telethon | Render.com
+FastAPI + Telethon + MongoDB
 """
 
 import os
 import json
 import asyncio
 import re
+import base64
 import emoji as emoji_lib
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 import uvicorn
 from telethon import TelegramClient, events, errors
+from telethon.sessions import StringSession
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
+from pymongo import MongoClient
+from pymongo.server_api import ServerApi
 
 app = FastAPI()
 
-API_SECRET   = os.getenv("API_SECRET", "changeme")
-SESSIONS_DIR = "sessions"
-ACCOUNTS_FILE = "accounts.json"
+# ── Config ───────────────────────────────────────────
+API_SECRET  = os.getenv("API_SECRET", "turbo2024secret")
+MONGO_URL   = os.getenv("MONGO_URL", "")
 
-os.makedirs(SESSIONS_DIR, exist_ok=True)
-
-# ── Helpers ──────────────────────────────────────────
+# ── MongoDB ───────────────────────────────────────────
+def get_db():
+    client = MongoClient(MONGO_URL, server_api=ServerApi('1'))
+    return client["turbo_refer"]
 
 def load_accounts():
-    if not os.path.exists(ACCOUNTS_FILE):
+    try:
+        db = get_db()
+        return list(db["accounts"].find({}, {"_id": 0}))
+    except Exception as e:
+        print(f"DB error: {e}")
         return []
-    with open(ACCOUNTS_FILE) as f:
-        return json.load(f)
 
-def save_accounts(data):
-    with open(ACCOUNTS_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+def save_account(acc_data):
+    try:
+        db = get_db()
+        db["accounts"].update_one(
+            {"session_name": acc_data["session_name"]},
+            {"$set": acc_data},
+            upsert=True
+        )
+    except Exception as e:
+        print(f"DB save error: {e}")
 
+def delete_account_db(session_name):
+    try:
+        db = get_db()
+        db["accounts"].delete_one({"session_name": session_name})
+        return True
+    except Exception as e:
+        print(f"DB delete error: {e}")
+        return False
+
+def save_session_string(session_name, session_str):
+    try:
+        db = get_db()
+        db["sessions"].update_one(
+            {"session_name": session_name},
+            {"$set": {"session_name": session_name, "session_str": session_str}},
+            upsert=True
+        )
+    except Exception as e:
+        print(f"Session save error: {e}")
+
+def get_session_string(session_name):
+    try:
+        db = get_db()
+        doc = db["sessions"].find_one({"session_name": session_name})
+        return doc["session_str"] if doc else None
+    except Exception as e:
+        print(f"Session get error: {e}")
+        return None
+
+def delete_session_db(session_name):
+    try:
+        db = get_db()
+        db["sessions"].delete_one({"session_name": session_name})
+    except Exception as e:
+        print(f"Session delete error: {e}")
+
+# ── Helpers ───────────────────────────────────────────
 def check_auth(request: Request):
     secret = request.headers.get("x-api-secret", "")
     if secret != API_SECRET:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
 def get_client(acc):
-    path = os.path.join(SESSIONS_DIR, acc["session_name"])
-    return TelegramClient(path, acc["api_id"], acc["api_hash"])
+    session_str = get_session_string(acc["session_name"])
+    if session_str:
+        return TelegramClient(StringSession(session_str), acc["api_id"], acc["api_hash"])
+    return TelegramClient(StringSession(), acc["api_id"], acc["api_hash"])
 
 def parse_bot_link(link):
     m = re.match(r"https://t\.me/([a-zA-Z0-9_]+)(\?start=(.*))?", link)
@@ -55,7 +108,6 @@ def filter_accs(all_accs, names):
     return [a for a in all_accs if a["session_name"] in names]
 
 # ── Health ────────────────────────────────────────────
-
 @app.get("/")
 async def root():
     return {"status": "running", "version": "2.1.2"}
@@ -65,7 +117,6 @@ async def ping():
     return {"ping": "pong"}
 
 # ── Accounts ──────────────────────────────────────────
-
 @app.get("/accounts")
 async def list_accounts(request: Request):
     check_auth(request)
@@ -84,11 +135,13 @@ async def request_code(request: Request):
     api_hash     = body["api_hash"]
     phone        = body["phone"]
 
-    path = os.path.join(SESSIONS_DIR, session_name)
-    client = TelegramClient(path, api_id, api_hash)
+    client = TelegramClient(StringSession(), api_id, api_hash)
     await client.connect()
     try:
         result = await client.send_code_request(phone)
+        # Save temp session
+        session_str = client.session.save()
+        save_session_string(session_name + "_temp", session_str)
         return {"status": "code_sent", "phone_code_hash": result.phone_code_hash}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -106,15 +159,21 @@ async def verify_code(request: Request):
     code            = body["code"]
     phone_code_hash = body["phone_code_hash"]
 
-    path = os.path.join(SESSIONS_DIR, session_name)
-    client = TelegramClient(path, api_id, api_hash)
+    # Load temp session
+    temp_str = get_session_string(session_name + "_temp")
+    if temp_str:
+        client = TelegramClient(StringSession(temp_str), api_id, api_hash)
+    else:
+        client = TelegramClient(StringSession(), api_id, api_hash)
+
     await client.connect()
     try:
         await client.sign_in(phone=phone, code=code, phone_code_hash=phone_code_hash)
         me = await client.get_me()
-        accs = load_accounts()
-        accs = [a for a in accs if a["session_name"] != session_name]
-        accs.append({
+        session_str = client.session.save()
+        save_session_string(session_name, session_str)
+        # Save account
+        save_account({
             "session_name": session_name,
             "api_id": api_id,
             "api_hash": api_hash,
@@ -122,13 +181,14 @@ async def verify_code(request: Request):
             "username": me.username or "",
             "name": f"{me.first_name or ''} {me.last_name or ''}".strip()
         })
-        save_accounts(accs)
-        return {"status": "success", "message": f"Logged in as {me.first_name}"}
+        # Delete temp
+        delete_session_db(session_name + "_temp")
+        return {"status": "success", "message": f"✅ Logged in as {me.first_name} (@{me.username or 'no username'})"}
     except errors.SessionPasswordNeededError:
-        # Save account as pending so 2FA can find it
-        accs = load_accounts()
-        accs = [a for a in accs if a["session_name"] != session_name]
-        accs.append({
+        # Save pending account for 2FA
+        session_str = client.session.save()
+        save_session_string(session_name, session_str)
+        save_account({
             "session_name": session_name,
             "api_id": api_id,
             "api_hash": api_hash,
@@ -136,7 +196,7 @@ async def verify_code(request: Request):
             "username": "",
             "name": "pending_2fa"
         })
-        save_accounts(accs)
+        delete_session_db(session_name + "_temp")
         return {"status": "2fa_needed", "message": "2FA required"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -160,7 +220,18 @@ async def verify_2fa(request: Request):
     try:
         await client.sign_in(password=password)
         me = await client.get_me()
-        return {"status": "success", "message": f"2FA verified for {me.first_name}"}
+        session_str = client.session.save()
+        save_session_string(session_name, session_str)
+        # Update account info
+        save_account({
+            "session_name": session_name,
+            "api_id": acc["api_id"],
+            "api_hash": acc["api_hash"],
+            "phone": acc.get("phone", ""),
+            "username": me.username or "",
+            "name": f"{me.first_name or ''} {me.last_name or ''}".strip()
+        })
+        return {"status": "success", "message": f"✅ 2FA verified for {me.first_name}"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
     finally:
@@ -169,16 +240,11 @@ async def verify_2fa(request: Request):
 @app.delete("/accounts/{session_name}")
 async def delete_account(session_name: str, request: Request):
     check_auth(request)
-    accs = load_accounts()
-    accs = [a for a in accs if a["session_name"] != session_name]
-    save_accounts(accs)
-    sf = os.path.join(SESSIONS_DIR, session_name + ".session")
-    if os.path.exists(sf):
-        os.remove(sf)
-    return {"status": "success", "message": f"Deleted {session_name}"}
+    delete_account_db(session_name)
+    delete_session_db(session_name)
+    return {"status": "success", "message": f"✅ Deleted {session_name}"}
 
 # ── Referral ──────────────────────────────────────────
-
 async def refer_no_captcha(acc, bot_link):
     client = get_client(acc)
     await client.start()
@@ -188,8 +254,10 @@ async def refer_no_captcha(acc, bot_link):
             return {"account": acc["session_name"], "status": "error", "msg": "Invalid link"}
         msg = f"/start {start_param}" if start_param else "/start"
         await client.send_message(bot_user, msg)
+        # Save updated session
+        save_session_string(acc["session_name"], client.session.save())
         await asyncio.sleep(2)
-        return {"account": acc["session_name"], "status": "success", "msg": "Referred"}
+        return {"account": acc["session_name"], "status": "success", "msg": "✅ Referred"}
     except Exception as e:
         return {"account": acc["session_name"], "status": "error", "msg": str(e)}
     finally:
@@ -203,8 +271,8 @@ async def refer_emoji(acc, bot_link):
         bot_user, start_param = parse_bot_link(bot_link)
         if not bot_user:
             return {"account": acc["session_name"], "status": "error", "msg": "Invalid link"}
-        msg = f"/start {start_param}" if start_param else "/start"
-        await client.send_message(bot_user, msg)
+        msg_text = f"/start {start_param}" if start_param else "/start"
+        await client.send_message(bot_user, msg_text)
         solved = asyncio.Event()
 
         @client.on(events.NewMessage(from_users=bot_user))
@@ -222,7 +290,7 @@ async def refer_emoji(acc, bot_link):
                         for e in emojis:
                             if e in txt:
                                 await btn.click()
-                                result.update({"status": "success", "msg": f"Solved: {e}"})
+                                result.update({"status": "success", "msg": f"✅ Emoji: {e}"})
                                 solved.set()
                                 return
             except Exception as ex:
@@ -233,6 +301,7 @@ async def refer_emoji(acc, bot_link):
             await asyncio.wait_for(solved.wait(), timeout=20)
         except asyncio.TimeoutError:
             pass
+        save_session_string(acc["session_name"], client.session.save())
     except Exception as e:
         result.update({"status": "error", "msg": str(e)})
     finally:
@@ -247,8 +316,8 @@ async def refer_math(acc, bot_link):
         bot_user, start_param = parse_bot_link(bot_link)
         if not bot_user:
             return {"account": acc["session_name"], "status": "error", "msg": "Invalid link"}
-        msg = f"/start {start_param}" if start_param else "/start"
-        await client.send_message(bot_user, msg)
+        msg_text = f"/start {start_param}" if start_param else "/start"
+        await client.send_message(bot_user, msg_text)
         solved = asyncio.Event()
 
         @client.on(events.NewMessage(from_users=bot_user))
@@ -259,22 +328,21 @@ async def refer_math(acc, bot_link):
                 if not m:
                     return
                 a, op, b = int(m.group(1)), m.group(2), int(m.group(3))
-                if op == "+":         ans = a + b
-                elif op == "-":       ans = a - b
-                elif op in ("*","×"): ans = a * b
-                elif op in ("/","÷") and b != 0: ans = a // b
+                if op == "+":           ans = a + b
+                elif op == "-":         ans = a - b
+                elif op in ("*", "×"):  ans = a * b
+                elif op in ("/", "÷") and b != 0: ans = a // b
                 else: return
-
                 if event.buttons:
                     for row in event.buttons:
                         for btn in row:
                             if str(ans) in (getattr(btn, "text", "") or ""):
                                 await btn.click()
-                                result.update({"status": "success", "msg": f"Math: {a}{op}{b}={ans}"})
+                                result.update({"status": "success", "msg": f"✅ Math: {a}{op}{b}={ans}"})
                                 solved.set()
                                 return
                 await client.send_message(bot_user, str(ans))
-                result.update({"status": "success", "msg": f"Sent: {ans}"})
+                result.update({"status": "success", "msg": f"✅ Sent: {ans}"})
                 solved.set()
             except Exception as ex:
                 result.update({"status": "error", "msg": str(ex)})
@@ -284,6 +352,7 @@ async def refer_math(acc, bot_link):
             await asyncio.wait_for(solved.wait(), timeout=20)
         except asyncio.TimeoutError:
             pass
+        save_session_string(acc["session_name"], client.session.save())
     except Exception as e:
         result.update({"status": "error", "msg": str(e)})
     finally:
@@ -298,8 +367,8 @@ async def refer_button(acc, bot_link):
         bot_user, start_param = parse_bot_link(bot_link)
         if not bot_user:
             return {"account": acc["session_name"], "status": "error", "msg": "Invalid link"}
-        msg = f"/start {start_param}" if start_param else "/start"
-        await client.send_message(bot_user, msg)
+        msg_text = f"/start {start_param}" if start_param else "/start"
+        await client.send_message(bot_user, msg_text)
         solved = asyncio.Event()
 
         @client.on(events.NewMessage(from_users=bot_user))
@@ -308,7 +377,7 @@ async def refer_button(acc, bot_link):
                 if not event.buttons:
                     return
                 await event.buttons[0][0].click()
-                result.update({"status": "success", "msg": "Button clicked"})
+                result.update({"status": "success", "msg": "✅ Button clicked"})
                 solved.set()
             except Exception as ex:
                 result.update({"status": "error", "msg": str(ex)})
@@ -318,6 +387,7 @@ async def refer_button(acc, bot_link):
             await asyncio.wait_for(solved.wait(), timeout=20)
         except asyncio.TimeoutError:
             pass
+        save_session_string(acc["session_name"], client.session.save())
     except Exception as e:
         result.update({"status": "error", "msg": str(e)})
     finally:
@@ -335,7 +405,7 @@ async def run_referral(request: Request):
     all_accs = load_accounts()
     selected = filter_accs(all_accs, names)
     if not selected:
-        return {"status": "error", "message": "No accounts"}
+        return {"status": "error", "message": "No accounts found"}
 
     results = []
     for acc in selected:
@@ -352,7 +422,6 @@ async def run_referral(request: Request):
             "failed": len(results) - success, "results": results}
 
 # ── Join / Leave ──────────────────────────────────────
-
 @app.post("/channels")
 async def join_leave(request: Request):
     check_auth(request)
@@ -377,14 +446,15 @@ async def join_leave(request: Request):
                 try:
                     if action == "join":
                         await client(JoinChannelRequest(ch))
-                        ch_results.append({"channel": ch, "status": "Joined"})
+                        ch_results.append({"channel": ch, "status": "✅ Joined"})
                     else:
                         entity = await client.get_entity(ch)
                         await client(LeaveChannelRequest(entity))
-                        ch_results.append({"channel": ch, "status": "Left"})
+                        ch_results.append({"channel": ch, "status": "✅ Left"})
                     await asyncio.sleep(2)
                 except Exception as e:
-                    ch_results.append({"channel": ch, "status": f"Error: {e}"})
+                    ch_results.append({"channel": ch, "status": f"❌ {str(e)}"})
+            save_session_string(acc["session_name"], client.session.save())
         finally:
             await client.disconnect()
         results.append({"account": acc["session_name"], "channels": ch_results})
@@ -392,7 +462,6 @@ async def join_leave(request: Request):
     return {"status": "done", "results": results}
 
 # ── Send Message ──────────────────────────────────────
-
 @app.post("/message")
 async def send_message(request: Request):
     check_auth(request)
@@ -412,9 +481,10 @@ async def send_message(request: Request):
         await client.start()
         try:
             await client.send_message(target, message)
-            results.append({"account": acc["session_name"], "status": "Sent"})
+            save_session_string(acc["session_name"], client.session.save())
+            results.append({"account": acc["session_name"], "status": "✅ Sent"})
         except Exception as e:
-            results.append({"account": acc["session_name"], "status": f"Error: {e}"})
+            results.append({"account": acc["session_name"], "status": f"❌ {str(e)}"})
         finally:
             await client.disconnect()
         await asyncio.sleep(2)
@@ -422,8 +492,7 @@ async def send_message(request: Request):
     return {"status": "done", "results": results}
 
 # ── Run ───────────────────────────────────────────────
-
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
-        
+    
