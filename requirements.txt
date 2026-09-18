@@ -1,6 +1,0 @@
-fastapi
-uvicorn
-telethon
-emoji
-httpx
-pymongo[srv]
