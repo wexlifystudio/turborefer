@@ -4,4 +4,3 @@ telethon==1.36.0
 emoji==2.12.1
 pydantic==1.10.13
 httpx==0.24.1
-cryptg==0.4.0
