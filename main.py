@@ -125,6 +125,18 @@ async def verify_code(request: Request):
         save_accounts(accs)
         return {"status": "success", "message": f"Logged in as {me.first_name}"}
     except errors.SessionPasswordNeededError:
+        # Save account as pending so 2FA can find it
+        accs = load_accounts()
+        accs = [a for a in accs if a["session_name"] != session_name]
+        accs.append({
+            "session_name": session_name,
+            "api_id": api_id,
+            "api_hash": api_hash,
+            "phone": phone,
+            "username": "",
+            "name": "pending_2fa"
+        })
+        save_accounts(accs)
         return {"status": "2fa_needed", "message": "2FA required"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -414,3 +426,4 @@ async def send_message(request: Request):
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
+        
