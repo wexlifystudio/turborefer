@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: turbo-refer-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: API_SECRET
+        value: your_secret_key_here_change_this
+      - key: PORT
+        value: 8000
