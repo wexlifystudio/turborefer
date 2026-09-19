@@ -136,6 +136,16 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .bars .seg{width:100%}
 .bars .seg.ok{background:var(--ok)}.bars .seg.bad{background:var(--bad)}
 .bars .lbl{font-size:9px;color:var(--hint)}
+/* action sheet rows */
+.action-list{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.arow{display:flex;align-items:center;gap:12px;padding:12px 4px;width:100%;text-align:left;border-radius:12px}
+.arow:active{background:var(--bg2)}
+.arow .icon{width:38px;height:38px;border-radius:10px;background:var(--bg2);display:grid;place-items:center;font-size:18px;flex:none}
+.arow .body{flex:1;min-width:0}
+.arow .t{font-weight:600;display:block}
+.arow .d{color:var(--hint);font-size:12px;display:block;margin-top:1px}
+.arow.danger .t{color:var(--bad)}
+.arow.danger .icon{background:color-mix(in srgb,var(--bad) 12%,transparent)}
 /* admin */
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .kpi{background:var(--bg2);border-radius:14px;padding:12px 10px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--hint)}
@@ -146,8 +156,6 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .pill.banned{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
 .hdot{width:9px;height:9px;border-radius:50%;flex:none;margin-right:6px}
 .hdot.ok{background:var(--ok)}.hdot.limited{background:var(--warn)}.hdot.banned,.hdot.dead,.hdot.error{background:var(--bad)}.hdot.unknown{background:var(--hint)}
-.tagdot{font-size:12px;margin-left:6px}
-.tag-safe{color:var(--ok)}.tag-new{color:var(--warn)}.tag-risky{color:var(--bad)}
 .pill.owner{background:color-mix(in srgb,var(--turbo) 15%,transparent);color:var(--turbo)}
 /* sheet */
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;opacity:0;transition:opacity .2s}
@@ -220,14 +228,12 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <div class="screen" id="s-accounts">
     <div class="top"><div><h1>Accounts</h1><div class="sub" id="acc-sub">Real Telegram accounts used for every run</div></div><button class="btn sm" onclick="openAdd()">＋ Add</button></div>
     <button class="btn ghost sm" id="health-all-btn" onclick="healthCheckAll()" style="width:100%;margin-bottom:10px">🩺 Check health of all accounts</button>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button class="btn ghost sm" style="flex:1" onclick="exportBackup()">⬇️ Export backup</button>
-      <button class="btn ghost sm" style="flex:1" onclick="$('import-file').click()">⬆️ Import backup</button>
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <button class="btn ghost sm" style="flex:1" onclick="exportBackup()">📤 Export backup</button>
+      <button class="btn ghost sm" style="flex:1" onclick="$('import-file').click()">📥 Import backup</button>
       <input type="file" id="import-file" accept="application/json" class="hidden" onchange="importBackup(event)">
     </div>
-    <div class="chips" id="tag-filter" style="margin-bottom:12px">
-      <button class="chip on" data-v="">All</button><button class="chip" data-v="safe">🟢 Safe</button><button class="chip" data-v="new">🟡 New</button><button class="chip" data-v="risky">🔴 Risky</button><button class="chip" data-v="none">⚪ Untagged</button>
-    </div>
+    <div class="help" style="margin-bottom:14px">Export sends a backup file to your Telegram chat with the bot. Save it somewhere safe — anyone with this file can access those accounts.</div>
     <div class="list" id="acc-list"><div class="empty">Loading…</div></div>
   </div>
 
@@ -397,6 +403,37 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <div class="field"><textarea id="note-text" placeholder="e.g. Bought from XYZ on 12 Sep, used for crypto channels" maxlength="500"></textarea></div>
   <button class="btn" id="note-save" onclick="saveNote()">Save note</button>
 </div>
+<!-- ══ Account action sheet ══ -->
+<div class="sheet-bg hidden" id="sheet-bg3" onclick="closeSheet3()"></div>
+<div class="sheet" id="sheet3">
+  <div class="grab"></div>
+  <h2 id="am-title">Account</h2>
+  <div class="sub" id="am-sub" style="margin:-10px 0 6px"></div>
+  <div class="sub" id="am-note" style="margin-bottom:14px"></div>
+  <div class="action-list">
+    <button class="arow" onclick="amAction('health')"><span class="icon">🩺</span><span class="body"><span class="t">Check health</span><span class="d">See if this account is active, limited, or banned</span></span></button>
+    <button class="arow" onclick="amAction('note')"><span class="icon">📝</span><span class="body"><span class="t">Edit note</span><span class="d">Add a personal note about this account</span></span></button>
+    <button class="arow danger" onclick="amAction('delete')"><span class="icon">🗑️</span><span class="body"><span class="t">Delete account</span><span class="d">Removes it from this app permanently</span></span></button>
+  </div>
+  <button class="btn ghost" style="margin-top:6px" onclick="closeSheet3()">Cancel</button>
+</div>
+
+<!-- ══ Admin user action sheet ══ -->
+<div class="sheet-bg hidden" id="sheet-bg4" onclick="closeSheet4()"></div>
+<div class="sheet" id="sheet4">
+  <div class="grab"></div>
+  <h2 id="ua-title">User</h2>
+  <div class="sub" id="ua-sub" style="margin:-10px 0 14px"></div>
+  <div class="action-list">
+    <button class="arow" id="ua-approve" onclick="uaAction('approve')"><span class="icon">✅</span><span class="body"><span class="t">Approve</span><span class="d">Let this person use the app</span></span></button>
+    <button class="arow" id="ua-revoke" onclick="uaAction('revoke')"><span class="icon">➖</span><span class="body"><span class="t">Revoke access</span></span></button>
+    <button class="arow danger" id="ua-ban" onclick="uaAction('ban')"><span class="icon">🚫</span><span class="body"><span class="t">Ban</span></span></button>
+    <button class="arow" id="ua-unban" onclick="uaAction('unban')"><span class="icon">✅</span><span class="body"><span class="t">Unban</span></span></button>
+    <button class="arow" id="ua-view" onclick="uaAction('view')"><span class="icon">👁️</span><span class="body"><span class="t">View their accounts</span></span></button>
+    <button class="arow danger" id="ua-wipe" onclick="uaAction('wipe')"><span class="icon">🗑️</span><span class="body"><span class="t">Delete their accounts</span></span></button>
+  </div>
+  <button class="btn ghost" style="margin-top:6px" onclick="closeSheet4()">Cancel</button>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -470,45 +507,40 @@ async function loadHome(){
 
 /* ── accounts ── */
 function initials(a){ const n=(a.name||a.session_name||'?').trim(); return n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
-const TAG_ICON={safe:'🟢',new:'🟡',risky:'🔴'};
 function agoLong(t){ if(!t) return 'never used'; const d=(Date.now()/1000-t); if(d<60) return 'used just now'; if(d<3600) return 'used '+Math.round(d/60)+'m ago'; if(d<86400) return 'used '+Math.round(d/3600)+'h ago'; return 'used '+Math.round(d/86400)+'d ago'; }
-let ACC_TAG_FILTER='';
 async function loadAccounts(quiet){
   try{
     const d=await api('/api/accounts'); ACCOUNTS=d.accounts||[];
     $('h-acc').textContent=ACCOUNTS.length; $('acc-sub').textContent = ACCOUNTS.length? ACCOUNTS.length+' account'+(ACCOUNTS.length>1?'s':'')+' ready' : 'Real Telegram accounts used for every run';
     if(quiet) return;
-    const shown = ACCOUNTS.filter(a=> !ACC_TAG_FILTER || (ACC_TAG_FILTER==='none'? !a.tag : a.tag===ACC_TAG_FILTER));
-    $('acc-list').innerHTML = shown.length ? shown.map(a=>`<button class="row" onclick="accMenu('${esc(a.session_name)}')">
+    $('acc-list').innerHTML = ACCOUNTS.length ? ACCOUNTS.map(a=>`<button class="row" onclick="accMenu('${esc(a.session_name)}')">
       <span class="av">${esc(initials(a))}</span>
-      <span class="body"><span class="t"><span class="hdot ${a.health||'unknown'}"></span>${esc(a.session_name)}${a.tag?`<span class="tagdot">${TAG_ICON[a.tag]}</span>`:''}</span>
+      <span class="body"><span class="t"><span class="hdot ${a.health||'unknown'}"></span>${esc(a.session_name)}</span>
       <span class="d">${esc(a.name||'')} ${a.username?'· @'+esc(a.username):''} · ${esc(a.phone||'')}</span>
       <span class="d">${agoLong(a.last_used)}${a.note?' · 📝 '+esc(a.note.slice(0,40)):''}</span></span>
       <span class="r">›</span></button>`).join('')
-      : (ACCOUNTS.length ? '<div class="empty">No accounts with this tag.</div>' : '<div class="empty"><b>No accounts yet</b>Add one to start running tasks.</div>');
+      : '<div class="empty"><b>No accounts yet</b>Add one to start running tasks.</div>';
   }catch(e){ if(!quiet) $('acc-list').innerHTML='<div class="empty"><b>Couldn\'t load accounts</b>'+esc(e.message)+'</div>'; }
 }
-async function accMenu(name){
-  haptic();
+function accMenu(name){
   const a=ACCOUNTS.find(x=>x.session_name===name)||{};
-  const go = tg?.showPopup ? await new Promise(res=>tg.showPopup({title:name,message:agoLong(a.last_used)+(a.note?'\n📝 '+a.note:''),buttons:[
-    {id:'health',type:'default',text:'🩺 Check health'},
-    {id:'tag',type:'default',text:'🏷️ Set tag'},
-    {id:'note',type:'default',text:'📝 Edit note'},
-    {id:'del',type:'destructive',text:'Delete account'}]},res)) : (confirm('Delete '+name+'?')?'del':null);
-  if(go==='health') return checkOneHealth(name);
-  if(go==='tag') return openTagPicker(name);
-  if(go==='note') return openNoteEditor(name);
-  if(go!=='del') return;
-  if(!await confirmDlg('Delete '+name+'? This cannot be undone.')) return;
-  try{ await del('/api/accounts/'+encodeURIComponent(name)); toast('Deleted '+name); haptic('ok'); SEL.delete(name); loadAccounts(); }catch(e){ toast(e.message); haptic('bad'); }
+  ACC_TARGET=name;
+  $('am-title').textContent=name;
+  $('am-sub').textContent=(a.name?a.name+' · ':'')+(a.username?'@'+a.username+' · ':'')+agoLong(a.last_used);
+  $('am-note').textContent = a.note ? '📝 '+a.note : '';
+  $('am-note').classList.toggle('hidden', !a.note);
+  $('sheet-bg3').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg3').classList.add('on');$('sheet3').classList.add('on');});
 }
-async function openTagPicker(name){
-  const opts=[{id:'safe',type:'default',text:'🟢 Safe'},{id:'new',type:'default',text:'🟡 New'},{id:'risky',type:'default',text:'🔴 Risky'},{id:'clear',type:'destructive',text:'Remove tag'}];
-  const pick = tg?.showPopup ? await new Promise(res=>tg.showPopup({title:'Tag '+name,message:'Pick a label for this account',buttons:opts},res)) : prompt('safe/new/risky/clear');
-  if(!pick||pick==='cancel') return;
-  const tag = pick==='clear' ? '' : pick;
-  try{ await post('/api/accounts/'+encodeURIComponent(name)+'/meta',{tag}); haptic('ok'); toast(tag?'Tagged '+TAG_ICON[tag]+' '+tag:'Tag removed'); loadAccounts(); }catch(e){ toast(e.message); }
+function closeSheet3(){ $('sheet-bg3').classList.remove('on'); $('sheet3').classList.remove('on'); setTimeout(()=>$('sheet-bg3').classList.add('hidden'),220); }
+function amAction(action){ const name=ACC_TARGET; closeSheet3();
+  if(action==='health') return checkOneHealth(name);
+  if(action==='note') return openNoteEditor(name);
+  if(action==='delete') return deleteAccount(name);
+}
+async function deleteAccount(name){
+  if(!await confirmDlg('Delete '+name+'? This cannot be undone.')) return;
+  try{ await del('/api/accounts/'+encodeURIComponent(name)); toast('Deleted '+name); haptic('ok'); SEL.delete(name); loadAccounts(); }
+  catch(e){ toast(e.message); haptic('bad'); }
 }
 let NOTE_TARGET=null;
 function openNoteEditor(name){ NOTE_TARGET=name; const a=ACCOUNTS.find(x=>x.session_name===name)||{}; $('note-text').value=a.note||''; $('note-title').textContent='Note · '+name;
@@ -579,7 +611,6 @@ function setRun(k){ RUNKIND=k; document.querySelectorAll('#run-seg button').forE
   ['refer','channels','message'].forEach(x=>$('run-'+x).classList.toggle('hidden',x!==k));
   $('run-btn').textContent = k==='refer'?'Start referral':k==='channels'?'Start':'Send'; }
 document.querySelectorAll('.chips').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b)return; g.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); haptic();
-  if(g.id==='tag-filter'){ ACC_TAG_FILTER=b.dataset.v; loadAccounts(); }
   if(g.id==='c-action'){ const v=b.dataset.v; $('c-list-wrap').classList.toggle('hidden',v==='random'); $('c-random-wrap').classList.toggle('hidden',v!=='random'); $('run-btn').textContent = v==='random'?'Start auto-leave':'Start'; } }));
 const chip = id => document.querySelector('#'+id+' .chip.on')?.dataset.v;
 const SPEED_HELP={single:'One account at a time with a 3s pause. Safest for your accounts.',parallel:'All selected accounts run at once. Fastest, but higher flood-ban risk.',custom:'Choose how many accounts run together and the pause between actions.'};
@@ -633,13 +664,10 @@ async function pollJob(){
 
 /* ── backup ── */
 async function exportBackup(){
-  try{ const d=await api('/api/accounts/export');
-    const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob); const link=document.createElement('a');
-    link.href=url; link.download='turbo_refer_backup_'+new Date().toISOString().slice(0,10)+'.json';
-    document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(url),2000);
-    toast('Backup downloaded · '+(d.accounts?.length||0)+' accounts'); haptic('ok');
-  }catch(e){ toast(e.message); haptic('bad'); }
+  toast('Preparing backup…');
+  try{ const d=await post('/api/accounts/export',{});
+    toast('✅ Sent to your Telegram chat with the bot · '+d.count+' account(s)',3500); haptic('ok');
+  }catch(e){ toast(e.message,4000); haptic('bad'); }
 }
 function importBackup(ev){
   const file=ev.target.files[0]; if(!file) return; ev.target.value='';
@@ -692,20 +720,26 @@ function renderUsers(){
     <span class="d"><code style="font-family:Manrope">${x.user_id}</code> · ${x.accounts} acc · ${ago(x.last_seen)}</span></span>
     <span class="pill ${x.status}">${x.status}</span></button>`).join('') : '<div class="empty">No users here.</div>';
 }
-async function userMenu(uid){
+let UADMIN_TARGET=null;
+function userMenu(uid){
   const x=(ADMIN?.users||[]).find(u=>u.user_id===uid); if(!x||x.status==='owner') return;
   haptic();
-  const btns=[];
-  if(x.status!=='approved' && x.status!=='banned') btns.push({id:'approve',type:'default',text:'✅ Approve'});
-  if(x.status==='approved') btns.push({id:'revoke',type:'default',text:'Revoke access'});
-  if(x.status==='banned') btns.push({id:'unban',type:'default',text:'Unban'}); else btns.push({id:'ban',type:'destructive',text:'🚫 Ban'});
-  if(x.accounts>0){ btns.push({id:'view',type:'default',text:'View accounts ('+x.accounts+')'}); btns.push({id:'wipe',type:'destructive',text:'Delete their accounts'}); }
-  btns.push({type:'cancel'});
-  const pick = tg?.showPopup ? await new Promise(res=>tg.showPopup({title:(x.name||uid).slice(0,60),message:'ID '+uid+' · '+x.status,buttons:btns.slice(0,4)},res)) : prompt('approve / ban / unban / revoke / view / wipe');
-  if(!pick||pick==='cancel') return;
-  if(pick==='view') return viewUserAccounts(uid);
-  if((pick==='wipe'||pick==='ban') && !await confirmDlg((pick==='wipe'?'Delete all accounts of ':'Ban ')+uid+'?')) return;
-  adminAct(uid,pick);
+  UADMIN_TARGET=x;
+  $('ua-title').textContent=x.name||uid; $('ua-sub').textContent='ID '+uid+' · '+x.status+(x.accounts?' · '+x.accounts+' account'+(x.accounts>1?'s':''):'');
+  $('ua-approve').classList.toggle('hidden', x.status==='approved'||x.status==='banned');
+  $('ua-revoke').classList.toggle('hidden', x.status!=='approved');
+  $('ua-ban').classList.toggle('hidden', x.status==='banned');
+  $('ua-unban').classList.toggle('hidden', x.status!=='banned');
+  $('ua-view').classList.toggle('hidden', x.accounts<1);
+  $('ua-wipe').classList.toggle('hidden', x.accounts<1);
+  $('sheet-bg4').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg4').classList.add('on');$('sheet4').classList.add('on');});
+}
+function closeSheet4(){ $('sheet-bg4').classList.remove('on'); $('sheet4').classList.remove('on'); setTimeout(()=>$('sheet-bg4').classList.add('hidden'),220); }
+async function uaAction(action){
+  const x=UADMIN_TARGET; if(!x) return; closeSheet4();
+  if(action==='view') return viewUserAccounts(x.user_id);
+  if((action==='wipe'||action==='ban') && !await confirmDlg((action==='wipe'?'Delete all accounts of ':'Ban ')+x.user_id+'?')) return;
+  adminAct(x.user_id,action);
 }
 async function adminAct(uid,action,fromInput){
   if(!/^\d+$/.test(uid)) return toast('User ID must be numbers only');

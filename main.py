@@ -399,7 +399,7 @@ async def accounts(request: Request):
                     "phone": p[:4] + "•••" + p[-3:] if len(p) > 7 else p,
                     "health": a.get("health", "unknown"), "health_detail": a.get("health_detail", ""),
                     "health_checked": a.get("health_checked"),
-                    "tag": a.get("tag", ""), "note": a.get("note", ""),
+                    "note": a.get("note", ""),
                     "last_used": a.get("last_used"), "created": a.get("created")})
     return {"count": len(out), "accounts": out}
 
@@ -552,25 +552,31 @@ async def update_meta(name: str, request: Request):
     acc = next((a for a in load_accounts(u["id"]) if a["session_name"] == name), None)
     if not acc: raise HTTPException(404, "Account not found")
     upd = {}
-    if "tag" in b:
-        if b["tag"] not in ("", "safe", "new", "risky"): raise HTTPException(400, "Invalid tag")
-        upd["tag"] = b["tag"]
     if "note" in b:
         upd["note"] = str(b["note"])[:500]
     if upd:
         db()["accounts"].update_one({"owner": u["id"], "session_name": name}, {"$set": upd})
     return {"status": "success"}
 
-@app.get("/api/accounts/export")
+@app.post("/api/accounts/export")
 async def export_accounts(request: Request):
-    """Download all of this user's accounts + sessions as one JSON backup file."""
+    """Build a backup file of this user's accounts+sessions and send it to them as a Telegram document."""
     u = current_user(request)
+    if not BOT_TOKEN: raise HTTPException(500, "BOT_TOKEN is not set on the server.")
     accs = load_accounts(u["id"])
+    if not accs: raise HTTPException(400, "No accounts to back up.")
     out = []
     for a in accs:
         sess = get_session(u["id"], a["session_name"])
         out.append({**{k: v for k, v in a.items() if k != "owner"}, "session_str": sess})
-    return JSONResponse({"turbo_refer_backup": True, "version": 1, "exported_at": int(time.time()), "accounts": out})
+    payload = {"turbo_refer_backup": True, "version": 1, "exported_at": int(time.time()), "accounts": out}
+    data = json.dumps(payload, indent=2).encode()
+    fname = f"turbo_refer_backup_{time.strftime('%Y-%m-%d')}.json"
+    ok = tg_send_document(u["id"], data, fname,
+        caption=f"🔒 <b>Backup file</b> — {len(out)} account(s)\n\nKeep this safe — it contains login sessions. Use Import in the app to restore.")
+    if not ok:
+        raise HTTPException(502, "Couldn't send the file via the bot. Open a chat with the bot first (send /start), then try again.")
+    return {"status": "success", "sent": True, "count": len(out)}
 
 @app.post("/api/accounts/import")
 async def import_accounts(request: Request):
@@ -749,6 +755,25 @@ async def stats(request: Request):
     }
 
 # ── Admin panel (owner only) ─────────────────────────────────────
+def tg_send_document(chat_id, file_bytes, filename, caption=""):
+    try:
+        boundary = uuid.uuid4().hex
+        parts = []
+        def field(name, value):
+            parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode())
+        field("chat_id", chat_id)
+        if caption: field("caption", caption); field("parse_mode", "HTML")
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="document"; filename="{filename}"\r\nContent-Type: application/json\r\n\r\n'.encode())
+        parts.append(file_bytes)
+        parts.append(f'\r\n--{boundary}--\r\n'.encode())
+        body = b"".join(parts)
+        req = urllib.request.Request(f"https://api.telegram.org/bot{BOT_TOKEN}/sendDocument", data=body,
+            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return json.loads(r.read()).get("ok", False)
+    except Exception as e:
+        print("tg_send_document error:", e); return False
+
 def tg_send(chat_id, text):
     try:
         req = urllib.request.Request(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
