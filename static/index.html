@@ -130,6 +130,12 @@ a{color:var(--link)}
 .st-partial .av{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
 
 input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-color:var(--turbo)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:10px}
+.bars .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.bars .stack{width:100%;max-width:20px;display:flex;flex-direction:column-reverse;border-radius:4px;overflow:hidden;background:var(--bg2)}
+.bars .seg{width:100%}
+.bars .seg.ok{background:var(--ok)}.bars .seg.bad{background:var(--bad)}
+.bars .lbl{font-size:9px;color:var(--hint)}
 /* admin */
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .kpi{background:var(--bg2);border-radius:14px;padding:12px 10px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--hint)}
@@ -138,6 +144,8 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .pill.pending{background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)}
 .pill.approved{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
 .pill.banned{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.hdot{width:9px;height:9px;border-radius:50%;flex:none;margin-right:6px}
+.hdot.ok{background:var(--ok)}.hdot.limited{background:var(--warn)}.hdot.banned,.hdot.dead,.hdot.error{background:var(--bad)}.hdot.unknown{background:var(--hint)}
 .pill.owner{background:color-mix(in srgb,var(--turbo) 15%,transparent);color:var(--turbo)}
 /* sheet */
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:30;opacity:0;transition:opacity .2s}
@@ -209,6 +217,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <!-- ══ Accounts ══ -->
   <div class="screen" id="s-accounts">
     <div class="top"><div><h1>Accounts</h1><div class="sub" id="acc-sub">Real Telegram accounts used for every run</div></div><button class="btn sm" onclick="openAdd()">＋ Add</button></div>
+    <button class="btn ghost sm" id="health-all-btn" onclick="healthCheckAll()" style="width:100%;margin-bottom:12px">🩺 Check health of all accounts</button>
     <div class="list" id="acc-list"><div class="empty">Loading…</div></div>
   </div>
 
@@ -229,8 +238,13 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         </div></div>
     </div>
     <div id="run-channels" class="hidden">
-      <div class="field"><label>Action</label><div class="chips" id="c-action"><button class="chip on" data-v="join">Join</button><button class="chip" data-v="leave">Leave</button></div></div>
-      <div class="field"><label>Channels</label><textarea id="c-list" placeholder="@channel1&#10;@channel2&#10;https://t.me/channel3"></textarea><div class="help">One per line, or separated by commas.</div></div>
+      <div class="field"><label>Action</label><div class="chips" id="c-action"><button class="chip on" data-v="join">Join</button><button class="chip" data-v="leave">Leave</button><button class="chip" data-v="random">🎲 Random leave</button></div></div>
+      <div id="c-list-wrap" class="field"><label>Channels</label><textarea id="c-list" placeholder="@channel1&#10;@channel2&#10;https://t.me/channel3"></textarea><div class="help">One per line, or separated by commas.</div></div>
+      <div id="c-random-wrap" class="field hidden">
+        <label>Leave how many random channels/groups? <b id="c-count-val" style="color:var(--text)">5</b></label>
+        <input type="range" id="c-count" min="1" max="50" value="5" oninput="$('c-count-val').textContent=this.value">
+        <div class="help">Picks that many at random from each account's joined channels &amp; groups, and leaves them. Different accounts leave different ones.</div>
+      </div>
     </div>
     <div id="run-message" class="hidden">
       <div class="field"><label>Send to</label><input id="m-target" placeholder="@username or user ID"></div>
@@ -271,6 +285,25 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     <div class="section"><h2>Results</h2><div class="list feed" id="job-feed"><div class="empty">Waiting for the first account…</div></div></div>
     <div style="height:18px"></div>
     <button class="btn ghost" id="job-back" onclick="show('run')">Run another</button>
+  </div>
+
+  <!-- ══ Dashboard ══ -->
+  <div class="screen" id="s-dash">
+    <div class="top"><div><h1>Stats</h1><div class="sub">Last 14 days</div></div><button class="btn sm ghost" onclick="loadDash()">↻</button></div>
+    <div class="grid3">
+      <div class="kpi"><span class="num" id="d-jobs">–</span><span>jobs run</span></div>
+      <div class="kpi"><span class="num" id="d-success">–</span><span>successful</span></div>
+      <div class="kpi"><span class="num" id="d-failed">–</span><span>failed</span></div>
+    </div>
+    <div class="section"><h2>Daily activity</h2>
+      <div class="bars" id="d-bars"></div>
+    </div>
+    <div class="section"><h2>By task type</h2>
+      <div class="list" id="d-kind"><div class="empty">No data yet.</div></div>
+    </div>
+    <div class="section"><h2>Top accounts</h2>
+      <div class="list" id="d-top"><div class="empty">No data yet.</div></div>
+    </div>
   </div>
 
   <!-- ══ Admin ══ -->
@@ -318,6 +351,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <button class="tab on" data-s="home" onclick="show('home')"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
   <button class="tab" data-s="accounts" onclick="show('accounts')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Accounts</button>
   <button class="tab" data-s="run" onclick="show('run')"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Run</button>
+  <button class="tab" data-s="dash" onclick="show('dash')"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></svg>Stats</button>
   <button class="tab hidden" data-s="admin" id="tab-admin" onclick="show('admin')"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>Admin</button>
 </nav>
 
@@ -375,7 +409,7 @@ function show(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.s===name));
   $('tabs').classList.toggle('hidden', name==='gate' || !ME);
   window.scrollTo(0,0);
-  if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run') renderSel(); if(name==='admin') loadAdmin();
+  if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run') renderSel(); if(name==='dash') loadDash(); if(name==='admin') loadAdmin();
   if(tg?.BackButton){ if(name==='job'||name==='admin'){tg.BackButton.show(); tg.BackButton.onClick(()=>show(name==='job'?'run':'home'));} else tg.BackButton.hide(); }
 }
 async function requestAccess(){ busy($('req-btn'),true,'Sending…'); try{ const d=await post('/api/request-access',{}); toast(d.already?'Request already sent':'Request sent to the owner',3000); haptic('ok'); }catch(e){ toast(e.message); haptic('bad'); } finally{ busy($('req-btn'),false); } }
@@ -425,16 +459,30 @@ async function loadAccounts(quiet){
     if(quiet) return;
     $('acc-list').innerHTML = ACCOUNTS.length ? ACCOUNTS.map(a=>`<button class="row" onclick="accMenu('${esc(a.session_name)}')">
       <span class="av">${esc(initials(a))}</span>
-      <span class="body"><span class="t">${esc(a.session_name)}</span><span class="d">${esc(a.name||'')} ${a.username?'· @'+esc(a.username):''} · ${esc(a.phone||'')}</span></span>
+      <span class="body"><span class="t"><span class="hdot ${a.health||'unknown'}"></span>${esc(a.session_name)}</span><span class="d">${esc(a.name||'')} ${a.username?'· @'+esc(a.username):''} · ${esc(a.phone||'')}${a.health&&a.health!=='unknown'?' · '+esc(a.health_detail||a.health):''}</span></span>
       <span class="r">›</span></button>`).join('')
       : '<div class="empty"><b>No accounts yet</b>Add one to start running tasks.</div>';
   }catch(e){ if(!quiet) $('acc-list').innerHTML='<div class="empty"><b>Couldn\'t load accounts</b>'+esc(e.message)+'</div>'; }
 }
 async function accMenu(name){
   haptic();
-  const go = tg?.showPopup ? await new Promise(res=>tg.showPopup({title:name,message:'What do you want to do?',buttons:[{id:'del',type:'destructive',text:'Delete account'},{type:'cancel'}]},res)) : (confirm('Delete '+name+'?')?'del':null);
+  const go = tg?.showPopup ? await new Promise(res=>tg.showPopup({title:name,message:'What do you want to do?',buttons:[{id:'health',type:'default',text:'🩺 Check health'},{id:'del',type:'destructive',text:'Delete account'},{type:'cancel'}]},res)) : (confirm('Delete '+name+'?')?'del':null);
+  if(go==='health') return checkOneHealth(name);
   if(go!=='del') return;
   try{ await del('/api/accounts/'+encodeURIComponent(name)); toast('Deleted '+name); haptic('ok'); SEL.delete(name); loadAccounts(); }catch(e){ toast(e.message); haptic('bad'); }
+}
+async function checkOneHealth(name){
+  toast('Checking '+name+'…');
+  try{ const r=await post('/api/accounts/'+encodeURIComponent(name)+'/health',{});
+    const map={ok:'✅ Healthy',limited:'⚠️ Limited',banned:'🚫 Banned',dead:'💀 Session dead',error:'❌ Error'};
+    toast((map[r.status]||r.status)+' — '+(r.detail||''),3500); haptic(r.status==='ok'?'ok':'bad'); loadAccounts();
+  }catch(e){ toast(e.message); haptic('bad'); }
+}
+async function healthCheckAll(){
+  if(!ACCOUNTS.length) return toast('No accounts to check');
+  busy($('health-all-btn'),true,'Checking…');
+  try{ const d=await post('/api/accounts/health-check-all',{}); openJob(d.job_id); }
+  catch(e){ toast(e.message); haptic('bad'); } finally{ busy($('health-all-btn'),false); }
 }
 
 /* add account sheet */
@@ -484,7 +532,8 @@ function goRun(k){ show('run'); setRun(k); }
 function setRun(k){ RUNKIND=k; document.querySelectorAll('#run-seg button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
   ['refer','channels','message'].forEach(x=>$('run-'+x).classList.toggle('hidden',x!==k));
   $('run-btn').textContent = k==='refer'?'Start referral':k==='channels'?'Start':'Send'; }
-document.querySelectorAll('.chips').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b)return; g.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); haptic(); }));
+document.querySelectorAll('.chips').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b)return; g.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); haptic();
+  if(g.id==='c-action'){ const v=b.dataset.v; $('c-list-wrap').classList.toggle('hidden',v==='random'); $('c-random-wrap').classList.toggle('hidden',v!=='random'); $('run-btn').textContent = v==='random'?'Start random leave':'Start'; } }));
 const chip = id => document.querySelector('#'+id+' .chip.on')?.dataset.v;
 const SPEED_HELP={single:'One account at a time with a 3s pause. Safest for your accounts.',parallel:'All selected accounts run at once. Fastest, but higher flood-ban risk.',custom:'Choose how many accounts run together and the pause between actions.'};
 function paintSpeed(){ const v=chip('speed')||'single'; $('speed-help').textContent=SPEED_HELP[v]; $('speed-custom').classList.toggle('hidden',v!=='custom'); }
@@ -505,8 +554,10 @@ async function startJob(){
   const accounts=[...SEL]; let path, body;
   if(RUNKIND==='refer'){ const link=$('r-link').value.trim(); if(!/^https?:\/\/t\.me\/[A-Za-z0-9_]+/.test(link)) return toast('Enter a valid t.me bot link');
     path='/api/refer'; body={bot_link:link,method:chip('r-method'),accounts,...speedBody()}; }
-  else if(RUNKIND==='channels'){ const channels=$('c-list').value.split(/[\n,]/).map(s=>s.trim()).filter(Boolean); if(!channels.length) return toast('Add at least one channel');
-    path='/api/channels'; body={action:chip('c-action'),channels,accounts,...speedBody()}; }
+  else if(RUNKIND==='channels'){ const action=chip('c-action');
+    if(action==='random'){ path='/api/channels/random-leave'; body={count:+$('c-count').value,accounts,...speedBody()}; }
+    else{ const channels=$('c-list').value.split(/[\n,]/).map(s=>s.trim()).filter(Boolean); if(!channels.length) return toast('Add at least one channel');
+      path='/api/channels'; body={action,channels,accounts,...speedBody()}; } }
   else { const target=$('m-target').value.trim(), text=$('m-text').value; if(!target||!text.trim()) return toast('Target and message are required');
     path='/api/message'; body={target,text,accounts,...speedBody()}; }
   busy($('run-btn'),true,'Starting…');
@@ -523,7 +574,7 @@ function setRing(ok,bad,total){ const t=total||1; $('ring-ok').style.strokeDasha
 async function pollJob(){
   try{
     const j=await api('/api/jobs/'+CURJOB);
-    const kind = j.kind==='refer'?'Referral':j.kind==='channels'?(j.meta.action==='join'?'Joining channels':'Leaving channels'):'Sending message';
+    const kindMap={refer:'Referral',channels:j.meta.action==='join'?'Joining channels':'Leaving channels',message:'Sending message',health:'Checking account health',random_leave:'Random leave'}; const kind = kindMap[j.kind]||j.kind;
     $('job-title').textContent = j.status==='running'?kind:kind+' · done'; $('job-sub').textContent = (j.meta.link||j.meta.target||(j.meta.channels||[]).join(', ')||'') + (j.meta.speed?'  ·  '+(j.meta.speed==='single'?'🐢 single':j.meta.speed==='parallel'?'⚡ parallel':'⚙️ '+j.meta.concurrency+' at once'):'');
     $('job-done').textContent=j.done; $('job-total').textContent=j.total; $('job-ok').textContent=j.success; $('job-bad').textContent=j.failed;
     setRing(j.success,j.failed,j.total);
@@ -531,6 +582,20 @@ async function pollJob(){
     if(j.results.length) $('job-feed').innerHTML = j.results.slice().reverse().map(r=>`<div class="row st-${r.status}"><span class="av">${r.status==='success'?'✓':r.status==='partial'?'~':'✕'}</span><span class="body"><span class="t">${esc(r.account)}</span><span class="d">${esc(r.msg)}</span></span></div>`).join('');
     if(j.status!=='running'){ clearInterval(POLL); haptic(j.failed?'bad':'ok'); }
   }catch(e){ clearInterval(POLL); $('job-lbl').textContent=e.message; }
+}
+
+/* ── dashboard ── */
+async function loadDash(){
+  try{
+    const s=await api('/api/stats');
+    $('d-jobs').textContent=s.totals.jobs; $('d-success').textContent=s.totals.success; $('d-failed').textContent=s.totals.failed;
+    const max=Math.max(1,...s.daily.map(d=>d.success+d.failed));
+    $('d-bars').innerHTML=s.daily.map(d=>{ const h=v=>Math.round(v/max*90); const day=new Date(d.date+'T00:00:00Z').getDate();
+      return `<div class="bar"><div class="stack" style="height:${Math.max(4,h(d.success+d.failed))}px">${d.failed?`<div class="seg bad" style="height:${h(d.failed)}px"></div>`:''}${d.success?`<div class="seg ok" style="height:${h(d.success)}px"></div>`:''}</div><span class="lbl">${day}</span></div>`; }).join('');
+    const kindLbl={refer:'🚀 Referral',channels:'📢 Join/Leave',message:'💬 Message',health:'🩺 Health check',random_leave:'🎲 Random leave'};
+    $('d-kind').innerHTML = s.by_kind.length ? s.by_kind.map(k=>`<div class="row"><span class="av" style="font-family:Manrope">${(kindLbl[k.kind]||k.kind)[0]}</span><span class="body"><span class="t">${kindLbl[k.kind]||k.kind}</span><span class="d">${k.jobs} job${k.jobs>1?'s':''}</span></span><span class="r">${k.success}✓ ${k.failed?('/ '+k.failed+'✗'):''}</span></div>`).join('') : '<div class="empty">No data yet.</div>';
+    $('d-top').innerHTML = s.top_accounts.length ? s.top_accounts.map(a=>`<div class="row"><span class="av">${esc(a.account.slice(-2))}</span><span class="body"><span class="t">${esc(a.account)}</span></span><span class="r">${a.success}✓ ${a.failed?a.failed+'✗':''}</span></div>`).join('') : '<div class="empty">No data yet.</div>';
+  }catch(e){ toast(e.message); }
 }
 
 /* ── admin ── */
