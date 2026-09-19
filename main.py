@@ -285,6 +285,8 @@ async def _run_pool(jid, accs, worker, concurrency, delay):
                 r = await worker(acc)
             except Exception as e:
                 r = {"account": acc["session_name"], "status": "error", "msg": str(e)}
+            db()["accounts"].update_one({"owner": acc["owner"], "session_name": acc["session_name"]},
+                {"$set": {"last_used": int(time.time())}})
             job_push(jid, r)
             if concurrency == 1:
                 await asyncio.sleep(delay)
@@ -396,7 +398,9 @@ async def accounts(request: Request):
                     "name": a.get("name", ""), "username": a.get("username", ""),
                     "phone": p[:4] + "•••" + p[-3:] if len(p) > 7 else p,
                     "health": a.get("health", "unknown"), "health_detail": a.get("health_detail", ""),
-                    "health_checked": a.get("health_checked")})
+                    "health_checked": a.get("health_checked"),
+                    "tag": a.get("tag", ""), "note": a.get("note", ""),
+                    "last_used": a.get("last_used"), "created": a.get("created")})
     return {"count": len(out), "accounts": out}
 
 @app.post("/api/accounts/request-code")
@@ -433,7 +437,7 @@ async def verify_code(request: Request):
         me_ = await client.get_me()
         save_session(u["id"], name, client.session.save()); del_session(u["id"], name + "_temp")
         save_account({"owner": u["id"], "session_name": name, "api_id": api_id, "api_hash": api_hash, "phone": b["phone"],
-                      "username": me_.username or "", "name": f"{me_.first_name or ''} {me_.last_name or ''}".strip()})
+                      "username": me_.username or "", "name": f"{me_.first_name or ''} {me_.last_name or ''}".strip(), "created": int(time.time())})
         return {"status": "success", "message": f"Logged in as {me_.first_name}"}
     except errors.SessionPasswordNeededError:
         save_session(u["id"], name, client.session.save()); del_session(u["id"], name + "_temp")
@@ -540,6 +544,58 @@ async def health_check_all(request: Request):
     asyncio.create_task(run())
     return {"job_id": jid}
 
+@app.post("/api/accounts/{name}/meta")
+async def update_meta(name: str, request: Request):
+    """Set tag (safe/new/risky/'') and/or note for an account."""
+    u = current_user(request)
+    b = await request.json()
+    acc = next((a for a in load_accounts(u["id"]) if a["session_name"] == name), None)
+    if not acc: raise HTTPException(404, "Account not found")
+    upd = {}
+    if "tag" in b:
+        if b["tag"] not in ("", "safe", "new", "risky"): raise HTTPException(400, "Invalid tag")
+        upd["tag"] = b["tag"]
+    if "note" in b:
+        upd["note"] = str(b["note"])[:500]
+    if upd:
+        db()["accounts"].update_one({"owner": u["id"], "session_name": name}, {"$set": upd})
+    return {"status": "success"}
+
+@app.get("/api/accounts/export")
+async def export_accounts(request: Request):
+    """Download all of this user's accounts + sessions as one JSON backup file."""
+    u = current_user(request)
+    accs = load_accounts(u["id"])
+    out = []
+    for a in accs:
+        sess = get_session(u["id"], a["session_name"])
+        out.append({**{k: v for k, v in a.items() if k != "owner"}, "session_str": sess})
+    return JSONResponse({"turbo_refer_backup": True, "version": 1, "exported_at": int(time.time()), "accounts": out})
+
+@app.post("/api/accounts/import")
+async def import_accounts(request: Request):
+    """Restore accounts + sessions from an exported backup JSON."""
+    u = current_user(request)
+    b = await request.json()
+    accs = b.get("accounts") or []
+    if not isinstance(accs, list) or not accs:
+        raise HTTPException(400, "No accounts found in this file.")
+    existing = {a["session_name"] for a in load_accounts(u["id"])}
+    added, skipped = 0, 0
+    for a in accs:
+        try:
+            name = a.get("session_name")
+            if not name or name in existing:
+                skipped += 1; continue
+            sess = a.pop("session_str", None)
+            a["owner"] = u["id"]
+            save_account(a)
+            if sess: save_session(u["id"], name, sess)
+            existing.add(name); added += 1
+        except Exception:
+            skipped += 1
+    return {"status": "success", "added": added, "skipped": skipped}
+
 @app.delete("/api/accounts/{name}")
 async def delete_account(name: str, request: Request):
     u = current_user(request)
@@ -559,16 +615,16 @@ async def refer(request: Request):
     asyncio.create_task(run_refer_job(jid, accs, b["bot_link"], b.get("method", "no_captcha"), delay, conc))
     return {"job_id": jid}
 
-@app.post("/api/channels/random-leave")
-async def random_leave(request: Request):
+@app.post("/api/channels/auto-leave")
+async def auto_leave(request: Request):
     """Leave N random channels/groups per selected account."""
     u = current_user(request)
     b = await request.json()
     accs = pick_accounts(u["id"], b.get("accounts"))
     if not accs: raise HTTPException(400, "No accounts selected.")
-    count = max(1, min(int(b.get("count", 5)), 500))
+    count = max(1, min(int(b.get("count", 5)), 3000))
     conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "random_leave", len(accs), {"count": count, "speed": b.get("speed", "single"), "concurrency": conc})
+    jid = job_new(u["id"], "auto_leave", len(accs), {"count": count, "speed": b.get("speed", "single"), "concurrency": conc})
 
     async def worker(acc):
         client = get_client(acc)
@@ -595,6 +651,10 @@ async def random_leave(request: Request):
             except Exception: pass
     asyncio.create_task(_run_pool(jid, accs, worker, conc, delay))
     return {"job_id": jid}
+
+@app.post("/api/channels/random-leave")
+async def random_leave_alias(request: Request):
+    return await auto_leave(request)
 
 @app.post("/api/channels")
 async def channels(request: Request):
