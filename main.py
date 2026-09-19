@@ -160,9 +160,34 @@ def require_owner(request: Request):
     return u
 
 # ── Telethon helpers ─────────────────────────────────────────────
+_ACC_LOCKS = {}
+def _acc_lock(acc):
+    """One lock per (owner, session_name) so the same account's session string
+    is never opened by two Telethon clients at the same time (causes 'EOF when
+    reading a line' / corrupted auth key)."""
+    key = (acc["owner"], acc["session_name"])
+    lock = _ACC_LOCKS.get(key)
+    if lock is None:
+        lock = asyncio.Lock()
+        _ACC_LOCKS[key] = lock
+    return lock
+
 def get_client(acc):
     s = get_session(acc["owner"], acc["session_name"])
-    return TelegramClient(StringSession(s) if s else StringSession(), acc["api_id"], acc["api_hash"])
+    return TelegramClient(StringSession(s) if s else StringSession(), acc["api_id"], acc["api_hash"],
+                           connection_retries=3, retry_delay=2, timeout=20)
+
+def friendly_error(e):
+    msg = str(e)
+    if "EOF when reading a line" in msg or "Server sent a very weird response" in msg:
+        return "Connection hiccup — please try again"
+    if "database is locked" in msg.lower():
+        return "Account busy with another task — try again in a moment"
+    if "The authorization key" in msg or "AUTH_KEY" in msg:
+        return "Session expired — needs re-login"
+    if "A wait of" in msg and "is required" in msg:
+        return msg  # flood wait, already clear
+    return msg[:200]
 
 def parse_bot_link(link):
     m = re.match(r"https?://t\.me/([A-Za-z0-9_]+)(?:\?start=(.*))?", link.strip())
@@ -219,7 +244,7 @@ async def _captcha_flow(acc, bot_link, solver):
             pass
         save_session(acc["owner"], acc["session_name"], client.session.save())
     except Exception as e:
-        result.update({"status": "error", "msg": str(e)})
+        result.update({"status": "error", "msg": friendly_error(e)})
     finally:
         try: await client.disconnect()
         except Exception: pass
@@ -269,7 +294,7 @@ async def refer_plain(acc, bot_link):
         save_session(acc["owner"], acc["session_name"], client.session.save())
         return {"account": acc["session_name"], "status": "success", "msg": "Started"}
     except Exception as e:
-        return {"account": acc["session_name"], "status": "error", "msg": str(e)}
+        return {"account": acc["session_name"], "status": "error", "msg": friendly_error(e)}
     finally:
         try: await client.disconnect()
         except Exception: pass
@@ -281,10 +306,11 @@ async def _run_pool(jid, accs, worker, concurrency, delay):
     async def one(i, acc):
         await asyncio.sleep(i * delay if concurrency > 1 else 0)   # stagger starts
         async with sem:
-            try:
-                r = await worker(acc)
-            except Exception as e:
-                r = {"account": acc["session_name"], "status": "error", "msg": str(e)}
+            async with _acc_lock(acc):   # never run this same account's session twice at once
+                try:
+                    r = await worker(acc)
+                except Exception as e:
+                    r = {"account": acc["session_name"], "status": "error", "msg": friendly_error(e)}
             db()["accounts"].update_one({"owner": acc["owner"], "session_name": acc["session_name"]},
                 {"$set": {"last_used": int(time.time())}})
             job_push(jid, r)
@@ -473,33 +499,34 @@ async def account_health(name: str, request: Request):
     u = current_user(request)
     acc = next((a for a in load_accounts(u["id"]) if a["session_name"] == name), None)
     if not acc: raise HTTPException(404, "Account not found")
-    client = get_client(acc)
     result = {"session_name": name, "status": "unknown", "detail": ""}
-    try:
-        await client.connect()
-        if not await client.is_user_authorized():
-            result.update({"status": "dead", "detail": "Session expired — needs re-login"})
-        else:
-            me_ = await client.get_me()
-            try:
-                await client.send_message("me", ".")  # harmless self-message, confirms send works
-                result.update({"status": "ok", "detail": f"Active as {me_.first_name}"})
-            except errors.UserDeactivatedBanError:
-                result.update({"status": "banned", "detail": "Account deleted/banned by Telegram"})
-            except errors.FloodWaitError as e:
-                result.update({"status": "limited", "detail": f"Flood-wait {e.seconds}s"})
-            except Exception as e:
-                result.update({"status": "limited", "detail": str(e)[:120]})
-            save_session(u["id"], name, client.session.save())
-    except errors.AuthKeyUnregisteredError:
-        result.update({"status": "dead", "detail": "Logged out from this device"})
-    except errors.UserDeactivatedBanError:
-        result.update({"status": "banned", "detail": "Account deleted/banned by Telegram"})
-    except Exception as e:
-        result.update({"status": "error", "detail": str(e)[:150]})
-    finally:
-        try: await client.disconnect()
-        except Exception: pass
+    async with _acc_lock(acc):
+        client = get_client(acc)
+        try:
+            await client.connect()
+            if not await client.is_user_authorized():
+                result.update({"status": "dead", "detail": "Session expired — needs re-login"})
+            else:
+                me_ = await client.get_me()
+                try:
+                    await client.send_message("me", ".")  # harmless self-message, confirms send works
+                    result.update({"status": "ok", "detail": f"Active as {me_.first_name}"})
+                except errors.UserDeactivatedBanError:
+                    result.update({"status": "banned", "detail": "Account deleted/banned by Telegram"})
+                except errors.FloodWaitError as e:
+                    result.update({"status": "limited", "detail": f"Flood-wait {e.seconds}s"})
+                except Exception as e:
+                    result.update({"status": "limited", "detail": str(e)[:120]})
+                save_session(u["id"], name, client.session.save())
+        except errors.AuthKeyUnregisteredError:
+            result.update({"status": "dead", "detail": "Logged out from this device"})
+        except errors.UserDeactivatedBanError:
+            result.update({"status": "banned", "detail": "Account deleted/banned by Telegram"})
+        except Exception as e:
+            result.update({"status": "error", "detail": str(e)[:150]})
+        finally:
+            try: await client.disconnect()
+            except Exception: pass
     db()["accounts"].update_one({"owner": u["id"], "session_name": name},
         {"$set": {"health": result["status"], "health_detail": result["detail"], "health_checked": int(time.time())}})
     return result
@@ -513,23 +540,24 @@ async def health_check_all(request: Request):
     async def run():
         for acc in accs:
             try:
-                client = get_client(acc)
-                await client.connect()
-                if not await client.is_user_authorized():
-                    res = {"status": "dead", "detail": "Session expired"}
-                else:
-                    me_ = await client.get_me()
-                    try:
-                        await client.send_message("me", ".")
-                        res = {"status": "ok", "detail": f"Active as {me_.first_name}"}
-                    except errors.UserDeactivatedBanError:
-                        res = {"status": "banned", "detail": "Banned by Telegram"}
-                    except errors.FloodWaitError as e:
-                        res = {"status": "limited", "detail": f"Flood-wait {e.seconds}s"}
-                    except Exception as e:
-                        res = {"status": "limited", "detail": str(e)[:120]}
-                    save_session(u["id"], acc["session_name"], client.session.save())
-                await client.disconnect()
+                async with _acc_lock(acc):
+                    client = get_client(acc)
+                    await client.connect()
+                    if not await client.is_user_authorized():
+                        res = {"status": "dead", "detail": "Session expired"}
+                    else:
+                        me_ = await client.get_me()
+                        try:
+                            await client.send_message("me", ".")
+                            res = {"status": "ok", "detail": f"Active as {me_.first_name}"}
+                        except errors.UserDeactivatedBanError:
+                            res = {"status": "banned", "detail": "Banned by Telegram"}
+                        except errors.FloodWaitError as e:
+                            res = {"status": "limited", "detail": f"Flood-wait {e.seconds}s"}
+                        except Exception as e:
+                            res = {"status": "limited", "detail": str(e)[:120]}
+                        save_session(u["id"], acc["session_name"], client.session.save())
+                    await client.disconnect()
             except errors.AuthKeyUnregisteredError:
                 res = {"status": "dead", "detail": "Logged out"}
             except errors.UserDeactivatedBanError:
