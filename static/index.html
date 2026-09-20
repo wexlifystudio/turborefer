@@ -136,6 +136,69 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .bars .seg{width:100%}
 .bars .seg.ok{background:var(--ok)}.bars .seg.bad{background:var(--bad)}
 .bars .lbl{font-size:9px;color:var(--hint)}
+/* skeleton loading */
+@keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+.sk{background:linear-gradient(90deg,var(--bg2) 25%,color-mix(in srgb,var(--text) 6%,var(--bg2)) 50%,var(--bg2) 75%);
+  background-size:800px 100%;animation:shimmer 1.4s infinite linear;border-radius:8px}
+.sk-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.sk-av{width:40px;height:40px;border-radius:50%;flex:none}
+.sk-l1{height:13px;width:52%;margin-bottom:7px}
+.sk-l2{height:11px;width:78%}
+.sk-kpi{height:62px;border-radius:14px}
+.sk-bar{height:120px;border-radius:12px}
+
+/* empty states */
+.empty{padding:34px 16px;text-align:center;color:var(--hint)}
+.empty .art{font-size:40px;line-height:1;margin-bottom:10px;opacity:.85}
+.empty b{display:block;color:var(--text);font-weight:700;font-size:15px;margin-bottom:4px}
+.empty p{font-size:13px;margin-bottom:14px}
+.empty .btn{max-width:230px;margin:0 auto}
+
+/* micro-animations */
+.row,.arow,.chip,.tab,.quick button{transition:transform .12s cubic-bezier(.2,.8,.2,1),background .15s}
+.row:active,.quick button:active{transform:scale(.985)}
+.chip:active{transform:scale(.94)}
+.tab:active svg{transform:scale(.88)}
+.tab svg{transition:transform .12s}
+.screen.active{animation:in .22s cubic-bezier(.2,.8,.2,1)}
+@keyframes pop{0%{transform:scale(.8);opacity:0}100%{transform:scale(1);opacity:1}}
+.feed .row{animation:pop .2s cubic-bezier(.2,.8,.2,1)}
+
+/* pull to refresh */
+.ptr{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;justify-content:center;
+  height:0;overflow:hidden;color:var(--hint);font-size:12px;font-weight:600;z-index:15;transition:height .18s}
+.ptr.on{height:46px}
+.ptr .spin{width:16px;height:16px;border-color:var(--line);border-top-color:var(--turbo);margin-right:8px}
+
+/* health summary card */
+.hcard{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;background:var(--bg2);margin-top:14px;width:100%;text-align:left}
+.hcard.warn{background:color-mix(in srgb,var(--warn) 12%,transparent)}
+.hcard.bad{background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.hcard .ic{font-size:20px;flex:none}
+.hcard .t{font-weight:600;font-size:14px}
+.hcard .d{color:var(--hint);font-size:12px}
+
+/* search + sort */
+.searchbar{display:flex;gap:8px;margin-bottom:10px}
+.searchbar input{flex:1}
+.sortbtn{padding:0 14px;border-radius:12px;background:var(--bg2);font-weight:600;font-size:13px;flex:none}
+
+/* batch mode */
+.batchbar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--bg2);margin-bottom:10px}
+.batchbar .n{font-weight:700;flex:1}
+.acc-check{width:22px;height:22px;border-radius:7px;border:2px solid var(--hint);flex:none;display:grid;place-items:center;margin-right:2px}
+.acc-check.on{background:var(--turbo);border-color:var(--turbo)}
+.acc-check svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;display:none}
+.acc-check.on svg{display:block}
+
+/* link preview */
+.linkprev{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--bg2);margin-top:8px;font-size:13px}
+.linkprev .ok{color:var(--ok)}.linkprev .bad{color:var(--bad)}
+
+/* recent links */
+.recent{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.recent button{font-size:11px;padding:6px 10px;border-radius:8px;background:var(--bg2);color:var(--hint);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* action sheet rows */
 .action-list{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
 .arow{display:flex;align-items:center;gap:12px;padding:12px 4px;width:100%;text-align:left;border-radius:12px}
@@ -181,6 +244,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 </style>
 </head>
 <body>
+<div class="ptr" id="ptr"><span class="spin"></span><span id="ptr-text">Pull to refresh</span></div>
 <div id="app">
 
   <!-- ══ Gate (no access / loading) ══ -->
@@ -213,6 +277,11 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <div class="stat"><span class="num" id="h-acc">–</span><span class="lbl">accounts</span></div>
       <div class="stat"><span class="lbl" id="h-status"><span class="dot"></span>checking</span></div>
     </div>
+    <button class="hcard hidden" id="h-health" onclick="show('accounts')">
+      <span class="ic" id="hh-ic">🩺</span>
+      <span style="flex:1"><span class="t" id="hh-t"></span><span class="d" id="hh-d"></span></span>
+      <span class="r" style="color:var(--hint)">›</span>
+    </button>
     <div class="section"><h2>Run</h2>
       <div class="quick">
         <button onclick="goRun('refer')"><span class="icon" style="color:var(--turbo)"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>Referral</button>
@@ -233,6 +302,16 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <button class="btn ghost sm" style="flex:1" onclick="$('import-file').click()">📥 Import backup</button>
       <input type="file" id="import-file" accept="application/json" class="hidden" onchange="importBackup(event)">
     </div>
+    <div class="searchbar">
+      <input id="acc-search" placeholder="🔍 Search accounts…" oninput="renderAccounts()">
+      <button class="sortbtn" id="sort-btn" onclick="cycleSort()">↕ Recent</button>
+    </div>
+    <div class="batchbar hidden" id="batch-bar">
+      <span class="n" id="batch-n">0 selected</span>
+      <button class="btn sm ghost" onclick="batchHealth()">🩺 Check</button>
+      <button class="btn sm danger" onclick="batchDelete()">🗑 Delete</button>
+      <button class="btn sm ghost" onclick="exitBatch()">Done</button>
+    </div>
     <div class="help" style="margin-bottom:14px">Export sends a backup file to your Telegram chat with the bot. Save it somewhere safe — anyone with this file can access those accounts.</div>
     <div class="list" id="acc-list"><div class="empty">Loading…</div></div>
   </div>
@@ -247,7 +326,10 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     </div>
 
     <div id="run-refer">
-      <div class="field"><label>Bot referral link</label><input id="r-link" placeholder="https://t.me/SomeBot?start=123456" inputmode="url"><div class="help">The bot gets <b>/start 123456</b> from each account.</div></div>
+      <div class="field"><label>Bot referral link</label><input id="r-link" placeholder="https://t.me/SomeBot?start=123456" inputmode="url" oninput="previewLink()">
+        <div class="linkprev hidden" id="link-prev"></div>
+        <div class="recent" id="recent-links"></div>
+        <div class="help">The bot gets <b>/start 123456</b> from each account.</div></div>
       <div class="field"><label>Captcha type</label>
         <div class="chips" id="r-method">
           <button class="chip on" data-v="no_captcha">None</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="button">Button</button>
@@ -300,6 +382,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     </div>
     <div class="section"><h2>Results</h2><div class="list feed" id="job-feed"><div class="empty">Waiting for the first account…</div></div></div>
     <div style="height:18px"></div>
+    <button class="btn danger hidden" id="job-cancel" onclick="cancelJob()" style="margin-bottom:8px">🛑 Stop this run</button>
     <button class="btn ghost" id="job-back" onclick="show('run')">Run another</button>
   </div>
 
@@ -454,6 +537,10 @@ const post = (p,b)=>api(p,{method:'POST',body:JSON.stringify(b)});
 const del  = p=>api(p,{method:'DELETE'});
 
 /* ── ui helpers ── */
+const SK_ROWS = n => Array(n).fill('<div class="sk-row"><div class="sk sk-av"></div><div style="flex:1"><div class="sk sk-l1"></div><div class="sk sk-l2"></div></div></div>').join('');
+function bdHour(){ return Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Dhaka',hour:'numeric',hour12:false}).format(new Date())); }
+function greeting(){ const h=bdHour(); return h<5?'Late night':h<12?'Good morning':h<16?'Good afternoon':h<20?'Good evening':'Good night'; }
+function emptyState(art,title,text,btn){ return `<div class="empty"><div class="art">${art}</div><b>${title}</b><p>${text}</p>${btn||''}</div>`; }
 function toast(m,ms=2200){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),ms); }
 function haptic(k='light'){ try{ k==='ok'?tg.HapticFeedback.notificationOccurred('success'):k==='bad'?tg.HapticFeedback.notificationOccurred('error'):tg.HapticFeedback.impactOccurred(k); }catch(e){} }
 function busy(btn,on,label){ if(!btn)return; if(on){btn._l=btn.innerHTML;btn.innerHTML='<span class="spin"></span>'+(label||'');btn.disabled=true;}else{btn.innerHTML=btn._l||btn.innerHTML;btn.disabled=false;} }
@@ -464,7 +551,7 @@ function show(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.s===name));
   $('tabs').classList.toggle('hidden', name==='gate' || !ME);
   window.scrollTo(0,0);
-  if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run') renderSel(); if(name==='dash') loadDash(); if(name==='admin') loadAdmin();
+  if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run'){ renderSel(); loadRecentLinks(); } if(name==='dash') loadDash(); if(name==='admin') loadAdmin();
   if(tg?.BackButton){ if(name==='job'||name==='admin'){tg.BackButton.show(); tg.BackButton.onClick(()=>show(name==='job'?'run':'home'));} else tg.BackButton.hide(); }
 }
 async function requestAccess(){ busy($('req-btn'),true,'Sending…'); try{ const d=await post('/api/request-access',{}); toast(d.already?'Request already sent':'Request sent to the owner',3000); haptic('ok'); }catch(e){ toast(e.message); haptic('bad'); } finally{ busy($('req-btn'),false); } }
@@ -475,7 +562,7 @@ async function boot(){
   $('gate-loading').classList.remove('hidden'); $('gate-denied').classList.add('hidden'); $('gate-error').classList.add('hidden');
   try{
     ME = await api('/api/me');
-    $('hi').textContent = 'Hey, '+(ME.name||'').split(' ')[0]; $('hi-role').textContent = ME.role==='owner'?'Owner':'Approved';
+    $('hi').textContent = greeting()+', '+(ME.name||'').split(' ')[0]; $('hi-role').textContent = ME.role==='owner'?'Owner':'Approved';
     $('tab-admin').classList.toggle('hidden', ME.role!=='owner');
     show('home');
   }catch(e){
@@ -490,9 +577,12 @@ async function boot(){
 
 /* ── home ── */
 async function loadHome(){
+  $('hi').textContent = greeting()+', '+((ME?.name)||'').split(' ')[0];
   $('h-status').innerHTML='<span class="dot"></span>checking';
+  $('h-jobs').innerHTML=SK_ROWS(2);
   try{ await api('/ping'); $('h-status').innerHTML='<span class="dot ok"></span>backend online'; }catch(e){ $('h-status').innerHTML='<span class="dot bad"></span>backend offline'; }
   loadAccounts(true);
+  loadHealthCard();
   try{
     const d=await api('/api/jobs'); const jobs=d.jobs||[];
     $('j-count').textContent = jobs.length?jobs.length+' this session':'';
@@ -501,26 +591,84 @@ async function loadHome(){
       <span class="body"><span class="t">${j.kind==='refer'?'Referral':j.kind==='channels'?(j.meta.action==='join'?'Join channels':'Leave channels'):'Message'}</span>
       <span class="d">${esc(j.meta.link||j.meta.target||(j.meta.channels||[]).join(', '))}</span></span>
       <span class="r">${j.status==='running'?'<span style="color:var(--turbo)">running</span>':j.success+'/'+j.total+' ok'}</span></button>`).join('')
-      : '<div class="empty">Nothing has run yet.</div>';
+      : emptyState('⚡','Nothing has run yet','Start your first referral, channel join, or message.','<button class="btn" onclick="goRun(\'refer\')">Start a run</button>');
   }catch(e){}
+}
+async function loadHealthCard(){
+  try{
+    const h=await api('/api/health-summary'); const card=$('h-health');
+    if(!h.total){ card.classList.add('hidden'); return; }
+    card.classList.remove('hidden'); card.classList.remove('warn','bad');
+    if(h.needs_attention){ card.classList.add('bad'); $('hh-ic').textContent='🚨';
+      $('hh-t').textContent=h.needs_attention+' account'+(h.needs_attention>1?'s':'')+' need attention';
+      $('hh-d').textContent='Dead or banned — delete and add them again'; }
+    else if(h.counts.limited){ card.classList.add('warn'); $('hh-ic').textContent='⚠️';
+      $('hh-t').textContent=h.counts.limited+' account'+(h.counts.limited>1?'s':'')+' rate-limited';
+      $('hh-d').textContent='They will work again after the flood-wait ends'; }
+    else if(h.counts.unknown===h.total){ $('hh-ic').textContent='🩺';
+      $('hh-t').textContent='Health not checked yet'; $('hh-d').textContent='Tap to run a health check on all accounts'; }
+    else { $('hh-ic').textContent='✅'; $('hh-t').textContent='All accounts healthy';
+      $('hh-d').textContent=h.counts.ok+' of '+h.total+' verified working'; }
+  }catch(e){ $('h-health').classList.add('hidden'); }
 }
 
 /* ── accounts ── */
 function initials(a){ const n=(a.name||a.session_name||'?').trim(); return n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 function agoLong(t){ if(!t) return 'never used'; const d=(Date.now()/1000-t); if(d<60) return 'used just now'; if(d<3600) return 'used '+Math.round(d/60)+'m ago'; if(d<86400) return 'used '+Math.round(d/3600)+'h ago'; return 'used '+Math.round(d/86400)+'d ago'; }
+let SORT_MODE='recent', BATCH=false, BATCH_SEL=new Set();
+const SORT_LABEL={recent:'↕ Recent',name:'↕ Name',health:'↕ Health'};
 async function loadAccounts(quiet){
+  if(!quiet) $('acc-list').innerHTML=SK_ROWS(3);
   try{
     const d=await api('/api/accounts'); ACCOUNTS=d.accounts||[];
-    $('h-acc').textContent=ACCOUNTS.length; $('acc-sub').textContent = ACCOUNTS.length? ACCOUNTS.length+' account'+(ACCOUNTS.length>1?'s':'')+' ready' : 'Real Telegram accounts used for every run';
+    $('h-acc').textContent=ACCOUNTS.length;
+    $('acc-sub').textContent = ACCOUNTS.length? ACCOUNTS.length+' account'+(ACCOUNTS.length>1?'s':'')+' ready' : 'Real Telegram accounts used for every run';
     if(quiet) return;
-    $('acc-list').innerHTML = ACCOUNTS.length ? ACCOUNTS.map(a=>`<button class="row" onclick="accMenu('${esc(a.session_name)}')">
-      <span class="av">${esc(initials(a))}</span>
+    renderAccounts();
+  }catch(e){ if(!quiet) $('acc-list').innerHTML=emptyState('⚠️',"Couldn't load accounts",esc(e.message),'<button class="btn ghost" onclick="loadAccounts()">Try again</button>'); }
+}
+function cycleSort(){ SORT_MODE = SORT_MODE==='recent'?'name':SORT_MODE==='name'?'health':'recent';
+  $('sort-btn').textContent=SORT_LABEL[SORT_MODE]; haptic(); renderAccounts(); }
+const HEALTH_RANK={dead:0,banned:1,error:2,limited:3,unknown:4,ok:5};
+function renderAccounts(){
+  const q=($('acc-search')?.value||'').trim().toLowerCase();
+  let list=ACCOUNTS.filter(a=>!q || (a.session_name+' '+(a.name||'')+' '+(a.username||'')+' '+(a.phone||'')).toLowerCase().includes(q));
+  if(SORT_MODE==='name') list=[...list].sort((x,y)=>x.session_name.localeCompare(y.session_name));
+  else if(SORT_MODE==='health') list=[...list].sort((x,y)=>(HEALTH_RANK[x.health||'unknown']??9)-(HEALTH_RANK[y.health||'unknown']??9));
+  else list=[...list].sort((x,y)=>(y.last_used||0)-(x.last_used||0));
+  $('batch-bar').classList.toggle('hidden',!BATCH);
+  $('batch-n').textContent=BATCH_SEL.size+' selected';
+  if(!ACCOUNTS.length){
+    $('acc-list').innerHTML=emptyState('👤','No accounts yet','Add a real Telegram account to start running tasks.','<button class="btn" onclick="openAdd()">Add your first account</button>');
+    return;
+  }
+  if(!list.length){ $('acc-list').innerHTML=emptyState('🔍','No matches','No account matches "'+esc(q)+'".',''); return; }
+  $('acc-list').innerHTML=list.map(a=>{
+    const sel=BATCH_SEL.has(a.session_name);
+    const click = BATCH ? `toggleBatch('${esc(a.session_name)}')` : `accMenu('${esc(a.session_name)}')`;
+    return `<button class="row" onclick="${click}" oncontextmenu="enterBatch('${esc(a.session_name)}');return false">
+      ${BATCH?`<span class="acc-check ${sel?'on':''}"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span>`:`<span class="av">${esc(initials(a))}</span>`}
       <span class="body"><span class="t"><span class="hdot ${a.health||'unknown'}"></span>${esc(a.session_name)}</span>
       <span class="d">${esc(a.name||'')} ${a.username?'· @'+esc(a.username):''} · ${esc(a.phone||'')}</span>
       <span class="d">${agoLong(a.last_used)}${a.note?' · 📝 '+esc(a.note.slice(0,40)):''}</span></span>
-      <span class="r">›</span></button>`).join('')
-      : '<div class="empty"><b>No accounts yet</b>Add one to start running tasks.</div>';
-  }catch(e){ if(!quiet) $('acc-list').innerHTML='<div class="empty"><b>Couldn\'t load accounts</b>'+esc(e.message)+'</div>'; }
+      <span class="r">${BATCH?'':'›'}</span></button>`;
+  }).join('');
+}
+function enterBatch(name){ BATCH=true; BATCH_SEL.clear(); if(name) BATCH_SEL.add(name); haptic('medium'); renderAccounts(); }
+function exitBatch(){ BATCH=false; BATCH_SEL.clear(); renderAccounts(); }
+function toggleBatch(name){ BATCH_SEL.has(name)?BATCH_SEL.delete(name):BATCH_SEL.add(name); haptic(); renderAccounts(); }
+async function batchDelete(){
+  if(!BATCH_SEL.size) return toast('Select accounts first');
+  if(!await confirmDlg('Delete '+BATCH_SEL.size+' account(s)? This cannot be undone.')) return;
+  let ok=0;
+  for(const n of [...BATCH_SEL]){ try{ await del('/api/accounts/'+encodeURIComponent(n)); SEL.delete(n); ok++; }catch(e){} }
+  toast('Deleted '+ok+' account(s)'); haptic('ok'); exitBatch(); loadAccounts();
+}
+async function batchHealth(){
+  if(!BATCH_SEL.size) return toast('Select accounts first');
+  const names=[...BATCH_SEL]; exitBatch(); toast('Checking '+names.length+' account(s)…');
+  for(const n of names){ try{ await post('/api/accounts/'+encodeURIComponent(n)+'/health',{}); }catch(e){} }
+  toast('Health check done'); haptic('ok'); loadAccounts(); loadHealthCard();
 }
 function accMenu(name){
   const a=ACCOUNTS.find(x=>x.session_name===name)||{};
@@ -623,7 +771,7 @@ function renderSel(){
   const all = ACCOUNTS.length && SEL.size===ACCOUNTS.length;
   $('sel-all').classList.toggle('on',all); $('sel-count').textContent = SEL.size+' of '+ACCOUNTS.length+' selected';
   $('sel-list').innerHTML = ACCOUNTS.length ? ACCOUNTS.map(a=>`<button class="check ${SEL.has(a.session_name)?'on':''}" onclick="toggleSel('${esc(a.session_name)}')"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')}</span></span></button>`).join('')
-    : '<div class="empty"><b>No accounts</b><a href="#" onclick="show(\'accounts\');openAdd();return false">Add one first</a></div>';
+    : emptyState('👤','No accounts','Add an account before running anything.','<button class="btn" onclick="show(\'accounts\');openAdd()">Add account</button>');
   $('run-btn').disabled = SEL.size===0;
 }
 function toggleSel(n){ SEL.has(n)?SEL.delete(n):SEL.add(n); haptic(); renderSel(); }
@@ -644,9 +792,47 @@ async function startJob(){
   finally{ busy($('run-btn'),false); }
 }
 
+/* ── link preview + recent ── */
+let LINK_T=null;
+function previewLink(){
+  clearTimeout(LINK_T); LINK_T=setTimeout(()=>{
+    const v=$('r-link').value.trim(); const box=$('link-prev');
+    if(!v){ box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const m=v.match(/^https?:\/\/t\.me\/([A-Za-z0-9_]{4,})(?:\?start=(.*))?$/);
+    if(!m){ box.innerHTML='<span class="bad">✕</span> <span>Not a valid t.me bot link</span>'; return; }
+    const bot=m[1], param=m[2]||'';
+    box.innerHTML=`<span class="ok">✓</span> <span>Bot <b>@${esc(bot)}</b>${param?` · sends <code>/start ${esc(param.slice(0,24))}</code>`:' · sends <code>/start</code>'}</span>`;
+  },250);
+}
+async function loadRecentLinks(){
+  try{ const d=await api('/api/recent-links'); const box=$('recent-links');
+    box.innerHTML=(d.links||[]).map(l=>`<button onclick="useLink('${esc(l).replace(/'/g,"\\'")}')">${esc(l.replace('https://t.me/','@').slice(0,32))}</button>`).join('');
+  }catch(e){}
+}
+function useLink(l){ $('r-link').value=l; previewLink(); haptic(); }
+
 /* ── live job ── */
 const CIRC = 2*Math.PI*88;
-function openJob(id){ CURJOB=id; show('job'); $('job-feed').innerHTML='<div class="empty">Waiting for the first account…</div>'; setRing(0,0,0); clearInterval(POLL); pollJob(); POLL=setInterval(pollJob,1500); }
+function openJob(id){ CURJOB=id; JOB_DONE_FIRED=false; show('job'); $('job-feed').innerHTML=SK_ROWS(2); $('job-cancel').classList.remove('hidden'); setRing(0,0,0); clearInterval(POLL); pollJob(); POLL=setInterval(pollJob,1500); }
+let JOB_DONE_FIRED=false;
+async function cancelJob(){
+  if(!await confirmDlg('Stop this run? Accounts already processed will keep their results.')) return;
+  try{ await post('/api/jobs/'+CURJOB+'/cancel',{}); toast('Stopping…'); haptic('medium'); }catch(e){ toast(e.message); }
+}
+function playDone(ok){
+  try{ ok ? tg.HapticFeedback.notificationOccurred('success') : tg.HapticFeedback.notificationOccurred('warning'); }catch(e){}
+  try{ const C=window.AudioContext||window.webkitAudioContext; if(!C) return; const ctx=new C();
+    const notes = ok ? [660,880] : [440,330];
+    notes.forEach((f,i)=>{ const o=ctx.createOscillator(), g=ctx.createGain();
+      o.frequency.value=f; o.type='sine'; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001,ctx.currentTime+i*0.14);
+      g.gain.exponentialRampToValueAtTime(0.16,ctx.currentTime+i*0.14+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+i*0.14+0.13);
+      o.start(ctx.currentTime+i*0.14); o.stop(ctx.currentTime+i*0.14+0.14); });
+    setTimeout(()=>ctx.close(),700);
+  }catch(e){}
+}
 function setRing(ok,bad,total){ const t=total||1; $('ring-ok').style.strokeDasharray=CIRC; $('ring-bad').style.strokeDasharray=CIRC;
   $('ring-ok').style.strokeDashoffset = CIRC*(1-ok/t); $('ring-bad').style.strokeDashoffset = CIRC*(1-(ok+bad)/t); }
 async function pollJob(){
@@ -656,9 +842,16 @@ async function pollJob(){
     $('job-title').textContent = j.status==='running'?kind:kind+' · done'; $('job-sub').textContent = (j.meta.link||j.meta.target||(j.meta.channels||[]).join(', ')||'') + (j.meta.speed?'  ·  '+(j.meta.speed==='single'?'🐢 single':j.meta.speed==='parallel'?'⚡ parallel':'⚙️ '+j.meta.concurrency+' at once'):'');
     $('job-done').textContent=j.done; $('job-total').textContent=j.total; $('job-ok').textContent=j.success; $('job-bad').textContent=j.failed;
     setRing(j.success,j.failed,j.total);
-    $('ring').classList.toggle('running',j.status==='running'); $('job-lbl').textContent = j.status==='running'?'working…':(j.failed?'finished':'all done');
-    if(j.results.length) $('job-feed').innerHTML = j.results.slice().reverse().map(r=>`<div class="row st-${r.status}"><span class="av">${r.status==='success'?'✓':r.status==='partial'?'~':'✕'}</span><span class="body"><span class="t">${esc(r.account)}</span><span class="d">${esc(r.msg)}</span></span></div>`).join('');
-    if(j.status!=='running'){ clearInterval(POLL); haptic(j.failed?'bad':'ok'); }
+    $('ring').classList.toggle('running',j.status==='running');
+    $('job-lbl').textContent = j.status==='running'?'working…':j.status==='cancelled'?'stopped':(j.failed?'finished':'all done');
+    const skipped=(j.meta.skipped_dead||[]).length;
+    const skipNote = skipped ? `<div class="row"><span class="av" style="background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)">⏭</span><span class="body"><span class="t">${skipped} dead account${skipped>1?'s':''} skipped</span><span class="d">${esc((j.meta.skipped_dead||[]).join(', ').slice(0,80))}</span></span></div>` : '';
+    if(j.results.length) $('job-feed').innerHTML = skipNote + j.results.slice().reverse().map(r=>`<div class="row st-${r.status}"><span class="av">${r.status==='success'?'✓':r.status==='partial'?'~':'✕'}</span><span class="body"><span class="t">${esc(r.account)}</span><span class="d">${esc(r.msg)}</span></span></div>`).join('');
+    else if(skipNote) $('job-feed').innerHTML = skipNote;
+    if(j.status!=='running'){
+      clearInterval(POLL); $('job-cancel').classList.add('hidden');
+      if(!JOB_DONE_FIRED){ JOB_DONE_FIRED=true; playDone(!j.failed); }
+    }
   }catch(e){ clearInterval(POLL); $('job-lbl').textContent=e.message; }
 }
 
@@ -684,6 +877,7 @@ function importBackup(ev){
 
 /* ── dashboard ── */
 async function loadDash(){
+  $('d-kind').innerHTML=SK_ROWS(2); $('d-top').innerHTML=SK_ROWS(2); $('d-bars').innerHTML='<div class="sk sk-bar" style="width:100%"></div>';
   try{
     const s=await api('/api/stats');
     $('d-jobs').textContent=s.totals.jobs; $('d-success').textContent=s.totals.success; $('d-failed').textContent=s.totals.failed;
@@ -691,8 +885,8 @@ async function loadDash(){
     $('d-bars').innerHTML=s.daily.map(d=>{ const h=v=>Math.round(v/max*90); const day=new Date(d.date+'T00:00:00Z').getDate();
       return `<div class="bar"><div class="stack" style="height:${Math.max(4,h(d.success+d.failed))}px">${d.failed?`<div class="seg bad" style="height:${h(d.failed)}px"></div>`:''}${d.success?`<div class="seg ok" style="height:${h(d.success)}px"></div>`:''}</div><span class="lbl">${day}</span></div>`; }).join('');
     const kindLbl={refer:'🚀 Referral',channels:'📢 Join/Leave',message:'💬 Message',health:'🩺 Health check',random_leave:'🍃 Auto-leave'};
-    $('d-kind').innerHTML = s.by_kind.length ? s.by_kind.map(k=>`<div class="row"><span class="av" style="font-family:Manrope">${(kindLbl[k.kind]||k.kind)[0]}</span><span class="body"><span class="t">${kindLbl[k.kind]||k.kind}</span><span class="d">${k.jobs} job${k.jobs>1?'s':''}</span></span><span class="r">${k.success}✓ ${k.failed?('/ '+k.failed+'✗'):''}</span></div>`).join('') : '<div class="empty">No data yet.</div>';
-    $('d-top').innerHTML = s.top_accounts.length ? s.top_accounts.map(a=>`<div class="row"><span class="av">${esc(a.account.slice(-2))}</span><span class="body"><span class="t">${esc(a.account)}</span></span><span class="r">${a.success}✓ ${a.failed?a.failed+'✗':''}</span></div>`).join('') : '<div class="empty">No data yet.</div>';
+    $('d-kind').innerHTML = s.by_kind.length ? s.by_kind.map(k=>`<div class="row"><span class="av" style="font-family:Manrope">${(kindLbl[k.kind]||k.kind)[0]}</span><span class="body"><span class="t">${kindLbl[k.kind]||k.kind}</span><span class="d">${k.jobs} job${k.jobs>1?'s':''}</span></span><span class="r">${k.success}✓ ${k.failed?('/ '+k.failed+'✗'):''}</span></div>`).join('') : emptyState('📊','No activity yet','Run something and your stats will appear here.','<button class="btn" onclick="show(\'run\')">Go to Run</button>');
+    $('d-top').innerHTML = s.top_accounts.length ? s.top_accounts.map(a=>`<div class="row"><span class="av">${esc(a.account.slice(-2))}</span><span class="body"><span class="t">${esc(a.account)}</span></span><span class="r">${a.success}✓ ${a.failed?a.failed+'✗':''}</span></div>`).join('') : emptyState('👥','No account activity','Top-performing accounts will show up after a few runs.','');
   }catch(e){ toast(e.message); }
 }
 
@@ -700,6 +894,7 @@ async function loadDash(){
 let ADMIN=null, UFILTER='all';
 function ago(t){ if(!t) return ''; const d=(Date.now()/1000-t); return d<3600?Math.max(1,Math.round(d/60))+'m ago':d<86400?Math.round(d/3600)+'h ago':Math.round(d/86400)+'d ago'; }
 async function loadAdmin(){
+  $('u-list').innerHTML=SK_ROWS(3);
   try{
     ADMIN=await api('/api/admin/overview'); const k=ADMIN.stats;
     $('k-users').textContent=k.users; $('k-active').textContent=k.active_24h; $('k-accs').textContent=k.accounts;
@@ -718,7 +913,7 @@ function renderUsers(){
     <span class="av">${esc((x.name||'?').trim()[0]||'?').toUpperCase()}</span>
     <span class="body"><span class="t">${esc(x.name||x.user_id)} ${x.username?'<span style="color:var(--hint);font-weight:500">@'+esc(x.username)+'</span>':''}</span>
     <span class="d"><code style="font-family:Manrope">${x.user_id}</code> · ${x.accounts} acc · ${ago(x.last_seen)}</span></span>
-    <span class="pill ${x.status}">${x.status}</span></button>`).join('') : '<div class="empty">No users here.</div>';
+    <span class="pill ${x.status}">${x.status}</span></button>`).join('') : emptyState('🫥','Nobody here','No user matches this filter yet.','');
 }
 let UADMIN_TARGET=null;
 function userMenu(uid){
@@ -759,6 +954,31 @@ async function broadcast(){
   try{ const d=await post('/api/admin/broadcast',{text,to}); toast('Sent to '+d.sent+' of '+d.total); haptic('ok'); $('bc-text').value=''; }
   catch(e){ toast(e.message); haptic('bad'); } finally{ busy($('bc-btn'),false); }
 }
+
+/* ── pull to refresh ── */
+(function(){
+  let y0=null, pulling=false;
+  const ptr=$('ptr'), txt=$('ptr-text');
+  const refreshers={home:loadHome,accounts:()=>loadAccounts(),dash:loadDash,admin:loadAdmin,run:()=>{renderSel();loadRecentLinks();}};
+  document.addEventListener('touchstart',e=>{ if(window.scrollY<=0 && ME) { y0=e.touches[0].clientY; pulling=true; } },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!pulling||y0===null) return;
+    const dy=e.touches[0].clientY-y0;
+    if(dy>60){ ptr.classList.add('on'); txt.textContent='Release to refresh'; }
+    else if(dy>10){ ptr.classList.add('on'); txt.textContent='Pull to refresh'; }
+    else ptr.classList.remove('on');
+  },{passive:true});
+  document.addEventListener('touchend',async()=>{
+    if(!pulling){ return; } pulling=false; y0=null;
+    if(!ptr.classList.contains('on')) return;
+    if(txt.textContent==='Release to refresh'){
+      txt.textContent='Refreshing…'; haptic();
+      const cur=[...document.querySelectorAll('.screen')].find(x=>x.classList.contains('active'))?.id.replace('s-','');
+      try{ await (refreshers[cur]||(()=>{}))(); }catch(e){}
+      setTimeout(()=>ptr.classList.remove('on'),300);
+    } else ptr.classList.remove('on');
+  });
+})();
 
 boot();
 </script>

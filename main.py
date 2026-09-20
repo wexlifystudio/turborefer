@@ -182,28 +182,54 @@ def _acc_lock(acc):
 
 async def get_client(acc):
     s = await aget_session(acc["owner"], acc["session_name"])
-    return TelegramClient(StringSession(s) if s else StringSession(), acc["api_id"], acc["api_hash"],
+    session = StringSession()
+    if s:
+        try:
+            session = StringSession(s)
+            # Force-validate the session string right away — a corrupted string
+            # (e.g. from an old race condition) won't raise until the first real
+            # network read, which is what produced "EOF when reading a line".
+            session.auth_key
+        except Exception as e:
+            raise RuntimeError(f"Saved session for '{acc['session_name']}' is corrupted ({type(e).__name__}). Delete and re-add this account.") from e
+    return TelegramClient(session, acc["api_id"], acc["api_hash"],
                            connection_retries=3, retry_delay=2, timeout=20)
+
+def alert_dead_accounts(owner, dead_names):
+    if not dead_names: return
+    try:
+        lines = ["🚨 <b>Account problem detected</b>", "",
+                 f"{len(dead_names)} account(s) need to be re-added:"]
+        for n in dead_names[:10]:
+            lines.append(f"• <code>{n}</code>")
+        lines.append("\nOpen the app → Accounts → delete and add them again.")
+        tg_send(owner, "\n".join(lines))
+    except Exception as e:
+        print("dead alert error:", e)
 
 def friendly_error(e):
     msg = str(e)
     if "EOF when reading a line" in msg or "Server sent a very weird response" in msg:
-        return "Connection hiccup — please try again"
+        return f"Connection hiccup ({type(e).__name__}: {msg[:120]})"
     if "database is locked" in msg.lower():
         return "Account busy with another task — try again in a moment"
     if "The authorization key" in msg or "AUTH_KEY" in msg:
         return "Session expired — needs re-login"
     if "A wait of" in msg and "is required" in msg:
         return msg  # flood wait, already clear
-    return msg[:200]
+    return f"{type(e).__name__}: {msg[:180]}"
 
 def parse_bot_link(link):
     m = re.match(r"https?://t\.me/([A-Za-z0-9_]+)(?:\?start=(.*))?", link.strip())
     return (m.group(1), m.group(2) or "") if m else (None, None)
 
-def pick_accounts(owner, names):
+def pick_accounts(owner, names, skip_dead=True):
     accs = load_accounts(owner)
-    return accs if not names else [a for a in accs if a["session_name"] in names]
+    sel = accs if not names else [a for a in accs if a["session_name"] in names]
+    if skip_dead:
+        alive = [a for a in sel if a.get("health") != "dead"]
+        return alive, [a["session_name"] for a in sel if a.get("health") == "dead"]
+    return sel, []
 
 # ── Job system (background + live polling) ───────────────────────
 JOBS = {}
@@ -220,10 +246,38 @@ def job_push(jid, r):
     if r.get("status") == "success": j["success"] += 1
     else: j["failed"] += 1
 
+def job_cancel_requested(jid):
+    j = JOBS.get(jid)
+    return bool(j and j.get("cancel"))
+
+KIND_LABEL = {"refer": "Referral", "channels": "Join / Leave", "message": "Send message",
+              "health": "Health check", "auto_leave": "Auto-leave"}
+
 def job_finish(jid):
-    JOBS[jid]["status"] = "done"; JOBS[jid]["ended"] = int(time.time())
-    try: db()["jobs"].insert_one(dict(JOBS[jid]))
+    j = JOBS[jid]
+    j["status"] = "cancelled" if j.get("cancel") else "done"
+    j["ended"] = int(time.time())
+    try: db()["jobs"].insert_one(dict(j))
     except Exception: pass
+    # Notify the owner of this job in Telegram
+    try:
+        if j["total"] >= 1 and j.get("owner"):
+            label = KIND_LABEL.get(j["kind"], j["kind"])
+            icon = "🛑" if j["status"] == "cancelled" else ("✅" if not j["failed"] else ("⚠️" if j["success"] else "❌"))
+            took = j["ended"] - j.get("started", j["ended"])
+            lines = [f"{icon} <b>{label} {j['status']}</b>",
+                     f"✅ {j['success']} ok · ❌ {j['failed']} failed · {j['total']} total",
+                     f"⏱ {took}s"]
+            if j["meta"].get("skipped_dead"):
+                lines.append(f"⏭ Skipped {len(j['meta']['skipped_dead'])} dead account(s)")
+            bad = [r for r in j.get("results", []) if r.get("status") != "success"][:5]
+            if bad:
+                lines.append("\n<b>Failed:</b>")
+                for r in bad:
+                    lines.append(f"• <code>{r['account']}</code> — {str(r.get('msg',''))[:70]}")
+            tg_send(j["owner"], "\n".join(lines))
+    except Exception as e:
+        print("job alert error:", e)
 
 # ── Referral workers ─────────────────────────────────────────────
 async def _captcha_flow(acc, bot_link, solver):
@@ -313,7 +367,11 @@ async def _run_pool(jid, accs, worker, concurrency, delay):
     sem = asyncio.Semaphore(concurrency)
     async def one(i, acc):
         await asyncio.sleep(i * delay if concurrency > 1 else 0)   # stagger starts
+        if job_cancel_requested(jid):
+            return
         async with sem:
+            if job_cancel_requested(jid):
+                return
             async with _acc_lock(acc):   # never run this same account's session twice at once
                 try:
                     r = await worker(acc)
@@ -424,6 +482,22 @@ async def request_access(request: Request):
     return {"status": "success", "already": False}
 
 # ── Accounts ─────────────────────────────────────────────────────
+@app.get("/api/accounts/diagnose/{name}")
+async def diagnose_account(name: str, request: Request):
+    """Quick check: is the saved session string for this account well-formed?"""
+    u = current_user(request)
+    acc = next((a for a in load_accounts(u["id"]) if a["session_name"] == name), None)
+    if not acc: raise HTTPException(404, "Account not found")
+    s = await aget_session(u["id"], name)
+    if not s:
+        return {"session_name": name, "has_session": False}
+    try:
+        sess = StringSession(s)
+        auth_ok = sess.auth_key is not None and len(sess.auth_key.key) == 256
+        return {"session_name": name, "has_session": True, "length": len(s), "auth_key_ok": auth_ok, "dc_id": sess.dc_id}
+    except Exception as e:
+        return {"session_name": name, "has_session": True, "length": len(s), "corrupted": True, "error": f"{type(e).__name__}: {e}"}
+
 @app.get("/api/accounts")
 async def accounts(request: Request):
     u = current_user(request)
@@ -446,8 +520,10 @@ async def request_code(request: Request):
     name, api_id, api_hash, phone = creds(b)
     if not re.match(r"^\+\d{7,15}$", phone):
         return {"status": "error", "message": "Phone must start with + and country code"}
-    if any(a["session_name"] == name for a in load_accounts(u["id"])):
-        return {"status": "error", "message": "This number is already added"}
+    _digits = re.sub(r"\D", "", phone)
+    for a in load_accounts(u["id"]):
+        if a["session_name"] == name or re.sub(r"\D", "", a.get("phone", "")) == _digits:
+            return {"status": "error", "message": f"This number is already added as '{a['session_name']}'"}
     client = TelegramClient(StringSession(), api_id, api_hash)
     await client.connect()
     try:
@@ -548,6 +624,7 @@ async def health_check_all(request: Request):
     if not accs: raise HTTPException(400, "No accounts to check.")
     jid = job_new(u["id"], "health", len(accs), {})
     async def run():
+        _dead = []
         for acc in accs:
             try:
                 async with _acc_lock(acc):
@@ -577,9 +654,12 @@ async def health_check_all(request: Request):
             await asyncio.to_thread(db()["accounts"].update_one,
                 {"owner": u["id"], "session_name": acc["session_name"]},
                 {"$set": {"health": res["status"], "health_detail": res["detail"], "health_checked": int(time.time())}})
+            if res["status"] in ("dead", "banned"):
+                _dead.append(acc["session_name"])
             job_push(jid, {"account": acc["session_name"], "status": "success" if res["status"] == "ok" else "error", "msg": res["status"] + " — " + res["detail"]})
             await asyncio.sleep(1.5)
         job_finish(jid)
+        alert_dead_accounts(u["id"], _dead)
     asyncio.create_task(run())
     return {"job_id": jid}
 
@@ -652,11 +732,11 @@ async def delete_account(name: str, request: Request):
 async def refer(request: Request):
     u = current_user(request)
     b = await request.json()
-    accs = pick_accounts(u["id"], b.get("accounts"))
-    if not accs: raise HTTPException(400, "No accounts selected.")
+    accs, skipped = pick_accounts(u["id"], b.get("accounts"))
+    if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     if not parse_bot_link(b.get("bot_link", ""))[0]: raise HTTPException(400, "Invalid bot link.")
     conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "refer", len(accs), {"link": b["bot_link"], "method": b.get("method", "no_captcha"), "speed": b.get("speed", "single"), "concurrency": conc})
+    jid = job_new(u["id"], "refer", len(accs), {"link": b["bot_link"], "method": b.get("method", "no_captcha"), "speed": b.get("speed", "single"), "concurrency": conc, "skipped_dead": skipped})
     asyncio.create_task(run_refer_job(jid, accs, b["bot_link"], b.get("method", "no_captcha"), delay, conc))
     return {"job_id": jid}
 
@@ -665,11 +745,11 @@ async def auto_leave(request: Request):
     """Leave N random channels/groups per selected account."""
     u = current_user(request)
     b = await request.json()
-    accs = pick_accounts(u["id"], b.get("accounts"))
-    if not accs: raise HTTPException(400, "No accounts selected.")
+    accs, skipped = pick_accounts(u["id"], b.get("accounts"))
+    if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     count = max(1, min(int(b.get("count", 5)), 3000))
     conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "auto_leave", len(accs), {"count": count, "speed": b.get("speed", "single"), "concurrency": conc})
+    jid = job_new(u["id"], "auto_leave", len(accs), {"count": count, "speed": b.get("speed", "single"), "concurrency": conc, "skipped_dead": skipped})
 
     async def worker(acc):
         client = await get_client(acc)
@@ -705,12 +785,12 @@ async def random_leave_alias(request: Request):
 async def channels(request: Request):
     u = current_user(request)
     b = await request.json()
-    accs = pick_accounts(u["id"], b.get("accounts"))
+    accs, skipped = pick_accounts(u["id"], b.get("accounts"))
     chans = [c.strip() for c in b.get("channels", []) if c.strip()]
-    if not accs: raise HTTPException(400, "No accounts selected.")
+    if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     if not chans: raise HTTPException(400, "No channels given.")
     conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "channels", len(accs), {"action": b.get("action", "join"), "channels": chans, "speed": b.get("speed", "single"), "concurrency": conc})
+    jid = job_new(u["id"], "channels", len(accs), {"action": b.get("action", "join"), "channels": chans, "speed": b.get("speed", "single"), "concurrency": conc, "skipped_dead": skipped})
     asyncio.create_task(run_channel_job(jid, accs, chans, b.get("action", "join"), delay, conc))
     return {"job_id": jid}
 
@@ -718,11 +798,11 @@ async def channels(request: Request):
 async def message(request: Request):
     u = current_user(request)
     b = await request.json()
-    accs = pick_accounts(u["id"], b.get("accounts"))
-    if not accs: raise HTTPException(400, "No accounts selected.")
+    accs, skipped = pick_accounts(u["id"], b.get("accounts"))
+    if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     if not b.get("target") or not b.get("text"): raise HTTPException(400, "Target and message are required.")
     conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "message", len(accs), {"target": b["target"], "speed": b.get("speed", "single"), "concurrency": conc})
+    jid = job_new(u["id"], "message", len(accs), {"target": b["target"], "speed": b.get("speed", "single"), "concurrency": conc, "skipped_dead": skipped})
     asyncio.create_task(run_message_job(jid, accs, b["target"], b["text"], delay, conc))
     return {"job_id": jid}
 
@@ -733,6 +813,41 @@ async def job(jid: str, request: Request):
     if not j: raise HTTPException(404, "Job not found (server may have restarted).")
     if j.get("owner") != u["id"] and u["role"] != "owner": raise HTTPException(403, "Not your job.")
     return j
+
+@app.post("/api/jobs/{jid}/cancel")
+async def cancel_job(jid: str, request: Request):
+    u = current_user(request)
+    j = JOBS.get(jid)
+    if not j: raise HTTPException(404, "Job not found or already finished.")
+    if j.get("owner") != u["id"] and u["role"] != "owner": raise HTTPException(403, "Not your job.")
+    if j["status"] != "running": return {"status": "already_finished"}
+    j["cancel"] = True
+    return {"status": "cancelling"}
+
+@app.get("/api/health-summary")
+async def health_summary(request: Request):
+    """Small card for Home: how many accounts are ok / need attention."""
+    u = current_user(request)
+    accs = load_accounts(u["id"])
+    counts = {"ok": 0, "limited": 0, "dead": 0, "banned": 0, "unknown": 0, "error": 0}
+    for a in accs:
+        counts[a.get("health", "unknown")] = counts.get(a.get("health", "unknown"), 0) + 1
+    needs = counts["dead"] + counts["banned"]
+    last = max([a.get("health_checked") or 0 for a in accs], default=0)
+    return {"total": len(accs), "counts": counts, "needs_attention": needs, "last_checked": last or None}
+
+@app.get("/api/recent-links")
+async def recent_links(request: Request):
+    """Referral links this user has run before, newest first."""
+    u = current_user(request)
+    seen, out = set(), []
+    cur = db()["jobs"].find({"owner": u["id"], "kind": "refer"}, {"_id": 0, "meta": 1, "ended": 1}).sort("ended", -1).limit(40)
+    for j in cur:
+        link = (j.get("meta") or {}).get("link")
+        if link and link not in seen:
+            seen.add(link); out.append(link)
+        if len(out) >= 8: break
+    return {"links": out}
 
 @app.get("/api/jobs")
 async def jobs(request: Request):
