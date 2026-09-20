@@ -64,9 +64,17 @@ def save_session(owner, name, s):
     db()["sessions"].update_one({"owner": str(owner), "session_name": name},
                                 {"$set": {"owner": str(owner), "session_name": name, "session_str": s}}, upsert=True)
 
+async def asave_session(owner, name, s):
+    """Non-blocking version — use inside async Telethon workers so PyMongo's
+    blocking I/O doesn't stall the event loop while other accounts are connecting."""
+    await asyncio.to_thread(save_session, owner, name, s)
+
 def get_session(owner, name):
     d = db()["sessions"].find_one({"owner": str(owner), "session_name": name})
     return d["session_str"] if d else None
+
+async def aget_session(owner, name):
+    return await asyncio.to_thread(get_session, owner, name)
 
 def del_session(owner, name):
     db()["sessions"].delete_one({"owner": str(owner), "session_name": name})
@@ -172,8 +180,8 @@ def _acc_lock(acc):
         _ACC_LOCKS[key] = lock
     return lock
 
-def get_client(acc):
-    s = get_session(acc["owner"], acc["session_name"])
+async def get_client(acc):
+    s = await aget_session(acc["owner"], acc["session_name"])
     return TelegramClient(StringSession(s) if s else StringSession(), acc["api_id"], acc["api_hash"],
                            connection_retries=3, retry_delay=2, timeout=20)
 
@@ -219,7 +227,7 @@ def job_finish(jid):
 
 # ── Referral workers ─────────────────────────────────────────────
 async def _captcha_flow(acc, bot_link, solver):
-    client = get_client(acc)
+    client = await get_client(acc)
     result = {"account": acc["session_name"], "status": "timeout", "msg": "No captcha response in 20s"}
     try:
         await client.start()
@@ -242,7 +250,7 @@ async def _captcha_flow(acc, bot_link, solver):
             await asyncio.wait_for(solved.wait(), timeout=20)
         except asyncio.TimeoutError:
             pass
-        save_session(acc["owner"], acc["session_name"], client.session.save())
+        await asave_session(acc["owner"], acc["session_name"], client.session.save())
     except Exception as e:
         result.update({"status": "error", "msg": friendly_error(e)})
     finally:
@@ -284,14 +292,14 @@ async def solve_button(event, client, bot_user):
 SOLVERS = {"no_captcha": None, "emoji": solve_emoji, "math": solve_math, "button": solve_button}
 
 async def refer_plain(acc, bot_link):
-    client = get_client(acc)
+    client = await get_client(acc)
     try:
         await client.start()
         bot_user, param = parse_bot_link(bot_link)
         if not bot_user: return {"account": acc["session_name"], "status": "error", "msg": "Invalid link"}
         await client.send_message(bot_user, f"/start {param}".strip())
         await asyncio.sleep(2)
-        save_session(acc["owner"], acc["session_name"], client.session.save())
+        await asave_session(acc["owner"], acc["session_name"], client.session.save())
         return {"account": acc["session_name"], "status": "success", "msg": "Started"}
     except Exception as e:
         return {"account": acc["session_name"], "status": "error", "msg": friendly_error(e)}
@@ -311,8 +319,10 @@ async def _run_pool(jid, accs, worker, concurrency, delay):
                     r = await worker(acc)
                 except Exception as e:
                     r = {"account": acc["session_name"], "status": "error", "msg": friendly_error(e)}
-            db()["accounts"].update_one({"owner": acc["owner"], "session_name": acc["session_name"]},
+            db_result = asyncio.to_thread(db()["accounts"].update_one,
+                {"owner": acc["owner"], "session_name": acc["session_name"]},
                 {"$set": {"last_used": int(time.time())}})
+            await db_result
             job_push(jid, r)
             if concurrency == 1:
                 await asyncio.sleep(delay)
@@ -327,7 +337,7 @@ async def run_refer_job(jid, accs, link, method, delay, concurrency=1):
 
 async def run_channel_job(jid, accs, channels, action, delay=2, concurrency=1):
     async def worker(acc):
-        client = get_client(acc); ok = 0; lines = []
+        client = await get_client(acc); ok = 0; lines = []
         try:
             await client.start()
             for ch in channels:
@@ -340,7 +350,7 @@ async def run_channel_job(jid, accs, channels, action, delay=2, concurrency=1):
                 except Exception as e:
                     lines.append(f"✗ {ch}: {str(e)[:60]}")
                 await asyncio.sleep(delay)
-            save_session(acc["owner"], acc["session_name"], client.session.save())
+            await asave_session(acc["owner"], acc["session_name"], client.session.save())
             st = "success" if ok == len(channels) else ("partial" if ok else "error")
             return {"account": acc["session_name"], "status": st, "msg": f"{ok}/{len(channels)} · " + " · ".join(lines)}
         finally:
@@ -350,11 +360,11 @@ async def run_channel_job(jid, accs, channels, action, delay=2, concurrency=1):
 
 async def run_message_job(jid, accs, target, text, delay=2, concurrency=1):
     async def worker(acc):
-        client = get_client(acc)
+        client = await get_client(acc)
         try:
             await client.start()
             await client.send_message(target, text)
-            save_session(acc["owner"], acc["session_name"], client.session.save())
+            await asave_session(acc["owner"], acc["session_name"], client.session.save())
             return {"account": acc["session_name"], "status": "success", "msg": "Sent"}
         finally:
             try: await client.disconnect()
@@ -442,7 +452,7 @@ async def request_code(request: Request):
     await client.connect()
     try:
         r = await client.send_code_request(phone)
-        save_session(u["id"], name + "_temp", client.session.save())
+        await asave_session(u["id"], name + "_temp", client.session.save())
         return {"status": "code_sent", "phone_code_hash": r.phone_code_hash, "session_name": name, "phone": phone}
     except Exception as e:
         return {"status": "error", "message": str(e)}
@@ -455,18 +465,18 @@ async def verify_code(request: Request):
     b = await request.json()
     name, api_id, api_hash, phone = creds(b)
     b["phone"] = phone
-    tmp = get_session(u["id"], name + "_temp")
+    tmp = await aget_session(u["id"], name + "_temp")
     client = TelegramClient(StringSession(tmp) if tmp else StringSession(), api_id, api_hash)
     await client.connect()
     try:
         await client.sign_in(phone=b["phone"], code=b["code"], phone_code_hash=b["phone_code_hash"])
         me_ = await client.get_me()
-        save_session(u["id"], name, client.session.save()); del_session(u["id"], name + "_temp")
+        await asave_session(u["id"], name, client.session.save()); del_session(u["id"], name + "_temp")
         save_account({"owner": u["id"], "session_name": name, "api_id": api_id, "api_hash": api_hash, "phone": b["phone"],
                       "username": me_.username or "", "name": f"{me_.first_name or ''} {me_.last_name or ''}".strip(), "created": int(time.time())})
         return {"status": "success", "message": f"Logged in as {me_.first_name}"}
     except errors.SessionPasswordNeededError:
-        save_session(u["id"], name, client.session.save()); del_session(u["id"], name + "_temp")
+        await asave_session(u["id"], name, client.session.save()); del_session(u["id"], name + "_temp")
         save_account({"owner": u["id"], "session_name": name, "api_id": api_id, "api_hash": api_hash, "phone": b["phone"], "username": "", "name": "pending 2FA"})
         return {"status": "2fa_needed"}
     except Exception as e:
@@ -480,11 +490,11 @@ async def verify_2fa(request: Request):
     b = await request.json()
     acc = next((a for a in load_accounts(u["id"]) if a["session_name"] == b["session_name"]), None)
     if not acc: return {"status": "error", "message": "Account not found"}
-    client = get_client(acc); await client.connect()
+    client = await get_client(acc); await client.connect()
     try:
         await client.sign_in(password=b["password"])
         me_ = await client.get_me()
-        save_session(acc["owner"], acc["session_name"], client.session.save())
+        await asave_session(acc["owner"], acc["session_name"], client.session.save())
         acc.update({"username": me_.username or "", "name": f"{me_.first_name or ''} {me_.last_name or ''}".strip()})
         save_account(acc)
         return {"status": "success", "message": f"Logged in as {me_.first_name}"}
@@ -501,7 +511,7 @@ async def account_health(name: str, request: Request):
     if not acc: raise HTTPException(404, "Account not found")
     result = {"session_name": name, "status": "unknown", "detail": ""}
     async with _acc_lock(acc):
-        client = get_client(acc)
+        client = await get_client(acc)
         try:
             await client.connect()
             if not await client.is_user_authorized():
@@ -517,7 +527,7 @@ async def account_health(name: str, request: Request):
                     result.update({"status": "limited", "detail": f"Flood-wait {e.seconds}s"})
                 except Exception as e:
                     result.update({"status": "limited", "detail": str(e)[:120]})
-                save_session(u["id"], name, client.session.save())
+                await asave_session(u["id"], name, client.session.save())
         except errors.AuthKeyUnregisteredError:
             result.update({"status": "dead", "detail": "Logged out from this device"})
         except errors.UserDeactivatedBanError:
@@ -541,7 +551,7 @@ async def health_check_all(request: Request):
         for acc in accs:
             try:
                 async with _acc_lock(acc):
-                    client = get_client(acc)
+                    client = await get_client(acc)
                     await client.connect()
                     if not await client.is_user_authorized():
                         res = {"status": "dead", "detail": "Session expired"}
@@ -556,7 +566,7 @@ async def health_check_all(request: Request):
                             res = {"status": "limited", "detail": f"Flood-wait {e.seconds}s"}
                         except Exception as e:
                             res = {"status": "limited", "detail": str(e)[:120]}
-                        save_session(u["id"], acc["session_name"], client.session.save())
+                        await asave_session(u["id"], acc["session_name"], client.session.save())
                     await client.disconnect()
             except errors.AuthKeyUnregisteredError:
                 res = {"status": "dead", "detail": "Logged out"}
@@ -564,7 +574,8 @@ async def health_check_all(request: Request):
                 res = {"status": "banned", "detail": "Banned by Telegram"}
             except Exception as e:
                 res = {"status": "error", "detail": str(e)[:150]}
-            db()["accounts"].update_one({"owner": u["id"], "session_name": acc["session_name"]},
+            await asyncio.to_thread(db()["accounts"].update_one,
+                {"owner": u["id"], "session_name": acc["session_name"]},
                 {"$set": {"health": res["status"], "health_detail": res["detail"], "health_checked": int(time.time())}})
             job_push(jid, {"account": acc["session_name"], "status": "success" if res["status"] == "ok" else "error", "msg": res["status"] + " — " + res["detail"]})
             await asyncio.sleep(1.5)
@@ -595,7 +606,7 @@ async def export_accounts(request: Request):
     if not accs: raise HTTPException(400, "No accounts to back up.")
     out = []
     for a in accs:
-        sess = get_session(u["id"], a["session_name"])
+        sess = await aget_session(u["id"], a["session_name"])
         out.append({**{k: v for k, v in a.items() if k != "owner"}, "session_str": sess})
     payload = {"turbo_refer_backup": True, "version": 1, "exported_at": int(time.time()), "accounts": out}
     data = json.dumps(payload, indent=2).encode()
@@ -661,7 +672,7 @@ async def auto_leave(request: Request):
     jid = job_new(u["id"], "auto_leave", len(accs), {"count": count, "speed": b.get("speed", "single"), "concurrency": conc})
 
     async def worker(acc):
-        client = get_client(acc)
+        client = await get_client(acc)
         try:
             await client.start()
             dialogs = await client.get_dialogs(limit=None)
@@ -676,7 +687,7 @@ async def auto_leave(request: Request):
                 except Exception as e:
                     lines.append(f"✗ {dl.name}: {str(e)[:50]}")
                 await asyncio.sleep(delay)
-            save_session(u["id"], acc["session_name"], client.session.save())
+            await asave_session(u["id"], acc["session_name"], client.session.save())
             st = "success" if ok else ("error" if picked else "partial")
             msg = f"Left {ok}/{len(picked)}" if picked else "No channels/groups to leave"
             return {"account": acc["session_name"], "status": st, "msg": msg}
