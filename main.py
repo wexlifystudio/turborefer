@@ -20,7 +20,10 @@ app = FastAPI(title="Turbo Refer Mini App")
 
 # ── Config (Render → Environment) ────────────────────────────────
 BOT_TOKEN   = os.getenv("BOT_TOKEN", "")              # from @BotFather
-OWNER_ID    = str(os.getenv("OWNER_ID", ""))          # your Telegram user id
+# One or more owners, comma-separated: OWNER_ID=8451097117,6176958592
+OWNER_IDS   = [x.strip() for x in os.getenv("OWNER_ID", "").split(",") if x.strip()]
+OWNER_ID    = OWNER_IDS[0] if OWNER_IDS else ""      # primary owner (used for old-data migration)
+def is_owner(uid): return str(uid) in OWNER_IDS
 MONGO_URL   = os.getenv("MONGO_URL", "")
 API_SECRET  = os.getenv("API_SECRET", "")             # optional: legacy TBC access
 DEFAULT_API_ID   = int(os.getenv("DEFAULT_API_ID", "21235972"))
@@ -155,7 +158,7 @@ def current_user(request: Request):
     except Exception: pass
     if uid in user_list("banlist"):
         raise HTTPException(403, "You are banned.")
-    if OWNER_ID and uid == OWNER_ID:
+    if is_owner(uid):
         return {"id": uid, "name": name, "role": "owner", "username": user.get("username", "")}
     if setting_get("access_mode", "approved") == "open" or uid in user_list("whitelist"):
         return {"id": uid, "name": name, "role": "user", "username": user.get("username", "")}
@@ -477,8 +480,8 @@ async def request_access(request: Request):
     db()["users"].update_one({"user_id": uid}, {"$set": {"requested_at": int(time.time())}})
     name = (user.get("first_name", "") + " " + user.get("last_name", "")).strip()
     un = ("@" + user["username"]) if user.get("username") else "no username"
-    if OWNER_ID:
-        tg_send(OWNER_ID, f"🔔 <b>Access request</b>\n\n👤 {name} ({un})\n🆔 <code>{uid}</code>\n\nOpen the app → Admin → Pending to approve.")
+    for _oid in OWNER_IDS:
+        tg_send(_oid, f"🔔 <b>Access request</b>\n\n👤 {name} ({un})\n🆔 <code>{uid}</code>\n\nOpen the app → Admin → Pending to approve.")
     return {"status": "success", "already": False}
 
 # ── Accounts ─────────────────────────────────────────────────────
@@ -947,7 +950,7 @@ async def admin_overview(request: Request):
     users = []
     for x in d["users"].find({}, {"_id": 0}).sort("last_seen", -1):
         uid = x["user_id"]
-        status = "owner" if uid == OWNER_ID else "banned" if uid in bl else "approved" if uid in wl else "pending"
+        status = "owner" if is_owner(uid) else "banned" if uid in bl else "approved" if uid in wl else "pending"
         users.append({**x, "status": status, "accounts": acc_counts.get(uid, 0)})
     day_ago = int(time.time()) - 86400
     return {
@@ -971,7 +974,7 @@ async def admin_settings(request: Request):
 async def admin_user_action(uid: str, action: str, request: Request):
     require_owner(request)
     if not uid.isdigit(): raise HTTPException(400, "User ID must be numbers only.")
-    if uid == OWNER_ID: raise HTTPException(400, "That's you.")
+    if is_owner(uid): raise HTTPException(400, "Owners can't be changed here.")
     if action == "approve":
         user_add("whitelist", uid); user_remove("banlist", uid)
         tg_send(uid, "✅ <b>Access granted!</b>\nYou can now open Turbo Refer. Send /start to the bot.")
