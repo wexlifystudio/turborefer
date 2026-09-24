@@ -195,8 +195,12 @@ async def get_client(acc):
             session.auth_key
         except Exception as e:
             raise RuntimeError(f"Saved session for '{acc['session_name']}' is corrupted ({type(e).__name__}). Delete and re-add this account.") from e
+    # connection_retries=1 + short timeout: fail fast instead of hanging a slot for
+    # 20s+ on a bad account — this is what actually speeds up a big batch, since one
+    # stuck connection no longer blocks the concurrency pool for the others.
     return TelegramClient(session, acc["api_id"], acc["api_hash"],
-                           connection_retries=3, retry_delay=2, timeout=20)
+                           connection_retries=1, retry_delay=1, timeout=10,
+                           auto_reconnect=False, request_retries=2)
 
 def alert_dead_accounts(owner, dead_names):
     if not dead_names: return
@@ -365,9 +369,31 @@ async def refer_plain(acc, bot_link):
         except Exception: pass
 
 async def _run_pool(jid, accs, worker, concurrency, delay):
-    """Run worker(acc) over accs with N at a time; delay between starts."""
+    """Run worker(acc) over accs with N at a time; delay between starts.
+    'last_used' timestamps are buffered and flushed to MongoDB in one batched
+    update_many() every 2s instead of one update_one() per account — far fewer
+    DB round trips on a big run, and no worker blocks waiting on its own write."""
     concurrency = max(1, min(int(concurrency), 50))
     sem = asyncio.Semaphore(concurrency)
+    touched = set()
+    owner = accs[0]["owner"] if accs else None
+    async def flush_touched():
+        if not touched: return
+        names = list(touched); touched.clear()
+        try:
+            await asyncio.to_thread(
+                lambda: db()["accounts"].update_many(
+                    {"owner": owner, "session_name": {"$in": names}},
+                    {"$set": {"last_used": int(time.time())}}))
+        except Exception as e:
+            print("last_used batch flush error:", e)
+    async def periodic_flush():
+        try:
+            while True:
+                await asyncio.sleep(2)
+                await flush_touched()
+        except asyncio.CancelledError:
+            pass
     async def one(i, acc):
         await asyncio.sleep(i * delay if concurrency > 1 else 0)   # stagger starts
         if job_cancel_requested(jid):
@@ -380,14 +406,14 @@ async def _run_pool(jid, accs, worker, concurrency, delay):
                     r = await worker(acc)
                 except Exception as e:
                     r = {"account": acc["session_name"], "status": "error", "msg": friendly_error(e)}
-            db_result = asyncio.to_thread(db()["accounts"].update_one,
-                {"owner": acc["owner"], "session_name": acc["session_name"]},
-                {"$set": {"last_used": int(time.time())}})
-            await db_result
+            touched.add(acc["session_name"])
             job_push(jid, r)
             if concurrency == 1:
                 await asyncio.sleep(delay)
+    flusher = asyncio.create_task(periodic_flush())
     await asyncio.gather(*(one(i, a) for i, a in enumerate(accs)))
+    flusher.cancel()
+    await flush_touched()   # final flush for anything since the last periodic tick
     job_finish(jid)
 
 async def run_refer_job(jid, accs, link, method, delay, concurrency=1):
@@ -433,14 +459,19 @@ async def run_message_job(jid, accs, target, text, delay=2, concurrency=1):
     await _run_pool(jid, accs, worker, concurrency, delay)
 
 def speed_params(b, n_accounts):
-    """speed: single | parallel | custom → (concurrency, delay)"""
-    mode = b.get("speed", "single")
-    delay = float(b.get("delay", 3))
+    """speed: single | parallel | custom → (concurrency, delay).
+    Default (no speed sent, or mode missing) is now 'fast': 8 accounts at once, 1.5s delay —
+    tuned to stay inside Render's free 512MB RAM instead of the old single/slow default."""
+    mode = b.get("speed", "fast")
+    delay = float(b.get("delay", 1.5))
     if mode == "parallel":
         return min(n_accounts, 50), max(0.3, min(delay, 2))
     if mode == "custom":
-        return int(b.get("concurrency", 3)), delay
-    return 1, delay
+        return max(1, int(b.get("concurrency", 8))), delay
+    if mode == "single":
+        return 1, max(delay, 1)
+    # "fast" (new default): safe high concurrency within free-tier RAM
+    return min(n_accounts, 8), max(0.5, min(delay, 1.5))
 
 # ── Pages ────────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
@@ -739,7 +770,7 @@ async def refer(request: Request):
     if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     if not parse_bot_link(b.get("bot_link", ""))[0]: raise HTTPException(400, "Invalid bot link.")
     conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "refer", len(accs), {"link": b["bot_link"], "method": b.get("method", "no_captcha"), "speed": b.get("speed", "single"), "concurrency": conc, "skipped_dead": skipped})
+    jid = job_new(u["id"], "refer", len(accs), {"link": b["bot_link"], "method": b.get("method", "no_captcha"), "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped})
     asyncio.create_task(run_refer_job(jid, accs, b["bot_link"], b.get("method", "no_captcha"), delay, conc))
     return {"job_id": jid}
 
@@ -752,7 +783,7 @@ async def auto_leave(request: Request):
     if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     count = max(1, min(int(b.get("count", 5)), 3000))
     conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "auto_leave", len(accs), {"count": count, "speed": b.get("speed", "single"), "concurrency": conc, "skipped_dead": skipped})
+    jid = job_new(u["id"], "auto_leave", len(accs), {"count": count, "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped})
 
     async def worker(acc):
         client = await get_client(acc)
@@ -793,7 +824,7 @@ async def channels(request: Request):
     if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     if not chans: raise HTTPException(400, "No channels given.")
     conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "channels", len(accs), {"action": b.get("action", "join"), "channels": chans, "speed": b.get("speed", "single"), "concurrency": conc, "skipped_dead": skipped})
+    jid = job_new(u["id"], "channels", len(accs), {"action": b.get("action", "join"), "channels": chans, "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped})
     asyncio.create_task(run_channel_job(jid, accs, chans, b.get("action", "join"), delay, conc))
     return {"job_id": jid}
 
@@ -805,7 +836,7 @@ async def message(request: Request):
     if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     if not b.get("target") or not b.get("text"): raise HTTPException(400, "Target and message are required.")
     conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "message", len(accs), {"target": b["target"], "speed": b.get("speed", "single"), "concurrency": conc, "skipped_dead": skipped})
+    jid = job_new(u["id"], "message", len(accs), {"target": b["target"], "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped})
     asyncio.create_task(run_message_job(jid, accs, b["target"], b["text"], delay, conc))
     return {"job_id": jid}
 
