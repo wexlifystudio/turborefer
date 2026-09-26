@@ -451,6 +451,12 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <input id="lf-bot" placeholder="@SomeAirdropBot or https://t.me/SomeAirdropBot" inputmode="url">
       <div class="help">The account sends <b>/start</b> to this bot and reads its reply.</div>
     </div>
+    <div class="field"><label>Captcha (if the bot asks first)</label>
+      <div class="chips" id="lf-method">
+        <button class="chip on" data-v="auto">🤖 Auto</button><button class="chip" data-v="text_code">🔤 Text code</button><button class="chip" data-v="image">🖼️ Image</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="button">Button</button><button class="chip" data-v="no_captcha">None</button>
+      </div>
+      <div class="help" id="lf-captcha-help"></div>
+    </div>
     <div class="field">
       <label>Account to use</label>
       <div id="lf-acc-list" class="list"><div class="empty">Loading…</div></div>
@@ -460,7 +466,9 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 
     <div id="lf-result" class="hidden" style="margin-top:20px">
       <div class="section" style="margin-top:0">
-        <h2>Found <span id="lf-count">0</span> link(s) <small id="lf-from"></small></h2>
+        <h2 style="margin-bottom:4px"><span>Found <span id="lf-count">0</span> link(s)</span></h2>
+        <div class="help" id="lf-from" style="margin:0 0 6px"></div>
+        <div class="help" id="lf-captcha" style="margin:0 0 12px"></div>
         <div style="display:flex;gap:10px;margin-bottom:10px">
           <button class="btn sm" onclick="copyAllLinks()">📋 Copy all</button>
           <button class="btn sm ghost" onclick="runLinkFinder()">🔁 Run again</button>
@@ -654,7 +662,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <button data-v="off" onclick="setSoundPref('off')">Off</button>
       </div>
     </div>
-    <div class="help" style="text-align:center;margin-top:24px" id="app-build">Turbo Refer v20</div>
+    <div class="help" style="text-align:center;margin-top:24px" id="app-build">Turbo Refer v22</div>
   </div>
 </div>
 
@@ -1281,21 +1289,34 @@ async function setLfDefault(name){
   try{ await post('/api/accounts/'+encodeURIComponent(name)+'/meta',{link_finder_default:true}); ACCOUNTS.forEach(a=>a.link_finder_default=(a.session_name===name)); toast('Default account set ⭐'); haptic('ok'); renderLfAccounts(); }
   catch(e){ toast(e.message); haptic('bad'); }
 }
+const LF_CAPTCHA_HELP={
+  auto:'🤖 Captcha এলে নিজে থেকে type বুঝে solve করবে (Image / Text code / Math / Emoji), তারপর links নেবে।',
+  text_code:'🔤 Bot একটা code দেখায় (যেমন 7LsT4oFd) — সেটা reply করবে।',
+  image:'🖼️ ছবির সংখ্যা/অক্ষর পড়ে reply করবে (OCR)।',
+  math:'➗ 5 + 3 এর মতো অঙ্কের উত্তর দেবে।',
+  emoji:'😀 Emoji মিলিয়ে button চাপবে।',
+  button:'প্রথম button চাপবে।',
+  no_captcha:'শুধু /start পাঠিয়ে reply থেকে links নেবে।'};
+function paintLfCaptcha(){ $('lf-captcha-help').textContent=LF_CAPTCHA_HELP[chip('lf-method')||'auto']||''; }
+document.getElementById('lf-method').addEventListener('click',()=>setTimeout(paintLfCaptcha,0)); paintLfCaptcha();
 async function runLinkFinder(){
   const bot=$('lf-bot').value.trim();
   if(!bot){ toast('Bot username বা link লিখুন'); return; }
   if(!LF_ACC){ toast('একটা account বাছাই করুন'); return; }
-  busy($('lf-go'),true,'Fetching…');
+  const captcha=chip('lf-method')||'auto';
+  busy($('lf-go'),true,captcha==='no_captcha'?'Fetching…':'Solving captcha & fetching…');
   $('lf-result').classList.add('hidden');
   try{
-    const d=await post('/api/linkfinder',{bot,account:LF_ACC});
+    const d=await post('/api/linkfinder',{bot,account:LF_ACC,captcha});
     LF_LINKS=d.all_links||[];
     $('lf-count').textContent=d.total;
-    $('lf-from').textContent='· @'+d.bot+' · via '+d.account;
+    $('lf-from').textContent='@'+d.bot+' · via '+d.account;
+    const cap=d.captcha||[];
+    $('lf-captcha').textContent = cap.length ? '🧩 Captcha: '+cap.join(' → ') : (captcha==='no_captcha'?'':'🧩 Captcha: none detected');
     $('lf-links').innerHTML = LF_LINKS.length ? LF_LINKS.map((l,i)=>`<div class="row"><span class="body"><span class="t" style="word-break:break-all">${esc(l)}</span></span><button class="btn sm ghost" style="width:auto" onclick="copyOneLink(${i})">📋 Copy</button></div>`).join('')
-      : '<div class="empty">No links found in the reply.</div>';
+      : `<div class="empty">No links found.${d.replies?` Bot sent ${d.replies} message(s) but none had links`:' Bot did not reply'}${cap.length?'':' — if it asked a captcha, pick its type above and try again'}.</div>`;
     $('lf-result').classList.remove('hidden');
-    haptic('ok');
+    haptic(LF_LINKS.length?'ok':'bad');
   }catch(e){ toast(e.message,4000); haptic('bad'); }
   finally{ busy($('lf-go'),false); }
 }

@@ -451,6 +451,11 @@ async def solve_button(event, client, bot_user):
 _CODE_HINT = re.compile(r"code|captcha|verif|security|copy|send it|type", re.I)
 _CODE_TOKEN = re.compile(r"^[A-Za-z0-9_\-]{3,32}$")
 
+def _looks_like_code(t):
+    """A real code has a digit or several capitals (7LsT4oFd, XKQPD) — not an
+    ordinary word like 'what' / 'Please' / 'below'."""
+    return any(c.isdigit() for c in t) or sum(c.isupper() for c in t) >= 2
+
 def _extract_text_code(msg):
     text = msg.raw_text or ""
     if not _CODE_HINT.search(text):
@@ -466,7 +471,7 @@ def _extract_text_code(msg):
         pass
     # 2) plain text: the token right after "code:" / "captcha:" (same or next line)
     m = re.search(r"(?:code|captcha)[^\n:：]{0,20}[:：]?\s*\n?\s*([A-Za-z0-9]{4,16})\b", text, re.I)
-    if m and m.group(1).lower() not in ("below", "here", "exactly", "the", "your"):
+    if m and _looks_like_code(m.group(1)):
         return m.group(1)
     # 3) a line that is nothing but a code-looking token (mixed letters+digits)
     for line in text.splitlines():
@@ -579,7 +584,36 @@ solve_image.timeout = 40   # OCR takes a few seconds; allow more time
 
 solve_math.verify = True
 
-SOLVERS = {"no_captcha": None, "emoji": solve_emoji, "math": solve_math, "button": solve_button,
+# ── Auto-detect captcha ──────────────────────────────────────────
+# Looks at a bot message and picks the matching solver itself. Conservative on
+# purpose: math/emoji only fire when the text actually asks for it, so ordinary
+# welcome/sponsor messages are never "answered".
+_MATH_HINT = re.compile(r"captcha|solve|answer|calculate|result|=\s*\?|\?\s*$|how much|what is", re.I | re.M)
+_TAP_HINT  = re.compile(r"captcha|verif|click|tap|press|select|choose|human|robot|bot check", re.I)
+
+def _has_url_buttons(m):
+    return any(getattr(btn, "url", None) for row in (m.buttons or []) for btn in row)
+
+async def solve_auto(event, client, bot_user):
+    m = event.message
+    if m.photo or (m.document and (m.document.mime_type or "").startswith("image/")):
+        r = await solve_image(event, client, bot_user)
+        if r: return {**r, "msg": "🖼️ " + r["msg"]}
+    text = m.raw_text or ""
+    # math before text-code: "Captcha: what is 5 + 3 = ?" must be answered 8, not "what"
+    if _MATH_HINT.search(text) and re.search(r"\d+\s*[+\-*/×÷x]\s*\d+", text):
+        r = await solve_math(event, client, bot_user)
+        if r: return {**r, "msg": "➗ " + r["msg"]}
+    r = await solve_text_code(event, client, bot_user)
+    if r: return {**r, "msg": "🔤 " + r["msg"]}
+    if m.buttons and not _has_url_buttons(m) and _TAP_HINT.search(text):
+        r = await solve_emoji(event, client, bot_user)
+        if r: return {**r, "msg": "😀 " + r["msg"]}
+    return None
+solve_auto.verify = True
+solve_auto.timeout = 40
+
+SOLVERS = {"no_captcha": None, "auto": solve_auto, "emoji": solve_emoji, "math": solve_math, "button": solve_button,
            "text_code": solve_text_code, "image": solve_image}
 
 async def refer_plain(acc, bot_link):
@@ -1171,6 +1205,10 @@ async def link_finder(request: Request):
     if acc.get("health") == "dead":
         raise HTTPException(400, f"Account '{acc['session_name']}' is dead — pick another or re-add it.")
 
+    method = b.get("captcha", "auto")
+    solver = SOLVERS.get(method) if method != "no_captcha" else None
+    captcha_log, messages, replies = [], [], 0
+
     async with _acc_lock(acc):
         client = await get_client(acc)
         try:
@@ -1178,11 +1216,13 @@ async def link_finder(request: Request):
             if not await client.is_user_authorized():
                 raise HTTPException(400, f"Account '{acc['session_name']}' session expired — re-add it.")
             try:
-                await client.send_message(bot_username, "/start")
+                sent = await client.send_message(bot_username, "/start")
             except Exception as e:
                 raise HTTPException(400, f"Couldn't message @{bot_username}: {friendly_error(e)}")
-            await asyncio.sleep(6)
-            messages = await client.get_messages(bot_username, limit=8)
+            messages, replies = await _lf_collect(client, bot_username, sent.id, solver, captcha_log)
+            if not messages:
+                # nothing new with links — fall back to the latest chat history
+                messages = await client.get_messages(bot_username, limit=8)
             await asave_session(acc["owner"], acc["session_name"], client.session.save())
         finally:
             try: await client.disconnect()
@@ -1192,7 +1232,62 @@ async def link_finder(request: Request):
     all_urls = list(dict.fromkeys(button_urls + text_urls))
     return {"status": "success", "bot": bot_username, "account": acc["session_name"],
             "button_links": button_urls, "text_links": text_urls, "all_links": all_urls,
-            "total": len(all_urls)}
+            "total": len(all_urls), "captcha": captcha_log, "replies": replies}
+
+class _MsgEvent:
+    """Minimal stand-in for a Telethon NewMessage event so the captcha solvers
+    (which read event.message / .raw_text / .buttons) can run on polled messages."""
+    def __init__(self, m):
+        self.message = m; self.raw_text = m.raw_text; self.buttons = m.buttons
+
+LF_MAX_WAIT   = 45   # hard cap for the whole run (seconds)
+LF_SILENT_MAX = 15   # give up if the bot says nothing at all for this long
+LF_SETTLE     = 4    # after the last link message, wait this long for more
+LF_MAX_SOLVES = 3    # captcha attempts (a wrong answer usually brings a new captcha)
+
+async def _lf_collect(client, bot_username, after_id, solver, captcha_log):
+    """Poll the bot chat after /start. Solve captcha messages as they arrive;
+    keep every message that carries links (a bot may also *edit* its captcha
+    message into the sponsor list, so edits are re-checked too)."""
+    loop = asyncio.get_event_loop()
+    start = loop.time()
+    processed, link_msgs = set(), {}
+    last_link = last_reply = None
+    solves = 0
+    while loop.time() - start < LF_MAX_WAIT:
+        try:
+            batch = await client.get_messages(bot_username, min_id=after_id, limit=30)
+        except Exception:
+            batch = []
+        for m in reversed(batch):            # oldest first
+            if m.out:
+                continue                      # our own /start and captcha answers
+            key = (m.id, m.edit_date)
+            if key in processed:
+                continue
+            processed.add(key)
+            last_reply = loop.time()
+            bu, tu = _extract_all_links([m])
+            if bu or tu:
+                link_msgs[m.id] = m; last_link = loop.time()
+                continue
+            link_msgs.pop(m.id, None)         # an edit removed its links
+            if solver and solves < LF_MAX_SOLVES:
+                try:
+                    r = await solver(_MsgEvent(m), client, bot_username)
+                    if r:
+                        solves += 1; captcha_log.append(r.get("msg", "solved"))
+                        last_link = None      # expect the real content next
+                except Exception as e:
+                    solves += 1; captcha_log.append("⚠️ " + str(e)[:80])
+        now = loop.time()
+        if link_msgs and last_link and now - last_link >= LF_SETTLE:
+            break
+        if last_reply is None and now - start >= LF_SILENT_MAX:
+            break
+        await asyncio.sleep(1.5)
+    replies = len({k[0] for k in processed})
+    return [link_msgs[k] for k in sorted(link_msgs)], replies
 
 # ── Jobs ─────────────────────────────────────────────────────────
 @app.post("/api/refer")
