@@ -249,7 +249,8 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .milestone-card{position:fixed;left:16px;right:16px;top:50%;transform:translateY(-50%) scale(.85);opacity:0;
   background:var(--bg2);border-radius:20px;padding:28px 20px;text-align:center;z-index:61;
   box-shadow:0 20px 60px rgba(0,0,0,.35);transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .35s}
-.milestone-card.on{transform:translateY(-50%) scale(1);opacity:1}
+.milestone-card{pointer-events:none;visibility:hidden}
+.milestone-card.on{transform:translateY(-50%) scale(1);opacity:1;pointer-events:auto;visibility:visible}
 .milestone-card .emoji{font-size:48px;margin-bottom:10px;display:block}
 .milestone-card h3{font-family:Unbounded;font-size:20px;margin-bottom:6px}
 .milestone-card p{color:var(--hint);font-size:14px;margin-bottom:18px}
@@ -526,6 +527,10 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       </div>
     </div>
 
+    <div class="section"><h2>📡 Live activity <small>auto-refreshes</small></h2>
+      <div class="list" id="act-list"><div class="empty">Loading…</div></div>
+    </div>
+
     <div class="section"><h2>📊 Platform-wide stats</h2>
       <div class="grid3">
         <div class="kpi"><span class="num" id="sw-accs">–</span><span>all accounts</span></div>
@@ -579,7 +584,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 
   <!-- ══ Settings ══ -->
   <div class="screen" id="s-settings">
-    <div class="top"><button class="icon" onclick="show('home')" style="margin-right:10px"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><path d="M15 18l-6-6 6-6"/></svg></button><div><h1>Settings</h1><div class="sub">Language, look, and feel</div></div></div>
+    <div class="top"><div style="display:flex;align-items:center;gap:12px"><button class="icon" onclick="show('home')"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><path d="M15 18l-6-6 6-6"/></svg></button><div><h1>Settings</h1><div class="sub">Language, look, and feel</div></div></div></div>
 
     <div class="section"><h2>🌐 Language</h2>
       <div class="seg" id="lang-seg">
@@ -669,6 +674,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <div class="action-list">
     <button class="arow" onclick="amAction('health')"><span class="icon">🩺</span><span class="body"><span class="t">Check health</span><span class="d">See if this account is active, limited, or banned</span></span></button>
     <button class="arow" onclick="amAction('note')"><span class="icon">📝</span><span class="body"><span class="t">Edit note</span><span class="d">Add a personal note about this account</span></span></button>
+    <button class="arow" onclick="amAction('exclude')"><span class="icon" id="am-ex-ic">🚫</span><span class="body"><span class="t" id="am-ex-t">Exclude from runs</span><span class="d" id="am-ex-d">Skip this account by default when running tasks</span></span></button>
     <button class="arow danger" onclick="amAction('delete')"><span class="icon">🗑️</span><span class="body"><span class="t">Delete account</span><span class="d">Removes it from this app permanently</span></span></button>
   </div>
   <button class="btn ghost" style="margin-top:6px" onclick="closeSheet3()">Cancel</button>
@@ -747,7 +753,9 @@ const del  = p=>api(p,{method:'DELETE'});
 /* ── ui helpers ── */
 const SK_ROWS = n => Array(n).fill('<div class="sk-row"><div class="sk sk-av"></div><div style="flex:1"><div class="sk sk-l1"></div><div class="sk sk-l2"></div></div></div>').join('');
 function bdHour(){ return Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Dhaka',hour:'numeric',hour12:false}).format(new Date())); }
-function greeting(){ const h=bdHour(); return h<5?'Late night':h<12?'Good morning':h<16?'Good afternoon':h<20?'Good evening':'Good night'; }
+function greeting(){ const h=bdHour(); const bn=(typeof PREFS!=='undefined'&&PREFS.lang==='bn');
+  if(bn) return h<5?'শুভ রাত্রি':h<12?'শুভ সকাল':h<16?'শুভ দুপুর':h<20?'শুভ সন্ধ্যা':'শুভ রাত্রি';
+  return h<5?'Late night':h<12?'Good morning':h<16?'Good afternoon':h<20?'Good evening':'Good night'; }
 function emptyState(art,title,text,btn){ return `<div class="empty"><div class="art">${art}</div><b>${title}</b><p>${text}</p>${btn||''}</div>`; }
 function toast(m,ms=2200){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),ms); }
 function haptic(k='light'){ if(PREFS.haptic==='off') return; try{ k==='ok'?tg.HapticFeedback.notificationOccurred('success'):k==='bad'?tg.HapticFeedback.notificationOccurred('error'):tg.HapticFeedback.impactOccurred(k); }catch(e){} }
@@ -773,6 +781,7 @@ function show(name){
   $('tabs').classList.toggle('hidden', name==='gate' || name==='settings' || !ME);
   window.scrollTo(0,0);
   if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run'){ renderSel(); loadRecentLinks(); } if(name==='dash') loadDash(); if(name==='admin') loadAdmin(); if(name==='settings') loadSettings();
+  clearInterval(window._ACT_T); if(name==='admin') window._ACT_T=setInterval(()=>{ loadActivity(); loadServerHealth(); loadRateLimit(); },10000);
   if(tg?.BackButton){ if(name==='job'||name==='admin'||name==='settings'){tg.BackButton.show(); tg.BackButton.onClick(()=>show(name==='job'?'run':'home'));} else tg.BackButton.hide(); }
 }
 async function requestAccess(){ busy($('req-btn'),true,'Sending…'); try{ const d=await post('/api/request-access',{}); toast(d.already?'Request already sent':'Request sent to the owner',3000); haptic('ok'); }catch(e){ toast(e.message); haptic('bad'); } finally{ busy($('req-btn'),false); } }
@@ -917,7 +926,7 @@ function renderAccounts(){
       ${BATCH?`<span class="acc-check ${sel?'on':''}"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span>`:`<span class="av">${esc(initials(a))}</span>`}
       <span class="body"><span class="t"><span class="hdot ${a.health||'unknown'}"></span>${esc(a.session_name)}</span>
       <span class="d">${esc(a.name||'')} ${a.username?'· @'+esc(a.username):''} · ${esc(a.phone||'')}</span>
-      <span class="d">${agoLong(a.last_used)}${a.note?' · 📝 '+esc(a.note.slice(0,40)):''}</span></span>
+      <span class="d">${a.excluded?'🚫 excluded · ':''}${agoLong(a.last_used)}${a.note?' · 📝 '+esc(a.note.slice(0,40)):''}</span></span>
       <span class="r">${BATCH?'':'›'}</span></button>`;
   }).join('');
 }
@@ -944,13 +953,25 @@ function accMenu(name){
   $('am-sub').textContent=(a.name?a.name+' · ':'')+(a.username?'@'+a.username+' · ':'')+agoLong(a.last_used);
   $('am-note').textContent = a.note ? '📝 '+a.note : '';
   $('am-note').classList.toggle('hidden', !a.note);
+  $('am-ex-ic').textContent = a.excluded ? '✅' : '🚫';
+  $('am-ex-t').textContent = a.excluded ? 'Include in runs' : 'Exclude from runs';
+  $('am-ex-d').textContent = a.excluded ? 'This account is currently skipped by default' : 'Skip this account by default when running tasks';
   $('sheet-bg3').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg3').classList.add('on');$('sheet3').classList.add('on');});
+}
+async function toggleExclude(name){
+  const a=ACCOUNTS.find(x=>x.session_name===name); if(!a) return;
+  const next=!a.excluded;
+  try{ await post('/api/accounts/'+encodeURIComponent(name)+'/meta',{excluded:next});
+    a.excluded=next; if(next) SEL.delete(name); else SEL.add(name);
+    renderAccounts(); haptic('ok'); toast(next?'🚫 '+name+' excluded from runs':'✅ '+name+' included in runs');
+  }catch(e){ toast(e.message); haptic('bad'); }
 }
 function closeSheet3(){ $('sheet-bg3').classList.remove('on'); $('sheet3').classList.remove('on'); setTimeout(()=>$('sheet-bg3').classList.add('hidden'),220); }
 function amAction(action){ const name=ACC_TARGET; closeSheet3();
   if(action==='health') return checkOneHealth(name);
   if(action==='note') return openNoteEditor(name);
   if(action==='delete') return deleteAccount(name);
+  if(action==='exclude') return toggleExclude(name);
 }
 let PENDING_DELETES={};
 function deleteAccount(name){
@@ -1057,17 +1078,18 @@ const SPEED_HELP={fast:'⚡ 8 accounts at once with a short pause. Tuned to be a
 function paintSpeed(){ const v=chip('speed')||'fast'; $('speed-help').textContent=SPEED_HELP[v]; $('speed-custom').classList.toggle('hidden',v!=='custom'); }
 document.getElementById('speed').addEventListener('click',()=>setTimeout(paintSpeed,0)); paintSpeed();
 function speedBody(){ const v=chip('speed')||'fast'; return v==='custom'?{speed:v,concurrency:+$('conc').value,delay:+chip('r-delay')}:{speed:v}; }
+let SEL_INIT=false;
 function renderSel(){
-  if(SEL.size===0) ACCOUNTS.forEach(a=>SEL.add(a.session_name));
+  if(!SEL_INIT && ACCOUNTS.length){ SEL_INIT=true; ACCOUNTS.forEach(a=>{ if(!a.excluded) SEL.add(a.session_name); }); }
   SEL.forEach(n=>{ if(!ACCOUNTS.some(a=>a.session_name===n)) SEL.delete(n); });
   const all = ACCOUNTS.length && SEL.size===ACCOUNTS.length;
   $('sel-all').classList.toggle('on',all); $('sel-count').textContent = SEL.size+' of '+ACCOUNTS.length+' selected';
-  $('sel-list').innerHTML = ACCOUNTS.length ? ACCOUNTS.map(a=>`<button class="check ${SEL.has(a.session_name)?'on':''}" onclick="toggleSel('${esc(a.session_name)}')"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')}</span></span></button>`).join('')
+  $('sel-list').innerHTML = ACCOUNTS.length ? ACCOUNTS.map(a=>`<button class="check ${SEL.has(a.session_name)?'on':''}" onclick="toggleSel('${esc(a.session_name)}')"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')}${a.excluded?' · 🚫 excluded':''}</span></span></button>`).join('')
     : emptyState('👤','No accounts','Add an account before running anything.','<button class="btn" onclick="show(\'accounts\');openAdd()">Add account</button>');
   $('run-btn').disabled = SEL.size===0;
 }
 function toggleSel(n){ SEL.has(n)?SEL.delete(n):SEL.add(n); haptic(); renderSel(); }
-function toggleAll(){ if(SEL.size===ACCOUNTS.length) SEL.clear(); else ACCOUNTS.forEach(a=>SEL.add(a.session_name)); haptic(); renderSel(); }
+function toggleAll(){ const pool=ACCOUNTS.filter(a=>!a.excluded); if(SEL.size>=pool.length && pool.every(a=>SEL.has(a.session_name))) SEL.clear(); else { SEL.clear(); pool.forEach(a=>SEL.add(a.session_name)); } haptic(); renderSel(); }
 async function startJob(){
   const accounts=[...SEL]; let path, body;
   if(RUNKIND==='refer'){ const link=$('r-link').value.trim(); if(!/^https?:\/\/t\.me\/[A-Za-z0-9_]+/.test(link)) return toast('Enter a valid t.me bot link');
@@ -1259,7 +1281,9 @@ function loadPrefs(){
 }
 function savePrefs(p){ try{ localStorage.setItem('tr_prefs', JSON.stringify(p)); }catch(e){} }
 let PREFS=loadPrefs();
-function applyAccent(v){ document.documentElement.style.setProperty('--turbo', ACCENTS[v]||ACCENTS.orange); }
+function applyAccent(v){ const c=ACCENTS[v]||ACCENTS.orange; const r=document.documentElement.style;
+  r.setProperty('--turbo',c); r.setProperty('--btn',c); r.setProperty('--btn-text','#ffffff');
+  try{ tg?.setHeaderColor?.('bg_color'); }catch(e){} }
 function applyLang(v){
   const t=I18N[v]||I18N.en;
   document.querySelectorAll('.tab').forEach(el=>{ const key=el.dataset.s; const label={home:'home',accounts:'accounts',run:'run',dash:'stats',admin:'admin'}[key];
@@ -1271,7 +1295,7 @@ function loadSettings(){
   document.querySelectorAll('#haptic-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===PREFS.haptic));
   document.querySelectorAll('#sound-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===(PREFS.sound?'on':'off')));
 }
-function setLang(v){ PREFS.lang=v; savePrefs(PREFS); applyLang(v); loadSettings(); haptic('ok'); toast(v==='bn'?'ভাষা পরিবর্তন হয়েছে':'Language updated'); }
+function setLang(v){ PREFS.lang=v; savePrefs(PREFS); applyLang(v); loadSettings(); if(ME) $('hi').textContent=greeting()+', '+((ME.name)||'').split(' ')[0]; haptic('ok'); toast(v==='bn'?'ভাষা পরিবর্তন হয়েছে':'Language updated'); }
 function setAccent(v){ PREFS.accent=v; savePrefs(PREFS); applyAccent(v); loadSettings(); haptic('ok'); toast('Accent color updated'); }
 function setHapticLevel(v){ PREFS.haptic=v; savePrefs(PREFS); loadSettings(); if(v!=='off') haptic('ok'); toast('Haptic set to '+v); }
 function setSoundPref(v){ PREFS.sound=(v==='on'); savePrefs(PREFS); loadSettings(); haptic('ok'); toast('Sound '+(PREFS.sound?'on':'off')); }
@@ -1301,7 +1325,7 @@ async function loadAdmin(){
     $('k-approved').textContent=k.approved; $('k-banned').textContent=k.banned; $('k-jobs').textContent=k.jobs_24h;
     paintMode(ADMIN.access_mode); renderUsers();
   }catch(e){ toast(e.message); }
-  loadAdminSettings(); loadSystemStats(); loadServerHealth(); loadRateLimit();
+  loadAdminSettings(); loadSystemStats(); loadServerHealth(); loadRateLimit(); loadActivity();
 }
 let LOCKDOWN_ON=false;
 async function loadAdminSettings(){
@@ -1346,8 +1370,20 @@ async function loadServerHealth(){
     if(h.storage_pct!=null){
       $('sh-bar').style.width=h.storage_pct+'%';
       $('sh-bar').style.background = h.storage_pct>85?'var(--bad)':h.storage_pct>60?'var(--warn)':'var(--ok)';
-      $('sh-storage-text').textContent = h.storage_mb+' MB of 512 MB used ('+h.storage_pct+'%)';
+      $('sh-storage-text').textContent = (h.storage_pct>=80?'⚠️ Almost full — ':'')+h.storage_mb+' MB of 512 MB used ('+h.storage_pct+'%)';
     } else { $('sh-storage-text').textContent='Storage info unavailable'; }
+  }catch(e){}
+}
+async function loadActivity(){
+  try{
+    const d=await api('/api/admin/activity');
+    const lbl={refer:'Referral',channels:'Join / Leave',message:'Message',health:'Health check',auto_leave:'Auto-leave',random_leave:'Auto-leave'};
+    const ic={refer:'🚀',channels:'📢',message:'💬',health:'🩺',auto_leave:'🍃',random_leave:'🍃'};
+    $('act-list').innerHTML = d.items.length ? d.items.map(i=>{
+      if(i.type==='job') return `<button class="row" onclick="openJobDetail('${esc(i.job_id)}')"><span class="av" style="font-family:Manrope">${ic[i.kind]||'⚡'}</span><span class="body"><span class="t">${esc(i.user)} · ${lbl[i.kind]||esc(i.kind)}${i.status==='running'?' <span style="color:var(--turbo)">● running</span>':''}</span><span class="d">${i.success}✓ ${i.failed}✗ of ${i.total} · ${ago(i.ts)}</span></span></button>`;
+      if(i.type==='request') return `<div class="row"><span class="av">🔔</span><span class="body"><span class="t">${esc(i.user)} requested access</span><span class="d">ID ${esc(i.user_id)} · ${ago(i.ts)}</span></span></div>`;
+      return `<div class="row"><span class="av">👋</span><span class="body"><span class="t">${esc(i.user)} opened the app first time</span><span class="d">ID ${esc(i.user_id)} · ${ago(i.ts)}</span></span></div>`;
+    }).join('') : emptyState('📡','No activity yet','Runs and new users will show up here live.','');
   }catch(e){}
 }
 async function loadRateLimit(){
