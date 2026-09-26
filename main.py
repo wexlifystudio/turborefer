@@ -14,7 +14,7 @@ from telethon import TelegramClient, events, errors
 from telethon.sessions import StringSession
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
 from telethon.tl.functions.messages import ImportChatInviteRequest, CheckChatInviteRequest
-from telethon.tl.types import ChatInviteAlready, ChatInvitePeek
+from telethon.tl.types import ChatInviteAlready, ChatInvitePeek, MessageEntityTextUrl, MessageEntityUrl
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 
@@ -884,7 +884,8 @@ async def accounts(request: Request):
                     "health": a.get("health", "unknown"), "health_detail": a.get("health_detail", ""),
                     "health_checked": a.get("health_checked"),
                     "note": a.get("note", ""), "excluded": bool(a.get("excluded")),
-                    "last_used": a.get("last_used"), "created": a.get("created")})
+                    "last_used": a.get("last_used"), "created": a.get("created"),
+                    "link_finder_default": bool(a.get("link_finder_default"))})
     return {"count": len(out), "accounts": out}
 
 @app.post("/api/accounts/request-code")
@@ -1051,6 +1052,10 @@ async def update_meta(name: str, request: Request):
         upd["excluded"] = bool(b["excluded"])
     if upd:
         db()["accounts"].update_one({"owner": u["id"], "session_name": name}, {"$set": upd})
+    if b.get("link_finder_default"):
+        # only one account can be the Link Finder default — clear it off the others
+        db()["accounts"].update_many({"owner": u["id"]}, {"$unset": {"link_finder_default": ""}})
+        db()["accounts"].update_one({"owner": u["id"], "session_name": name}, {"$set": {"link_finder_default": True}})
     return {"status": "success"}
 
 @app.post("/api/accounts/export")
@@ -1102,6 +1107,83 @@ async def delete_account(name: str, request: Request):
     u = current_user(request)
     delete_account_db(u["id"], name)
     return {"status": "success"}
+
+# ── Link Finder ──────────────────────────────────────────────────
+# Sends /start to any bot with one account, reads back its reply (buttons +
+# inline text links), and returns every URL found — handy for pulling all the
+# "Follow Sponsor" / "Join Channel" links out of airdrop/referral bots.
+_LF_SKIP_HOSTS = ("t.me/share", "t.me/premium", "telegram.org")
+
+def _extract_all_links(messages):
+    button_urls, text_urls = [], []
+    for msg in messages:
+        if not msg:
+            continue
+        if msg.buttons:
+            for row in msg.buttons:
+                for btn in row:
+                    url = getattr(btn, "url", None)
+                    if url:
+                        button_urls.append(url)
+        if msg.entities:
+            for ent in msg.entities:
+                if isinstance(ent, MessageEntityTextUrl):
+                    text_urls.append(ent.url)
+                elif isinstance(ent, MessageEntityUrl):
+                    text_urls.append((msg.text or "")[ent.offset: ent.offset + ent.length])
+    def clean(urls):
+        seen, out = set(), []
+        for u_ in urls:
+            u_ = u_.strip()
+            if not u_ or u_ in seen or any(h in u_ for h in _LF_SKIP_HOSTS):
+                continue
+            seen.add(u_); out.append(u_)
+        return out
+    return clean(button_urls), clean(text_urls)
+
+@app.post("/api/linkfinder")
+async def link_finder(request: Request):
+    """Send /start to `bot` using one of this user's accounts and return every
+    channel/sponsor link it replies with (from buttons and from text)."""
+    u = current_user(request)
+    b = await request.json()
+    bot_username, _ = parse_bot_link(b["bot"]) if str(b.get("bot", "")).startswith("http") else (str(b.get("bot", "")).strip().lstrip("@"), "")
+    if not bot_username:
+        raise HTTPException(400, "Enter a valid bot username or t.me link.")
+    accs = load_accounts(u["id"])
+    if not accs:
+        raise HTTPException(400, "Add at least one account first.")
+    acc_name = b.get("account")
+    acc = next((a for a in accs if a["session_name"] == acc_name), None) if acc_name else None
+    if not acc:
+        acc = next((a for a in accs if a.get("link_finder_default") and a.get("health") != "dead"), None)
+    if not acc:
+        acc = next((a for a in accs if a.get("health") != "dead"), accs[0])
+    if acc.get("health") == "dead":
+        raise HTTPException(400, f"Account '{acc['session_name']}' is dead — pick another or re-add it.")
+
+    async with _acc_lock(acc):
+        client = await get_client(acc)
+        try:
+            await client.connect()
+            if not await client.is_user_authorized():
+                raise HTTPException(400, f"Account '{acc['session_name']}' session expired — re-add it.")
+            try:
+                await client.send_message(bot_username, "/start")
+            except Exception as e:
+                raise HTTPException(400, f"Couldn't message @{bot_username}: {friendly_error(e)}")
+            await asyncio.sleep(6)
+            messages = await client.get_messages(bot_username, limit=8)
+            await asave_session(acc["owner"], acc["session_name"], client.session.save())
+        finally:
+            try: await client.disconnect()
+            except Exception: pass
+
+    button_urls, text_urls = _extract_all_links(messages)
+    all_urls = list(dict.fromkeys(button_urls + text_urls))
+    return {"status": "success", "bot": bot_username, "account": acc["session_name"],
+            "button_links": button_urls, "text_links": text_urls, "all_links": all_urls,
+            "total": len(all_urls)}
 
 # ── Jobs ─────────────────────────────────────────────────────────
 @app.post("/api/refer")
