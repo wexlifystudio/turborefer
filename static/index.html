@@ -216,6 +216,44 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .recent{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .recent button{font-size:11px;padding:6px 10px;border-radius:8px;background:var(--bg2);color:var(--hint);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+/* settings swatches */
+.swatches{display:flex;gap:12px;flex-wrap:wrap}
+.swatch{width:42px;height:42px;border-radius:50%;border:3px solid transparent;position:relative}
+.swatch.on{border-color:var(--text)}
+.swatch.on::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+
+/* weekly recap */
+.recap-hero{text-align:center;padding:6px 0 18px}
+.recap-emoji{font-size:44px;display:block;margin-bottom:8px}
+.recap-hero h2{font-family:Unbounded;font-size:19px}
+.recap-stat{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}
+.recap-stat:last-child{border-bottom:0}
+.recap-stat .ic{font-size:22px;flex:none;width:36px;text-align:center}
+.recap-stat .t{font-weight:700;font-family:Unbounded;font-size:16px}
+.recap-stat .d{color:var(--hint);font-size:12px}
+
+/* streak */
+.streak-row{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:13px;color:var(--hint);font-weight:600}
+.streak-row b{color:var(--text);font-family:Unbounded;font-size:14px}
+.streak-sep{opacity:.4}
+.streak-fire{font-size:15px;filter:drop-shadow(0 0 4px color-mix(in srgb,var(--turbo) 60%,transparent));animation:fireFlicker 1.3s ease-in-out infinite}
+@keyframes fireFlicker{0%,100%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.12) rotate(2deg)}}
+
+/* confetti */
+#confetti-layer{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.confetti-piece{position:absolute;top:-12px;width:8px;height:14px;opacity:.95;animation:confettiFall linear forwards;border-radius:2px}
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotate(0deg);opacity:1}
+  100%{transform:translateY(110vh) rotate(var(--spin));opacity:.85}
+}
+.milestone-card{position:fixed;left:16px;right:16px;top:50%;transform:translateY(-50%) scale(.85);opacity:0;
+  background:var(--bg2);border-radius:20px;padding:28px 20px;text-align:center;z-index:61;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .35s}
+.milestone-card.on{transform:translateY(-50%) scale(1);opacity:1}
+.milestone-card .emoji{font-size:48px;margin-bottom:10px;display:block}
+.milestone-card h3{font-family:Unbounded;font-size:20px;margin-bottom:6px}
+.milestone-card p{color:var(--hint);font-size:14px;margin-bottom:18px}
+
 /* action sheet rows */
 .action-list{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
 .arow{display:flex;align-items:center;gap:12px;padding:12px 4px;width:100%;text-align:left;border-radius:12px}
@@ -285,14 +323,25 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <p style="color:var(--hint)" id="gate-error-msg"></p>
       <button class="btn" onclick="boot()">Try again</button>
     </div>
+    <div class="gate hidden" id="gate-lockdown">
+      <h1>🔧 Under maintenance</h1>
+      <p style="color:var(--hint)" id="gate-lockdown-msg">The app is temporarily down for maintenance. Please try again soon.</p>
+      <button class="btn" onclick="boot()">Try again</button>
+    </div>
   </div>
 
   <!-- ══ Home ══ -->
   <div class="screen" id="s-home">
-    <div class="top"><div><h1 id="hi">Hey</h1><div class="sub" id="hi-sub">Turbo Refer v2</div></div><span class="role" id="hi-role"></span></div>
+    <div class="top"><div><h1 id="hi" onclick="eggTap()">Hey</h1><div class="sub" id="hi-sub">Turbo Refer v2</div></div><span style="display:flex;align-items:center;gap:8px"><span class="role" id="hi-role"></span><button class="icon" style="width:34px;height:34px" onclick="show('settings')"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></span></div>
     <div style="display:flex;gap:28px">
       <div class="stat"><span class="num" id="h-acc">–</span><span class="lbl">accounts</span></div>
       <div class="stat"><span class="lbl" id="h-status"><span class="dot"></span>checking</span></div>
+    </div>
+    <div class="streak-row hidden" id="streak-row">
+      <span class="streak-fire" id="streak-fire">🔥</span>
+      <span><b id="streak-n">0</b> day streak</span>
+      <span class="streak-sep">·</span>
+      <span><b id="streak-total">0</b> lifetime runs</span>
     </div>
     <button class="hcard hidden" id="h-health" onclick="show('accounts')">
       <span class="ic" id="hh-ic">🩺</span>
@@ -414,14 +463,27 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <div class="kpi"><span class="num" id="d-success">–</span><span>successful</span></div>
       <div class="kpi"><span class="num" id="d-failed">–</span><span>failed</span></div>
     </div>
+    <button class="hcard hidden" id="recap-card" onclick="openWeeklyRecap()" style="margin-top:14px">
+      <span class="ic">🎁</span><span style="flex:1"><span class="t">Your weekly recap is ready</span><span class="d">Tap to see this week's highlights</span></span>
+      <span class="r" style="color:var(--hint)">›</span>
+    </button>
+    <div class="hcard hidden" id="time-saved-card" style="margin-top:10px;cursor:default">
+      <span class="ic">⏱️</span><span style="flex:1"><span class="t" id="ts-text">–</span><span class="d">Estimated vs. running everything one at a time</span></span>
+    </div>
     <div class="section"><h2>Daily activity</h2>
       <div class="bars" id="d-bars"></div>
+    </div>
+    <div class="section"><h2>Speed over time <small>accounts/sec</small></h2>
+      <div class="bars" id="speed-bars"></div>
     </div>
     <div class="section"><h2>By task type</h2>
       <div class="list" id="d-kind"><div class="empty">No data yet.</div></div>
     </div>
     <div class="section"><h2>Top accounts</h2>
       <div class="list" id="d-top"><div class="empty">No data yet.</div></div>
+    </div>
+    <div class="section"><h2>Recent jobs <small>tap for details</small></h2>
+      <div class="list" id="d-jobslist"><div class="empty">No jobs yet.</div></div>
     </div>
   </div>
 
@@ -436,6 +498,57 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <div class="kpi"><span class="num" id="k-approved">–</span><span>approved</span></div>
       <div class="kpi"><span class="num" id="k-banned">–</span><span>banned</span></div>
       <div class="kpi"><span class="num" id="k-jobs">–</span><span>jobs 24h</span></div>
+    </div>
+
+    <button class="hcard hidden" id="lock-banner" onclick="show('admin')" style="margin-top:14px">
+      <span class="ic">🔒</span><span style="flex:1"><span class="t">Lockdown is active</span><span class="d">Only owners can use the app right now</span></span>
+    </button>
+
+    <div class="section"><h2>🖥️ Server health</h2>
+      <div class="grid3" id="sh-grid">
+        <div class="kpi"><span class="num" id="sh-mongo">–</span><span>MongoDB</span></div>
+        <div class="kpi"><span class="num" id="sh-bot">–</span><span>Bot API</span></div>
+        <div class="kpi"><span class="num" id="sh-jobs">–</span><span>active jobs</span></div>
+      </div>
+      <div class="field" style="margin-top:10px">
+        <label>Database storage</label>
+        <div style="height:8px;border-radius:5px;background:var(--bg2);overflow:hidden;margin-top:6px">
+          <div id="sh-bar" style="height:100%;width:0%;background:var(--ok);transition:width .4s"></div>
+        </div>
+        <div class="help" id="sh-storage-text">–</div>
+      </div>
+      <div class="field" style="margin-top:14px">
+        <label>Telegram activity (this server)</label>
+        <div class="grid3" style="margin-top:6px">
+          <div class="kpi"><span class="num" id="rl-min">–</span><span>calls/min</span></div>
+          <div class="kpi"><span class="num" id="rl-hour">–</span><span>calls/hr</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section"><h2>📊 Platform-wide stats</h2>
+      <div class="grid3">
+        <div class="kpi"><span class="num" id="sw-accs">–</span><span>all accounts</span></div>
+        <div class="kpi"><span class="num" id="sw-jobs">–</span><span>all jobs</span></div>
+        <div class="kpi"><span class="num" id="sw-jobs24">–</span><span>jobs 24h</span></div>
+        <div class="kpi"><span class="num" id="sw-ok">–</span><span>total success</span></div>
+        <div class="kpi"><span class="num" id="sw-bad">–</span><span>total failed</span></div>
+        <div class="kpi"><span class="num" id="sw-owners">–</span><span>owners</span></div>
+      </div>
+    </div>
+
+    <div class="section"><h2>🚨 Emergency lockdown</h2>
+      <button class="hcard bad" id="lockdown-toggle" onclick="toggleLockdown()" style="cursor:pointer">
+        <span class="ic" id="lock-ic">🔓</span><span style="flex:1"><span class="t" id="lock-t">App is open</span><span class="d" id="lock-d">Tap to lock the app for everyone except owners</span></span>
+      </button>
+      <div class="field" style="margin-top:10px"><label>Lockdown message (shown to blocked users)</label>
+        <input id="lock-msg" placeholder="The app is temporarily down for maintenance."></div>
+    </div>
+
+    <div class="section"><h2>📢 Log channel</h2>
+      <div class="field"><label>Post every job summary here too (channel/group ID or @username)</label>
+        <div style="display:flex;gap:8px"><input id="log-chan" placeholder="@my_private_log or -1001234567890"><button class="btn sm" onclick="saveLogChannel()">Save</button></div>
+        <div class="help">Add the bot as admin to that channel first, or it can't post there.</div></div>
     </div>
 
     <div class="section"><h2>Who can use the app</h2>
@@ -461,6 +574,46 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <div class="field"><textarea id="bc-text" placeholder="Message to send from the bot (HTML allowed)"></textarea></div>
       <div class="chips" id="bc-to" style="margin-bottom:10px"><button class="chip on" data-v="all">All users</button><button class="chip" data-v="approved">Approved only</button></div>
       <button class="btn ghost" id="bc-btn" onclick="broadcast()">Send broadcast</button>
+    </div>
+  </div>
+
+  <!-- ══ Settings ══ -->
+  <div class="screen" id="s-settings">
+    <div class="top"><button class="icon" onclick="show('home')" style="margin-right:10px"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><path d="M15 18l-6-6 6-6"/></svg></button><div><h1>Settings</h1><div class="sub">Language, look, and feel</div></div></div>
+
+    <div class="section"><h2>🌐 Language</h2>
+      <div class="seg" id="lang-seg">
+        <button data-v="en" onclick="setLang('en')">English</button>
+        <button data-v="bn" onclick="setLang('bn')">বাংলা</button>
+      </div>
+    </div>
+
+    <div class="section"><h2>🎨 Accent color</h2>
+      <div class="swatches" id="theme-swatches">
+        <button class="swatch" data-v="orange" style="background:#ff4d1f" onclick="setAccent('orange')"></button>
+        <button class="swatch" data-v="blue" style="background:#2ea6ff" onclick="setAccent('blue')"></button>
+        <button class="swatch" data-v="green" style="background:#22c55e" onclick="setAccent('green')"></button>
+        <button class="swatch" data-v="purple" style="background:#a855f7" onclick="setAccent('purple')"></button>
+        <button class="swatch" data-v="pink" style="background:#ec4899" onclick="setAccent('pink')"></button>
+        <button class="swatch" data-v="yellow" style="background:#eab308" onclick="setAccent('yellow')"></button>
+      </div>
+    </div>
+
+    <div class="section"><h2>📳 Haptic intensity</h2>
+      <div class="seg" id="haptic-seg">
+        <button data-v="off" onclick="setHapticLevel('off')">Off</button>
+        <button data-v="light" onclick="setHapticLevel('light')">Light</button>
+        <button data-v="normal" onclick="setHapticLevel('normal')">Normal</button>
+        <button data-v="strong" onclick="setHapticLevel('strong')">Strong</button>
+      </div>
+      <button class="btn ghost sm" style="margin-top:10px" onclick="haptic('medium');hapticPattern('streak')">Test vibration</button>
+    </div>
+
+    <div class="section"><h2>🔊 Sound on job complete</h2>
+      <div class="seg" id="sound-seg">
+        <button data-v="on" onclick="setSoundPref('on')">On</button>
+        <button data-v="off" onclick="setSoundPref('off')">Off</button>
+      </div>
     </div>
   </div>
 </div>
@@ -537,6 +690,41 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   </div>
   <button class="btn ghost" style="margin-top:6px" onclick="closeSheet4()">Cancel</button>
 </div>
+
+<!-- ══ Job detail sheet ══ -->
+<div class="sheet-bg hidden" id="sheet-bg5" onclick="closeSheet5()"></div>
+<div class="sheet" id="sheet5" style="max-height:82vh">
+  <div class="grab"></div>
+  <h2 id="jd-title">Job</h2>
+  <div class="sub" id="jd-sub" style="margin:-10px 0 14px"></div>
+  <div style="display:flex;gap:16px;margin-bottom:14px;font-size:13px;color:var(--hint)">
+    <span><span class="dot ok"></span><b id="jd-ok" style="color:var(--text)">0</b> ok</span>
+    <span><span class="dot bad"></span><b id="jd-bad" style="color:var(--text)">0</b> failed</span>
+    <span id="jd-total" style="margin-left:auto"></span>
+  </div>
+  <div class="list feed" id="jd-results"><div class="empty">Loading…</div></div>
+  <button class="btn ghost" style="margin-top:14px" onclick="closeSheet5()">Close</button>
+</div>
+
+<!-- ══ Weekly recap sheet ══ -->
+<div class="sheet-bg hidden" id="sheet-bg6" onclick="closeSheet6()"></div>
+<div class="sheet" id="sheet6">
+  <div class="grab"></div>
+  <div class="recap-hero">
+    <span class="recap-emoji">🎁</span>
+    <h2>Your week, wrapped</h2>
+    <p class="sub" style="margin:0">Last 7 days on Turbo Refer</p>
+  </div>
+  <div id="recap-body"><div class="empty">Loading…</div></div>
+  <button class="btn" style="margin-top:16px" onclick="closeSheet6()">Nice!</button>
+</div>
+<div id="confetti-layer"></div>
+<div class="milestone-card" id="milestone-card">
+  <span class="emoji" id="ms-emoji">🎉</span>
+  <h3 id="ms-title">Milestone!</h3>
+  <p id="ms-sub"></p>
+  <button class="btn" onclick="closeMilestone()">Nice!</button>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -562,24 +750,37 @@ function bdHour(){ return Number(new Intl.DateTimeFormat('en-US',{timeZone:'Asia
 function greeting(){ const h=bdHour(); return h<5?'Late night':h<12?'Good morning':h<16?'Good afternoon':h<20?'Good evening':'Good night'; }
 function emptyState(art,title,text,btn){ return `<div class="empty"><div class="art">${art}</div><b>${title}</b><p>${text}</p>${btn||''}</div>`; }
 function toast(m,ms=2200){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),ms); }
-function haptic(k='light'){ try{ k==='ok'?tg.HapticFeedback.notificationOccurred('success'):k==='bad'?tg.HapticFeedback.notificationOccurred('error'):tg.HapticFeedback.impactOccurred(k); }catch(e){} }
+function haptic(k='light'){ if(PREFS.haptic==='off') return; try{ k==='ok'?tg.HapticFeedback.notificationOccurred('success'):k==='bad'?tg.HapticFeedback.notificationOccurred('error'):tg.HapticFeedback.impactOccurred(k); }catch(e){} }
+function hapticPattern(name){
+  if(PREFS.haptic==='off') return;
+  const strong = PREFS.haptic==='strong'; const level = strong?'heavy':PREFS.haptic==='light'?'light':'medium';
+  try{
+    if(name==='milestone'){ // triple buzz, celebratory
+      [0,140,280].forEach(t=>setTimeout(()=>{ try{tg.HapticFeedback.impactOccurred(strong?'heavy':'medium');}catch(e){} },t));
+    } else if(name==='quarter'){ // gentle single tick at each 25% mark
+      tg.HapticFeedback.impactOccurred(PREFS.haptic==='light'?'light':'light');
+    } else if(name==='streak'){
+      [0,90].forEach(t=>setTimeout(()=>{ try{tg.HapticFeedback.impactOccurred(level);}catch(e){} },t));
+    }
+  }catch(e){}
+}
 function busy(btn,on,label){ if(!btn)return; if(on){btn._l=btn.innerHTML;btn.innerHTML='<span class="spin"></span>'+(label||'');btn.disabled=true;}else{btn.innerHTML=btn._l||btn.innerHTML;btn.disabled=false;} }
 function confirmDlg(msg){ return new Promise(res=>{ if(tg?.showConfirm) tg.showConfirm(msg,res); else res(confirm(msg)); }); }
 function show(name){
   if(!ME && name!=='gate') return;
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id==='s-'+name));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.s===name));
-  $('tabs').classList.toggle('hidden', name==='gate' || !ME);
+  $('tabs').classList.toggle('hidden', name==='gate' || name==='settings' || !ME);
   window.scrollTo(0,0);
-  if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run'){ renderSel(); loadRecentLinks(); } if(name==='dash') loadDash(); if(name==='admin') loadAdmin();
-  if(tg?.BackButton){ if(name==='job'||name==='admin'){tg.BackButton.show(); tg.BackButton.onClick(()=>show(name==='job'?'run':'home'));} else tg.BackButton.hide(); }
+  if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run'){ renderSel(); loadRecentLinks(); } if(name==='dash') loadDash(); if(name==='admin') loadAdmin(); if(name==='settings') loadSettings();
+  if(tg?.BackButton){ if(name==='job'||name==='admin'||name==='settings'){tg.BackButton.show(); tg.BackButton.onClick(()=>show(name==='job'?'run':'home'));} else tg.BackButton.hide(); }
 }
 async function requestAccess(){ busy($('req-btn'),true,'Sending…'); try{ const d=await post('/api/request-access',{}); toast(d.already?'Request already sent':'Request sent to the owner',3000); haptic('ok'); }catch(e){ toast(e.message); haptic('bad'); } finally{ busy($('req-btn'),false); } }
 function copyId(){ navigator.clipboard?.writeText($('gate-id').textContent); toast('ID copied'); haptic('ok'); }
 
 /* ── boot ── */
 async function boot(){
-  $('gate-loading').classList.remove('hidden'); $('gate-denied').classList.add('hidden'); $('gate-error').classList.add('hidden');
+  $('gate-loading').classList.remove('hidden'); $('gate-denied').classList.add('hidden'); $('gate-error').classList.add('hidden'); $('gate-lockdown')?.classList.add('hidden'); $('gate-banned')?.classList.add('hidden');
   try{
     ME = await api('/api/me');
     $('hi').textContent = greeting()+', '+(ME.name||'').split(' ')[0]; $('hi-role').textContent = ME.role==='owner'?'Owner':'Approved';
@@ -589,7 +790,8 @@ async function boot(){
     ME=null; $('tabs').classList.add('hidden'); $('gate-loading').classList.add('hidden');
     document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id==='s-gate'));
     const myId = tg?.initDataUnsafe?.user?.id || e.data?.id || '?';
-    if(e.status===403 && e.data?.role==='none'){ $('gate-id').textContent=myId; $('gate-denied').classList.remove('hidden'); }
+    if(e.status===423){ $('gate-lockdown-msg').textContent=e.message||'The app is temporarily down for maintenance. Please try again soon.'; $('gate-lockdown').classList.remove('hidden'); }
+    else if(e.status===403 && e.data?.role==='none'){ $('gate-id').textContent=myId; $('gate-denied').classList.remove('hidden'); }
     else if(e.status===403 && /banned/i.test(e.message)){ $('gate-id2').textContent=myId; $('gate-banned').classList.remove('hidden'); }
     else { $('gate-error-msg').textContent = e.message; $('gate-error').classList.remove('hidden'); }
   }
@@ -603,6 +805,7 @@ async function loadHome(){
   try{ await api('/ping'); $('h-status').innerHTML='<span class="dot ok"></span>backend online'; }catch(e){ $('h-status').innerHTML='<span class="dot bad"></span>backend offline'; }
   loadAccounts(true);
   loadHealthCard();
+  loadStreak();
   try{
     const d=await api('/api/jobs'); const jobs=d.jobs||[];
     $('j-count').textContent = jobs.length?jobs.length+' this session':'';
@@ -612,6 +815,50 @@ async function loadHome(){
       <span class="d">${esc(j.meta.link||j.meta.target||(j.meta.channels||[]).join(', '))}</span></span>
       <span class="r">${j.status==='running'?'<span style="color:var(--turbo)">running</span>':j.success+'/'+j.total+' ok'}</span></button>`).join('')
       : emptyState('⚡','Nothing has run yet','Start your first referral, channel join, or message.','<button class="btn" onclick="goRun(\'refer\')">Start a run</button>');
+  }catch(e){}
+}
+const CONFETTI_COLORS=['#ff4d1f','#22c55e','#2ea6ff','#f59e0b','#e879f9','#fbbf24'];
+function fireConfetti(n=60){
+  const layer=$('confetti-layer'); if(!layer) return;
+  for(let i=0;i<n;i++){
+    const p=document.createElement('div'); p.className='confetti-piece';
+    p.style.left=(Math.random()*100)+'vw';
+    p.style.background=CONFETTI_COLORS[i%CONFETTI_COLORS.length];
+    p.style.setProperty('--spin',(Math.random()*720-360)+'deg');
+    p.style.animationDuration=(2.2+Math.random()*1.3)+'s';
+    p.style.animationDelay=(Math.random()*0.4)+'s';
+    layer.appendChild(p);
+    setTimeout(()=>p.remove(),4200);
+  }
+}
+function showMilestone(count){
+  $('ms-emoji').textContent = count>=5000?'👑':count>=1000?'🏆':count>=100?'🎉':'✨';
+  $('ms-title').textContent = count.toLocaleString()+' successful runs!';
+  $('ms-sub').textContent = 'Your accounts have completed '+count.toLocaleString()+' successful actions lifetime. Keep it up!';
+  $('milestone-card').classList.add('on');
+  fireConfetti(70);
+  hapticPattern('milestone');
+  playDone(true);
+}
+function closeMilestone(){ $('milestone-card').classList.remove('on'); }
+let EGG_TAPS=0, EGG_T=null;
+function eggTap(){
+  EGG_TAPS++; clearTimeout(EGG_T); EGG_T=setTimeout(()=>EGG_TAPS=0,1200);
+  if(EGG_TAPS===7){
+    EGG_TAPS=0; haptic('ok'); fireConfetti(40);
+    toast('⚡ You found the secret! Turbo Refer salutes you. 🐢', 3000);
+  }
+}
+const EASTER_MESSAGES=['🐢 The turtle is just resting, not judging your speed settings.','⚡ Fun fact: this bolt has seen every one of your referrals.','🍃 Somewhere, a channel is grateful you left it alone.','🩺 Your accounts are doing great. Probably.'];
+function maybeEasterEmpty(){ return Math.random()<0.08 ? EASTER_MESSAGES[Math.floor(Math.random()*EASTER_MESSAGES.length)] : null; }
+async function loadStreak(){
+  try{
+    const p=await api('/api/progress');
+    if(p.total_success>0){
+      $('streak-row').classList.remove('hidden');
+      $('streak-n').textContent=p.streak; $('streak-total').textContent=p.total_success.toLocaleString();
+      $('streak-fire').style.opacity = p.streak>0 ? '1' : '.35';
+    } else $('streak-row').classList.add('hidden');
   }catch(e){}
 }
 async function loadHealthCard(){
@@ -659,7 +906,7 @@ function renderAccounts(){
   $('batch-bar').classList.toggle('hidden',!BATCH);
   $('batch-n').textContent=BATCH_SEL.size+' selected';
   if(!ACCOUNTS.length){
-    $('acc-list').innerHTML=emptyState('👤','No accounts yet','Add a real Telegram account to start running tasks.','<button class="btn" onclick="openAdd()">Add your first account</button>');
+    $('acc-list').innerHTML=emptyState('👤','No accounts yet',maybeEasterEmpty()||'Add a real Telegram account to start running tasks.','<button class="btn" onclick="openAdd()">Add your first account</button>');
     return;
   }
   if(!list.length){ $('acc-list').innerHTML=emptyState('🔍','No matches','No account matches "'+esc(q)+'".',''); return; }
@@ -705,10 +952,35 @@ function amAction(action){ const name=ACC_TARGET; closeSheet3();
   if(action==='note') return openNoteEditor(name);
   if(action==='delete') return deleteAccount(name);
 }
-async function deleteAccount(name){
-  if(!await confirmDlg('Delete '+name+'? This cannot be undone.')) return;
-  try{ await del('/api/accounts/'+encodeURIComponent(name)); toast('Deleted '+name); haptic('ok'); SEL.delete(name); loadAccounts(); }
-  catch(e){ toast(e.message); haptic('bad'); }
+let PENDING_DELETES={};
+function deleteAccount(name){
+  const acc=ACCOUNTS.find(x=>x.session_name===name);
+  if(!acc) return;
+  if(PENDING_DELETES[name]) return; // already pending
+  ACCOUNTS=ACCOUNTS.filter(x=>x.session_name!==name);
+  SEL.delete(name); renderAccounts(); haptic('medium');
+  const timer=setTimeout(async()=>{
+    delete PENDING_DELETES[name];
+    try{ await del('/api/accounts/'+encodeURIComponent(name)); }
+    catch(e){ toast('Could not delete '+name+': '+e.message); loadAccounts(); }
+  },5000);
+  PENDING_DELETES[name]=timer;
+  showUndoToast('Deleted '+name, ()=>{
+    clearTimeout(PENDING_DELETES[name]);
+    delete PENDING_DELETES[name];
+    ACCOUNTS.push(acc); renderAccounts(); toast('Restored '+name); haptic('ok');
+  });
+}
+function showUndoToast(msg,onUndo){
+  const t=$('toast'); clearTimeout(t._t);
+  t.innerHTML='';
+  const span=document.createElement('span'); span.textContent=msg; t.appendChild(span);
+  const btn=document.createElement('button');
+  btn.textContent='Undo'; btn.style.cssText='margin-left:10px;text-decoration:underline;font-weight:700;color:inherit';
+  btn.onclick=()=>{ t.classList.remove('on'); onUndo(); };
+  t.appendChild(btn);
+  t.classList.add('on');
+  t._t=setTimeout(()=>{ t.classList.remove('on'); },5000);
 }
 let NOTE_TARGET=null;
 function openNoteEditor(name){ NOTE_TARGET=name; const a=ACCOUNTS.find(x=>x.session_name===name)||{}; $('note-text').value=a.note||''; $('note-title').textContent='Note · '+name;
@@ -835,7 +1107,7 @@ function useLink(l){ $('r-link').value=l; previewLink(); haptic(); }
 /* ── live job ── */
 const CIRC = 2*Math.PI*88;
 let JOB_START=0, JOB_LAST_DONE=0;
-function openJob(id){ CURJOB=id; JOB_DONE_FIRED=false; JOB_START=Date.now(); JOB_LAST_DONE=0; show('job'); $('job-feed').innerHTML=SK_ROWS(2); $('job-cancel').classList.remove('hidden'); $('job-rate').textContent='0.0'; setRing(0,0,0); clearInterval(POLL); pollJob(); POLL=setInterval(pollJob,600); }
+function openJob(id){ CURJOB=id; JOB_DONE_FIRED=false; JOB_START=Date.now(); JOB_LAST_DONE=0; JOB_LAST_QUARTER=-1; show('job'); $('job-feed').innerHTML=SK_ROWS(2); $('job-cancel').classList.remove('hidden'); $('job-rate').textContent='0.0'; setRing(0,0,0); clearInterval(POLL); pollJob(); POLL=setInterval(pollJob,600); }
 let JOB_DONE_FIRED=false;
 async function cancelJob(){
   if(!await confirmDlg('Stop this run? Accounts already processed will keep their results.')) return;
@@ -850,7 +1122,8 @@ function spawnSparks(n){
   }
 }
 function playDone(ok){
-  try{ ok ? tg.HapticFeedback.notificationOccurred('success') : tg.HapticFeedback.notificationOccurred('warning'); }catch(e){}
+  if(PREFS.haptic!=='off'){ try{ ok ? tg.HapticFeedback.notificationOccurred('success') : tg.HapticFeedback.notificationOccurred('warning'); }catch(e){} }
+  if(!PREFS.sound) return;
   try{ const C=window.AudioContext||window.webkitAudioContext; if(!C) return; const ctx=new C();
     const notes = ok ? [660,880] : [440,330];
     notes.forEach((f,i)=>{ const o=ctx.createOscillator(), g=ctx.createGain();
@@ -864,6 +1137,7 @@ function playDone(ok){
 }
 function setRing(ok,bad,total){ const t=total||1; $('ring-ok').style.strokeDasharray=CIRC; $('ring-bad').style.strokeDasharray=CIRC;
   $('ring-ok').style.strokeDashoffset = CIRC*(1-ok/t); $('ring-bad').style.strokeDashoffset = CIRC*(1-(ok+bad)/t); }
+let JOB_LAST_QUARTER=-1;
 async function pollJob(){
   try{
     const j=await api('/api/jobs/'+CURJOB);
@@ -874,6 +1148,8 @@ async function pollJob(){
       spawnSparks(j.done-JOB_LAST_DONE);
       $('job-done').parentElement.classList.remove('num'); void $('job-done').parentElement.offsetWidth; $('job-done').parentElement.classList.add('num');
       JOB_LAST_DONE=j.done;
+      const quarter=Math.floor((j.done/Math.max(1,j.total))*4);
+      if(quarter>JOB_LAST_QUARTER && quarter<4 && quarter>0){ JOB_LAST_QUARTER=quarter; hapticPattern('quarter'); }
     }
     const secs=Math.max(0.4,(Date.now()-JOB_START)/1000);
     $('job-rate').textContent=(j.done/secs).toFixed(1);
@@ -887,7 +1163,11 @@ async function pollJob(){
     else if(skipNote) $('job-feed').innerHTML = skipNote;
     if(j.status!=='running'){
       clearInterval(POLL); $('job-cancel').classList.add('hidden');
-      if(!JOB_DONE_FIRED){ JOB_DONE_FIRED=true; playDone(!j.failed); }
+      if(!JOB_DONE_FIRED){
+        JOB_DONE_FIRED=true; playDone(!j.failed);
+        loadStreak();
+        if(j.milestone){ setTimeout(()=>showMilestone(j.milestone),500); }
+      }
     }
   }catch(e){ clearInterval(POLL); $('job-lbl').textContent=e.message; }
 }
@@ -914,7 +1194,7 @@ function importBackup(ev){
 
 /* ── dashboard ── */
 async function loadDash(){
-  $('d-kind').innerHTML=SK_ROWS(2); $('d-top').innerHTML=SK_ROWS(2); $('d-bars').innerHTML='<div class="sk sk-bar" style="width:100%"></div>';
+  $('d-kind').innerHTML=SK_ROWS(2); $('d-top').innerHTML=SK_ROWS(2); $('d-bars').innerHTML='<div class="sk sk-bar" style="width:100%"></div>'; $('speed-bars').innerHTML='<div class="sk sk-bar" style="width:100%"></div>';
   try{
     const s=await api('/api/stats');
     $('d-jobs').textContent=s.totals.jobs; $('d-success').textContent=s.totals.success; $('d-failed').textContent=s.totals.failed;
@@ -924,8 +1204,91 @@ async function loadDash(){
     const kindLbl={refer:'🚀 Referral',channels:'📢 Join/Leave',message:'💬 Message',health:'🩺 Health check',random_leave:'🍃 Auto-leave'};
     $('d-kind').innerHTML = s.by_kind.length ? s.by_kind.map(k=>`<div class="row"><span class="av" style="font-family:Manrope">${(kindLbl[k.kind]||k.kind)[0]}</span><span class="body"><span class="t">${kindLbl[k.kind]||k.kind}</span><span class="d">${k.jobs} job${k.jobs>1?'s':''}</span></span><span class="r">${k.success}✓ ${k.failed?('/ '+k.failed+'✗'):''}</span></div>`).join('') : emptyState('📊','No activity yet','Run something and your stats will appear here.','<button class="btn" onclick="show(\'run\')">Go to Run</button>');
     $('d-top').innerHTML = s.top_accounts.length ? s.top_accounts.map(a=>`<div class="row"><span class="av">${esc(a.account.slice(-2))}</span><span class="body"><span class="t">${esc(a.account)}</span></span><span class="r">${a.success}✓ ${a.failed?a.failed+'✗':''}</span></div>`).join('') : emptyState('👥','No account activity','Top-performing accounts will show up after a few runs.','');
+    const kindIcon={refer:'🚀',channels:'📢',message:'💬',health:'🩺',auto_leave:'🍃',random_leave:'🍃'};
+    $('d-jobslist').innerHTML = (s.recent_jobs||[]).length ? s.recent_jobs.map(j=>`<button class="row" onclick="openJobDetail('${j.id}')">
+      <span class="av" style="font-family:Manrope">${kindIcon[j.kind]||'⚡'}</span>
+      <span class="body"><span class="t">${kindLbl[j.kind]||j.kind} ${j.status==='running'?'<span style=\"color:var(--turbo)\">· running</span>':''}</span>
+      <span class="d">${ago(j.ended)} · ${j.total} account${j.total>1?'s':''}</span></span>
+      <span class="r">${j.success}✓${j.failed?' '+j.failed+'✗':''}</span></button>`).join('')
+      : emptyState('📋','No jobs yet','Your run history will show up here.','');
+    if(s.time_saved_sec>10){
+      $('time-saved-card').classList.remove('hidden');
+      const mins=Math.round(s.time_saved_sec/60);
+      $('ts-text').textContent = mins>=60 ? (mins/60).toFixed(1)+' hours saved' : mins+' minutes saved';
+    } else $('time-saved-card').classList.add('hidden');
+    const sh=s.speed_history||[];
+    if(sh.length){
+      const smax=Math.max(1,...sh.map(x=>x.rate));
+      $('speed-bars').innerHTML=sh.map(x=>{ const h=Math.max(4,Math.round(x.rate/smax*90));
+        return `<div class="bar"><div class="stack" style="height:${h}px"><div class="seg ok" style="height:${h}px"></div></div><span class="lbl">${x.rate}</span></div>`; }).join('');
+    } else $('speed-bars').innerHTML=emptyState('📈','No timed runs yet','Speed data appears after a completed run.','');
   }catch(e){ toast(e.message); }
+  checkWeeklyRecap();
 }
+async function checkWeeklyRecap(){
+  try{
+    const r=await api('/api/weekly-recap');
+    $('recap-card').classList.toggle('hidden', !r.has_data);
+    window._recapData=r;
+  }catch(e){ $('recap-card').classList.add('hidden'); }
+}
+function openWeeklyRecap(){
+  const r=window._recapData; if(!r||!r.has_data) return;
+  haptic();
+  const rows=[];
+  rows.push(`<div class="recap-stat"><span class="ic">✅</span><span><span class="t">${r.success.toLocaleString()}</span><span class="d">successful actions this week</span></span></div>`);
+  rows.push(`<div class="recap-stat"><span class="ic">⚡</span><span><span class="t">${r.jobs}</span><span class="d">jobs run across ${r.accounts_used} account${r.accounts_used>1?'s':''}</span></span></div>`);
+  if(r.best_account) rows.push(`<div class="recap-stat"><span class="ic">🏆</span><span><span class="t">${esc(r.best_account.account)}</span><span class="d">your MVP account — ${r.best_account.success} successful runs</span></span></div>`);
+  if(r.fastest_run) rows.push(`<div class="recap-stat"><span class="ic">🚀</span><span><span class="t">${r.fastest_run.rate} accounts/sec</span><span class="d">your fastest run this week</span></span></div>`);
+  if(r.busiest_task) rows.push(`<div class="recap-stat"><span class="ic">📌</span><span><span class="t">${esc(r.busiest_task)}</span><span class="d">your most-used task type</span></span></div>`);
+  $('recap-body').innerHTML=rows.join('');
+  $('sheet-bg6').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg6').classList.add('on');$('sheet6').classList.add('on');});
+  fireConfetti(35);
+}
+function closeSheet6(){ $('sheet-bg6').classList.remove('on'); $('sheet6').classList.remove('on'); setTimeout(()=>$('sheet-bg6').classList.add('hidden'),220); }
+
+/* ── settings (device-local preferences) ── */
+const ACCENTS={orange:'#ff4d1f',blue:'#2ea6ff',green:'#22c55e',purple:'#a855f7',pink:'#ec4899',yellow:'#eab308'};
+const I18N={
+  en:{hey:'Hey',accounts:'accounts',run:'Run',home:'Home',stats:'Stats',admin:'Admin',settings:'Settings'},
+  bn:{hey:'হ্যালো',accounts:'অ্যাকাউন্ট',run:'চালান',home:'হোম',stats:'পরিসংখ্যান',admin:'অ্যাডমিন',settings:'সেটিংস'}
+};
+function loadPrefs(){
+  let p={}; try{ p=JSON.parse(localStorage.getItem('tr_prefs')||'{}'); }catch(e){}
+  return {lang:p.lang||'en', accent:p.accent||'orange', haptic:p.haptic||'normal', sound:p.sound!==false};
+}
+function savePrefs(p){ try{ localStorage.setItem('tr_prefs', JSON.stringify(p)); }catch(e){} }
+let PREFS=loadPrefs();
+function applyAccent(v){ document.documentElement.style.setProperty('--turbo', ACCENTS[v]||ACCENTS.orange); }
+function applyLang(v){
+  const t=I18N[v]||I18N.en;
+  document.querySelectorAll('.tab').forEach(el=>{ const key=el.dataset.s; const label={home:'home',accounts:'accounts',run:'run',dash:'stats',admin:'admin'}[key];
+    if(label && t[label]){ const span=el.childNodes[el.childNodes.length-1]; if(span && span.nodeType===3) span.textContent=t[label]; } });
+}
+function loadSettings(){
+  document.querySelectorAll('#lang-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===PREFS.lang));
+  document.querySelectorAll('#theme-swatches .swatch').forEach(b=>b.classList.toggle('on',b.dataset.v===PREFS.accent));
+  document.querySelectorAll('#haptic-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===PREFS.haptic));
+  document.querySelectorAll('#sound-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===(PREFS.sound?'on':'off')));
+}
+function setLang(v){ PREFS.lang=v; savePrefs(PREFS); applyLang(v); loadSettings(); haptic('ok'); toast(v==='bn'?'ভাষা পরিবর্তন হয়েছে':'Language updated'); }
+function setAccent(v){ PREFS.accent=v; savePrefs(PREFS); applyAccent(v); loadSettings(); haptic('ok'); toast('Accent color updated'); }
+function setHapticLevel(v){ PREFS.haptic=v; savePrefs(PREFS); loadSettings(); if(v!=='off') haptic('ok'); toast('Haptic set to '+v); }
+function setSoundPref(v){ PREFS.sound=(v==='on'); savePrefs(PREFS); loadSettings(); haptic('ok'); toast('Sound '+(PREFS.sound?'on':'off')); }
+async function openJobDetail(jid){
+  haptic();
+  $('jd-title').textContent='Loading…'; $('jd-results').innerHTML=SK_ROWS(3);
+  $('sheet-bg5').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg5').classList.add('on');$('sheet5').classList.add('on');});
+  try{
+    const j=await api('/api/jobs/'+jid);
+    const kindLbl={refer:'🚀 Referral',channels:'📢 Join/Leave',message:'💬 Message',health:'🩺 Health check',random_leave:'🍃 Auto-leave',auto_leave:'🍃 Auto-leave'};
+    $('jd-title').textContent=kindLbl[j.kind]||j.kind;
+    $('jd-sub').textContent=(j.meta?.link||j.meta?.target||(j.meta?.channels||[]).join(', ')||'')+' · '+ago(j.ended||j.started);
+    $('jd-ok').textContent=j.success; $('jd-bad').textContent=j.failed; $('jd-total').textContent=j.total+' total';
+    $('jd-results').innerHTML=(j.results||[]).length ? j.results.map(r=>`<div class="row st-${r.status}"><span class="av">${r.status==='success'?'✓':r.status==='partial'?'~':'✕'}</span><span class="body"><span class="t">${esc(r.account)}</span><span class="d">${esc(r.msg||'')}</span></span></div>`).join('') : '<div class="empty">No results recorded.</div>';
+  }catch(e){ $('jd-title').textContent='Error'; $('jd-results').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
+}
+function closeSheet5(){ $('sheet-bg5').classList.remove('on'); $('sheet5').classList.remove('on'); setTimeout(()=>$('sheet-bg5').classList.add('hidden'),220); }
 
 /* ── admin ── */
 let ADMIN=null, UFILTER='all';
@@ -938,6 +1301,58 @@ async function loadAdmin(){
     $('k-approved').textContent=k.approved; $('k-banned').textContent=k.banned; $('k-jobs').textContent=k.jobs_24h;
     paintMode(ADMIN.access_mode); renderUsers();
   }catch(e){ toast(e.message); }
+  loadAdminSettings(); loadSystemStats(); loadServerHealth(); loadRateLimit();
+}
+let LOCKDOWN_ON=false;
+async function loadAdminSettings(){
+  try{
+    const s=await api('/api/admin/settings');
+    LOCKDOWN_ON=!!s.lockdown; paintLockdown();
+    $('lock-msg').value=s.lockdown_msg||''; $('log-chan').value=s.log_channel||'';
+    $('lock-banner').classList.toggle('hidden', !LOCKDOWN_ON);
+  }catch(e){}
+}
+function paintLockdown(){
+  const t=$('lockdown-toggle');
+  t.classList.toggle('bad', LOCKDOWN_ON);
+  $('lock-ic').textContent = LOCKDOWN_ON ? '🔒' : '🔓';
+  $('lock-t').textContent = LOCKDOWN_ON ? 'App is locked down' : 'App is open';
+  $('lock-d').textContent = LOCKDOWN_ON ? 'Tap to unlock — everyone can use it again' : 'Tap to lock the app for everyone except owners';
+}
+async function toggleLockdown(){
+  const next=!LOCKDOWN_ON;
+  if(next && !await confirmDlg('Lock the app for everyone except owners?')) return;
+  try{ await post('/api/admin/settings',{lockdown:next, lockdown_msg:$('lock-msg').value.trim()});
+    LOCKDOWN_ON=next; paintLockdown(); $('lock-banner').classList.toggle('hidden', !LOCKDOWN_ON);
+    toast(next?'🔒 App locked down':'🔓 App unlocked'); haptic(next?'medium':'ok');
+  }catch(e){ toast(e.message); }
+}
+async function saveLogChannel(){
+  try{ await post('/api/admin/settings',{log_channel:$('log-chan').value.trim()}); toast('Log channel saved'); haptic('ok'); }
+  catch(e){ toast(e.message); }
+}
+async function loadSystemStats(){
+  try{
+    const s=await api('/api/admin/system-stats');
+    $('sw-accs').textContent=s.total_accounts; $('sw-jobs').textContent=s.total_jobs; $('sw-jobs24').textContent=s.jobs_24h;
+    $('sw-ok').textContent=s.total_success; $('sw-bad').textContent=s.total_failed; $('sw-owners').textContent=s.owners;
+  }catch(e){}
+}
+async function loadServerHealth(){
+  try{
+    const h=await api('/api/admin/server-health');
+    $('sh-mongo').textContent = h.mongo_ok ? '🟢' : '🔴'; $('sh-bot').textContent = h.bot_ok ? '🟢' : '🔴';
+    $('sh-jobs').textContent = h.active_jobs;
+    if(h.storage_pct!=null){
+      $('sh-bar').style.width=h.storage_pct+'%';
+      $('sh-bar').style.background = h.storage_pct>85?'var(--bad)':h.storage_pct>60?'var(--warn)':'var(--ok)';
+      $('sh-storage-text').textContent = h.storage_mb+' MB of 512 MB used ('+h.storage_pct+'%)';
+    } else { $('sh-storage-text').textContent='Storage info unavailable'; }
+  }catch(e){}
+}
+async function loadRateLimit(){
+  try{ const r=await api('/api/admin/rate-limit'); $('rl-min').textContent=r.per_minute; $('rl-hour').textContent=r.per_hour; }
+  catch(e){}
 }
 function paintMode(m){ document.querySelectorAll('#mode-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===m));
   $('mode-help').textContent = m==='open' ? 'Anyone who opens the app can use it with their own accounts. Banned users are still blocked.' : 'Only users you approve can use the app. Others see their ID and a request screen.'; }
@@ -1017,6 +1432,7 @@ async function broadcast(){
   });
 })();
 
+applyAccent(PREFS.accent); applyLang(PREFS.lang);
 boot();
 </script>
 </body>

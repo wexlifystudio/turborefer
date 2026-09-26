@@ -160,6 +160,8 @@ def current_user(request: Request):
         raise HTTPException(403, "You are banned.")
     if is_owner(uid):
         return {"id": uid, "name": name, "role": "owner", "username": user.get("username", "")}
+    if setting_get("lockdown", False) and not is_owner(uid):
+        raise HTTPException(423, setting_get("lockdown_msg") or "The app is temporarily down for maintenance. Please try again soon.")
     if setting_get("access_mode", "approved") == "open" or uid in user_list("whitelist"):
         return {"id": uid, "name": name, "role": "user", "username": user.get("username", "")}
     raise HTTPException(403, "no_access")
@@ -230,9 +232,12 @@ def parse_bot_link(link):
     m = re.match(r"https?://t\.me/([A-Za-z0-9_]+)(?:\?start=(.*))?", link.strip())
     return (m.group(1), m.group(2) or "") if m else (None, None)
 
-def pick_accounts(owner, names, skip_dead=True):
+def pick_accounts(owner, names, skip_dead=True, exclude=None):
     accs = load_accounts(owner)
     sel = accs if not names else [a for a in accs if a["session_name"] in names]
+    if exclude:
+        ex = set(exclude)
+        sel = [a for a in sel if a["session_name"] not in ex]
     if skip_dead:
         alive = [a for a in sel if a.get("health") != "dead"]
         return alive, [a["session_name"] for a in sel if a.get("health") == "dead"]
@@ -257,13 +262,54 @@ def job_cancel_requested(jid):
     j = JOBS.get(jid)
     return bool(j and j.get("cancel"))
 
+# Rough rolling counter of Telegram API calls made by this server, for a simple
+# "how close to Telegram's limits are we" dashboard. Not exact — Telegram doesn't
+# expose real quotas — but useful as a live activity gauge.
+_API_CALL_LOG = []  # list of unix timestamps
+
+def log_api_call():
+    now = time.time()
+    _API_CALL_LOG.append(now)
+    if len(_API_CALL_LOG) > 5000:
+        del _API_CALL_LOG[:2500]
+
+def api_call_rate():
+    now = time.time()
+    last_min = sum(1 for t in _API_CALL_LOG if now - t <= 60)
+    last_hour = sum(1 for t in _API_CALL_LOG if now - t <= 3600)
+    return {"per_minute": last_min, "per_hour": last_hour}
+
 KIND_LABEL = {"refer": "Referral", "channels": "Join / Leave", "message": "Send message",
               "health": "Health check", "auto_leave": "Auto-leave"}
+
+MILESTONES = [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
+
+def update_progress(owner, success_count):
+    """Bump this owner's lifetime success counter and daily-streak, return any
+    milestone just crossed (or None) so the frontend can celebrate it once."""
+    if success_count <= 0 or not owner:
+        return None, None
+    today = time.strftime("%Y-%m-%d", time.gmtime())
+    col = db()["progress"]
+    doc = col.find_one({"owner": owner}) or {"owner": owner, "total_success": 0, "streak": 0, "last_day": ""}
+    prev_total = doc.get("total_success", 0)
+    new_total = prev_total + success_count
+    streak = doc.get("streak", 0)
+    last_day = doc.get("last_day", "")
+    if last_day != today:
+        yesterday = time.strftime("%Y-%m-%d", time.gmtime(time.time() - 86400))
+        streak = (streak + 1) if last_day == yesterday else 1
+    col.update_one({"owner": owner}, {"$set": {"total_success": new_total, "streak": streak, "last_day": today}}, upsert=True)
+    milestone = next((m for m in MILESTONES if prev_total < m <= new_total), None)
+    return milestone, streak
 
 def job_finish(jid):
     j = JOBS[jid]
     j["status"] = "cancelled" if j.get("cancel") else "done"
     j["ended"] = int(time.time())
+    milestone, streak = update_progress(j.get("owner"), j.get("success", 0))
+    j["milestone"] = milestone
+    j["streak"] = streak
     try: db()["jobs"].insert_one(dict(j))
     except Exception: pass
     # Notify the owner of this job in Telegram
@@ -277,12 +323,17 @@ def job_finish(jid):
                      f"⏱ {took}s"]
             if j["meta"].get("skipped_dead"):
                 lines.append(f"⏭ Skipped {len(j['meta']['skipped_dead'])} dead account(s)")
+            if milestone:
+                lines.append(f"\n🎉 <b>Milestone unlocked: {milestone:,} lifetime successful runs!</b>")
             bad = [r for r in j.get("results", []) if r.get("status") != "success"][:5]
             if bad:
                 lines.append("\n<b>Failed:</b>")
                 for r in bad:
                     lines.append(f"• <code>{r['account']}</code> — {str(r.get('msg',''))[:70]}")
             tg_send(j["owner"], "\n".join(lines))
+            log_chan = setting_get("log_channel", "")
+            if log_chan:
+                tg_send(log_chan, "\n".join(lines))
     except Exception as e:
         print("job alert error:", e)
 
@@ -312,6 +363,8 @@ async def _captcha_flow(acc, bot_link, solver):
         except asyncio.TimeoutError:
             pass
         await asave_session(acc["owner"], acc["session_name"], client.session.save())
+    except errors.FloodWaitError:
+        raise
     except Exception as e:
         result.update({"status": "error", "msg": friendly_error(e)})
     finally:
@@ -368,6 +421,27 @@ async def refer_plain(acc, bot_link):
         try: await client.disconnect()
         except Exception: pass
 
+FLOOD_AUTO_WAIT_MAX = 60  # only auto-wait out floods this short; longer ones are reported instead
+
+async def run_with_flood_retry(worker, acc, jid):
+    """Run worker(acc) once. If Telegram replies with a short flood-wait, wait it
+    out and retry automatically (once) instead of failing the account outright."""
+    log_api_call()
+    try:
+        return await worker(acc)
+    except errors.FloodWaitError as e:
+        if e.seconds <= FLOOD_AUTO_WAIT_MAX and not job_cancel_requested(jid):
+            await asyncio.sleep(e.seconds + 1)
+            try:
+                r = await worker(acc)
+                r["msg"] = f"(auto-retried after {e.seconds}s flood-wait) " + str(r.get("msg", ""))
+                return r
+            except Exception as e2:
+                return {"account": acc["session_name"], "status": "error", "msg": friendly_error(e2)}
+        return {"account": acc["session_name"], "status": "error", "msg": f"Flood-wait {e.seconds}s — too long to auto-retry"}
+    except Exception as e:
+        return {"account": acc["session_name"], "status": "error", "msg": friendly_error(e)}
+
 async def _run_pool(jid, accs, worker, concurrency, delay):
     """Run worker(acc) over accs with N at a time; delay between starts.
     'last_used' timestamps are buffered and flushed to MongoDB in one batched
@@ -402,10 +476,7 @@ async def _run_pool(jid, accs, worker, concurrency, delay):
             if job_cancel_requested(jid):
                 return
             async with _acc_lock(acc):   # never run this same account's session twice at once
-                try:
-                    r = await worker(acc)
-                except Exception as e:
-                    r = {"account": acc["session_name"], "status": "error", "msg": friendly_error(e)}
+                r = await run_with_flood_retry(worker, acc, jid)
             touched.add(acc["session_name"])
             job_push(jid, r)
             if concurrency == 1:
@@ -485,6 +556,61 @@ async def ping():
     return {"ping": "pong"}
 
 # ── Auth ─────────────────────────────────────────────────────────
+@app.get("/api/progress")
+async def progress(request: Request):
+    """Lifetime success count + daily streak for the Home screen."""
+    u = current_user(request)
+    doc = db()["progress"].find_one({"owner": u["id"]}, {"_id": 0}) or {"total_success": 0, "streak": 0, "last_day": ""}
+    today = time.strftime("%Y-%m-%d", time.gmtime())
+    yesterday = time.strftime("%Y-%m-%d", time.gmtime(time.time() - 86400))
+    streak = doc.get("streak", 0)
+    if doc.get("last_day") not in (today, yesterday):
+        streak = 0  # streak broken — hasn't run today or yesterday
+    next_milestone = next((m for m in MILESTONES if m > doc.get("total_success", 0)), None)
+    return {"total_success": doc.get("total_success", 0), "streak": streak, "next_milestone": next_milestone}
+
+@app.get("/api/weekly-recap")
+async def weekly_recap(request: Request):
+    """A shareable 'wrapped'-style summary of the last 7 days for this user."""
+    u = current_user(request)
+    owner = u["id"]
+    d = db()
+    now = int(time.time()); week_ago = now - 7 * 86400
+    q = {"owner": owner, "ended": {"$gt": week_ago}}
+    jobs = list(d["jobs"].find(q, {"_id": 0})) + \
+           [j for j in JOBS.values() if j.get("owner") == owner and j.get("started", 0) > week_ago and j.get("status") != "running"]
+    seen = set(); uniq = []
+    for j in jobs:
+        if j["id"] in seen: continue
+        seen.add(j["id"]); uniq.append(j)
+    if not uniq:
+        return {"has_data": False}
+
+    total_success = sum(j.get("success", 0) for j in uniq)
+    total_failed = sum(j.get("failed", 0) for j in uniq)
+    per_acc = {}
+    fastest = None
+    for j in uniq:
+        for r in j.get("results", []):
+            a = per_acc.setdefault(r["account"], {"account": r["account"], "success": 0})
+            if r.get("status") == "success": a["success"] += 1
+        started, ended, total = j.get("started"), j.get("ended"), j.get("total", 0)
+        if started and ended and ended > started and total:
+            rate = total / (ended - started)
+            if not fastest or rate > fastest["rate"]:
+                fastest = {"rate": round(rate, 2), "kind": j.get("kind"), "total": total}
+    best_account = max(per_acc.values(), key=lambda a: a["success"], default=None)
+    by_kind = {}
+    for j in uniq:
+        k = j.get("kind", "?"); by_kind[k] = by_kind.get(k, 0) + 1
+    busiest_kind = max(by_kind.items(), key=lambda x: x[1])[0] if by_kind else None
+    return {
+        "has_data": True, "jobs": len(uniq), "success": total_success, "failed": total_failed,
+        "best_account": best_account, "fastest_run": fastest,
+        "busiest_task": KIND_LABEL.get(busiest_kind, busiest_kind),
+        "accounts_used": len(per_acc),
+    }
+
 @app.get("/api/me")
 async def me(request: Request):
     try:
@@ -766,7 +892,7 @@ async def delete_account(name: str, request: Request):
 async def refer(request: Request):
     u = current_user(request)
     b = await request.json()
-    accs, skipped = pick_accounts(u["id"], b.get("accounts"))
+    accs, skipped = pick_accounts(u["id"], b.get("accounts"), exclude=b.get("exclude"))
     if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     if not parse_bot_link(b.get("bot_link", ""))[0]: raise HTTPException(400, "Invalid bot link.")
     conc, delay = speed_params(b, len(accs))
@@ -779,7 +905,7 @@ async def auto_leave(request: Request):
     """Leave N random channels/groups per selected account."""
     u = current_user(request)
     b = await request.json()
-    accs, skipped = pick_accounts(u["id"], b.get("accounts"))
+    accs, skipped = pick_accounts(u["id"], b.get("accounts"), exclude=b.get("exclude"))
     if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     count = max(1, min(int(b.get("count", 5)), 3000))
     conc, delay = speed_params(b, len(accs))
@@ -819,7 +945,7 @@ async def random_leave_alias(request: Request):
 async def channels(request: Request):
     u = current_user(request)
     b = await request.json()
-    accs, skipped = pick_accounts(u["id"], b.get("accounts"))
+    accs, skipped = pick_accounts(u["id"], b.get("accounts"), exclude=b.get("exclude"))
     chans = [c.strip() for c in b.get("channels", []) if c.strip()]
     if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     if not chans: raise HTTPException(400, "No channels given.")
@@ -832,7 +958,7 @@ async def channels(request: Request):
 async def message(request: Request):
     u = current_user(request)
     b = await request.json()
-    accs, skipped = pick_accounts(u["id"], b.get("accounts"))
+    accs, skipped = pick_accounts(u["id"], b.get("accounts"), exclude=b.get("exclude"))
     if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
     if not b.get("target") or not b.get("text"): raise HTTPException(400, "Target and message are required.")
     conc, delay = speed_params(b, len(accs))
@@ -936,10 +1062,42 @@ async def stats(request: Request):
     top_accounts = sorted(per_acc.values(), key=lambda x: -(x["success"] + x["failed"]))[:10]
 
     total_success = sum(j.get("success", 0) for j in jobs); total_failed = sum(j.get("failed", 0) for j in jobs)
+    recent_jobs = sorted(jobs, key=lambda j: -(j.get("ended") or j.get("started", 0)))[:20]
+    recent_jobs = [{"id": j["id"], "kind": j.get("kind"), "status": j.get("status"),
+                     "success": j.get("success", 0), "failed": j.get("failed", 0), "total": j.get("total", 0),
+                     "ended": j.get("ended") or j.get("started"), "meta": j.get("meta", {})} for j in recent_jobs]
+
+    # Speed history: accounts/sec for each completed job with a real duration, oldest→newest.
+    speed_history = []
+    for j in sorted(jobs, key=lambda j: j.get("ended") or j.get("started", 0)):
+        started = j.get("started"); ended = j.get("ended")
+        if not started or not ended or ended <= started or not j.get("total"):
+            continue
+        rate = round(j["total"] / (ended - started), 2)
+        speed_history.append({"ended": ended, "rate": rate, "kind": j.get("kind"),
+                               "speed_mode": j.get("meta", {}).get("speed", "single")})
+    speed_history = speed_history[-30:]  # last 30 timed jobs
+
+    # Time saved: for every job that ran faster than "single" (1 account at a time,
+    # ~1.5s each), estimate how much longer it would have taken at that baseline pace
+    # and sum the difference. Rough, but gives a genuinely meaningful number.
+    SINGLE_BASELINE_SEC_PER_ACCOUNT = 1.5
+    time_saved_sec = 0
+    for j in jobs:
+        started = j.get("started"); ended = j.get("ended")
+        mode = j.get("meta", {}).get("speed", "single")
+        if not started or not ended or ended <= started or mode == "single" or not j.get("total"):
+            continue
+        actual = ended - started
+        baseline = j["total"] * SINGLE_BASELINE_SEC_PER_ACCOUNT
+        if baseline > actual:
+            time_saved_sec += (baseline - actual)
+
     return {
         "totals": {"jobs": len(jobs), "success": total_success, "failed": total_failed,
                    "accounts": len(load_accounts(owner))},
         "daily": days, "by_kind": list(by_kind.values()), "top_accounts": top_accounts,
+        "recent_jobs": recent_jobs, "speed_history": speed_history, "time_saved_sec": round(time_saved_sec),
     }
 
 # ── Admin panel (owner only) ─────────────────────────────────────
@@ -999,7 +1157,68 @@ async def admin_settings(request: Request):
     b = await request.json()
     if b.get("access_mode") in ("approved", "open"):
         setting_set("access_mode", b["access_mode"])
-    return {"status": "success", "access_mode": setting_get("access_mode")}
+    if "lockdown" in b:
+        setting_set("lockdown", bool(b["lockdown"]))
+        if b.get("lockdown_msg"): setting_set("lockdown_msg", str(b["lockdown_msg"])[:200])
+    if "log_channel" in b:
+        setting_set("log_channel", str(b["log_channel"]).strip())
+    return {"status": "success", "access_mode": setting_get("access_mode"),
+            "lockdown": setting_get("lockdown", False), "log_channel": setting_get("log_channel", "")}
+
+@app.get("/api/admin/settings")
+async def get_admin_settings(request: Request):
+    require_owner(request)
+    return {"access_mode": setting_get("access_mode", "approved"), "lockdown": setting_get("lockdown", False),
+            "lockdown_msg": setting_get("lockdown_msg", ""), "log_channel": setting_get("log_channel", "")}
+
+@app.get("/api/admin/system-stats")
+async def system_stats(request: Request):
+    """Platform-wide numbers across every user, for the owner's eyes only."""
+    require_owner(request)
+    d = db()
+    total_accounts = await asyncio.to_thread(d["accounts"].count_documents, {})
+    total_users = await asyncio.to_thread(d["users"].count_documents, {})
+    day_ago = int(time.time()) - 86400
+    jobs_24h = await asyncio.to_thread(d["jobs"].count_documents, {"started": {"$gt": day_ago}})
+    jobs_24h += len([j for j in JOBS.values() if j.get("started", 0) > day_ago])
+    total_jobs = await asyncio.to_thread(d["jobs"].estimated_document_count)
+    agg = list(d["jobs"].aggregate([{"$group": {"_id": None, "s": {"$sum": "$success"}, "f": {"$sum": "$failed"}}}]))
+    ok = agg[0]["s"] if agg else 0; bad = agg[0]["f"] if agg else 0
+    for j in JOBS.values(): ok += j.get("success", 0); bad += j.get("failed", 0)
+    return {"total_users": total_users, "total_accounts": total_accounts, "total_jobs": total_jobs,
+            "jobs_24h": jobs_24h, "total_success": ok, "total_failed": bad,
+            "owners": len(OWNER_IDS), "approved": len(user_list("whitelist")), "banned": len(user_list("banlist"))}
+
+@app.get("/api/admin/rate-limit")
+async def rate_limit_dashboard(request: Request):
+    """Simple activity gauge: how many Telegram actions this server has made recently."""
+    require_owner(request)
+    return api_call_rate()
+
+@app.get("/api/admin/server-health")
+async def server_health(request: Request):
+    """MongoDB connectivity + rough storage usage, and Telegram Bot API reachability."""
+    require_owner(request)
+    mongo_ok = False; storage_mb = None; storage_pct = None
+    try:
+        stats = await asyncio.to_thread(lambda: db().command("dbStats"))
+        mongo_ok = True
+        storage_mb = round((stats.get("dataSize", 0) + stats.get("indexSize", 0)) / (1024 * 1024), 2)
+        storage_pct = round(min(100, storage_mb / 512 * 100), 1)  # Atlas free tier = 512MB
+    except Exception as e:
+        print("server_health mongo error:", e)
+    bot_ok = False
+    try:
+        if BOT_TOKEN:
+            req = urllib.request.Request(f"https://api.telegram.org/bot{BOT_TOKEN}/getMe")
+            with urllib.request.urlopen(req, timeout=8) as r:
+                bot_ok = json.loads(r.read()).get("ok", False)
+    except Exception as e:
+        print("server_health bot error:", e)
+    active_jobs = len([j for j in JOBS.values() if j.get("status") == "running"])
+    return {"mongo_ok": mongo_ok, "storage_mb": storage_mb, "storage_pct": storage_pct,
+            "bot_ok": bot_ok, "active_jobs": active_jobs, "render_alive": True,
+            "checked_at": int(time.time())}
 
 @app.post("/api/admin/user/{uid}/{action}")
 async def admin_user_action(uid: str, action: str, request: Request):
