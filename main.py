@@ -763,7 +763,16 @@ def speed_params(b, n_accounts):
 @app.get("/app", response_class=HTMLResponse)
 async def index():
     with open(INDEX_HTML, encoding="utf-8") as f:
-        return f.read()
+        html = f.read()
+    # Telegram's in-app WebView aggressively caches the Mini App page, so a
+    # deploy can go live on Render while users still see the old HTML/JS for
+    # days. Force it to always refetch — every screen already re-fetches its
+    # own data from the API, so a fresh load is cheap.
+    return HTMLResponse(html, headers={
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    })
 
 @app.get("/ping")
 async def ping():
