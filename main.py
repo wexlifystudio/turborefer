@@ -234,7 +234,7 @@ def parse_bot_link(link):
 
 def pick_accounts(owner, names, skip_dead=True, exclude=None):
     accs = load_accounts(owner)
-    sel = accs if not names else [a for a in accs if a["session_name"] in names]
+    sel = [a for a in accs if not a.get("excluded")] if not names else [a for a in accs if a["session_name"] in names]
     if exclude:
         ex = set(exclude)
         sel = [a for a in sel if a["session_name"] not in ex]
@@ -669,7 +669,7 @@ async def accounts(request: Request):
                     "phone": p[:4] + "•••" + p[-3:] if len(p) > 7 else p,
                     "health": a.get("health", "unknown"), "health_detail": a.get("health_detail", ""),
                     "health_checked": a.get("health_checked"),
-                    "note": a.get("note", ""),
+                    "note": a.get("note", ""), "excluded": bool(a.get("excluded")),
                     "last_used": a.get("last_used"), "created": a.get("created")})
     return {"count": len(out), "accounts": out}
 
@@ -833,6 +833,8 @@ async def update_meta(name: str, request: Request):
     upd = {}
     if "note" in b:
         upd["note"] = str(b["note"])[:500]
+    if "excluded" in b:
+        upd["excluded"] = bool(b["excluded"])
     if upd:
         db()["accounts"].update_one({"owner": u["id"], "session_name": name}, {"$set": upd})
     return {"status": "success"}
@@ -1189,6 +1191,33 @@ async def system_stats(request: Request):
             "jobs_24h": jobs_24h, "total_success": ok, "total_failed": bad,
             "owners": len(OWNER_IDS), "approved": len(user_list("whitelist")), "banned": len(user_list("banlist"))}
 
+@app.get("/api/admin/activity")
+async def admin_activity(request: Request):
+    """Live feed of what every user has been doing recently."""
+    require_owner(request)
+    d = db()
+    users = {x["user_id"]: x for x in d["users"].find({}, {"_id": 0})}
+    def who(uid):
+        x = users.get(str(uid), {})
+        return x.get("name") or ("@" + x["username"] if x.get("username") else str(uid))
+    items = []
+    for j in JOBS.values():
+        if j.get("status") == "running":
+            items.append({"type": "job", "kind": j["kind"], "user": who(j.get("owner")), "user_id": j.get("owner"),
+                          "status": "running", "success": j["success"], "failed": j["failed"], "total": j["total"],
+                          "ts": j.get("started", 0), "job_id": j["id"]})
+    for j in d["jobs"].find({}, {"_id": 0, "results": 0}).sort("ended", -1).limit(40):
+        items.append({"type": "job", "kind": j.get("kind"), "user": who(j.get("owner")), "user_id": j.get("owner"),
+                      "status": j.get("status"), "success": j.get("success", 0), "failed": j.get("failed", 0),
+                      "total": j.get("total", 0), "ts": j.get("ended") or j.get("started", 0), "job_id": j.get("id")})
+    for x in users.values():
+        if x.get("requested_at"):
+            items.append({"type": "request", "user": who(x["user_id"]), "user_id": x["user_id"], "ts": x["requested_at"]})
+        if x.get("first_seen"):
+            items.append({"type": "joined", "user": who(x["user_id"]), "user_id": x["user_id"], "ts": x["first_seen"]})
+    items.sort(key=lambda i: -(i.get("ts") or 0))
+    return {"items": items[:50]}
+
 @app.get("/api/admin/rate-limit")
 async def rate_limit_dashboard(request: Request):
     """Simple activity gauge: how many Telegram actions this server has made recently."""
@@ -1259,9 +1288,26 @@ async def admin_broadcast(request: Request):
         if tg_send(uid, text): sent += 1
     return {"status": "success", "sent": sent, "total": len(ids)}
 
+async def storage_watch():
+    """Every 6h: if MongoDB is 80%+ full, alert all owners (max once per day)."""
+    while True:
+        try:
+            st = await asyncio.to_thread(lambda: db().command("dbStats"))
+            mb = (st.get("dataSize", 0) + st.get("indexSize", 0)) / (1024 * 1024)
+            pct = mb / 512 * 100
+            last = setting_get("storage_alert_at", 0) or 0
+            if pct >= 80 and time.time() - last > 86400:
+                setting_set("storage_alert_at", int(time.time()))
+                for oid in OWNER_IDS:
+                    tg_send(oid, f"⚠️ <b>Database almost full</b>\n\n💾 {mb:.1f} MB of 512 MB used ({pct:.0f}%)\n\nDelete unused accounts or old data soon, or the app will stop saving.")
+        except Exception as e:
+            print("storage_watch:", e)
+        await asyncio.sleep(6 * 3600)
+
 @app.on_event("startup")
 async def _startup():
     migrate()
+    asyncio.create_task(storage_watch())
 
 # ── Run ──────────────────────────────────────────────────────────
 if __name__ == "__main__":
