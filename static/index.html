@@ -437,6 +437,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       </div>
     </div>
     <div class="section"><h2>Accounts <small id="sel-count"></small></h2>
+      <div class="help" id="lf-reserved-note" style="margin-bottom:10px"></div>
       <button class="check on" id="sel-all" onclick="toggleAll()"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span class="t">All accounts</span></button>
       <div id="sel-list"></div>
     </div>
@@ -460,7 +461,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     <div class="field">
       <label>Account to use</label>
       <div id="lf-acc-list" class="list"><div class="empty">Loading…</div></div>
-      <div class="help">⭐ marks your default account. Tap an account to pick it for this run, or tap "Set default" to make it start selected every time.</div>
+      <div class="help">⭐ marks your default account. Tap an account to pick it for this run, or tap "Set default" to make it start selected every time.<br><br>ℹ️ <b>যে account-টা এখানে ⭐ Default হিসেবে বাছা থাকবে, সেই account দিয়ে Referral বা Channel Join/Leave কখনোই চলবে না ❌ — সেটা শুধু Link Finder-এর জন্যই reserved থাকবে।</b></div>
     </div>
     <button class="btn turbo" id="lf-go" onclick="runLinkFinder()">Find links</button>
 
@@ -662,7 +663,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <button data-v="off" onclick="setSoundPref('off')">Off</button>
       </div>
     </div>
-    <div class="help" style="text-align:center;margin-top:24px" id="app-build">Turbo Refer v22</div>
+    <div class="help" style="text-align:center;margin-top:24px" id="app-build">Turbo Refer v23</div>
   </div>
 </div>
 
@@ -1153,16 +1154,23 @@ document.getElementById('speed').addEventListener('click',()=>setTimeout(paintSp
 function speedBody(){ const v=chip('speed')||'fast'; return v==='custom'?{speed:v,concurrency:+$('conc').value,delay:+chip('r-delay')}:{speed:v}; }
 let SEL_INIT=false;
 function renderSel(){
-  if(!SEL_INIT && ACCOUNTS.length){ SEL_INIT=true; ACCOUNTS.forEach(a=>{ if(!a.excluded) SEL.add(a.session_name); }); }
+  if(!SEL_INIT && ACCOUNTS.length){ SEL_INIT=true; ACCOUNTS.forEach(a=>{ if(!a.excluded && !a.link_finder_default) SEL.add(a.session_name); }); }
   SEL.forEach(n=>{ if(!ACCOUNTS.some(a=>a.session_name===n)) SEL.delete(n); });
-  const all = ACCOUNTS.length && SEL.size===ACCOUNTS.length;
-  $('sel-all').classList.toggle('on',all); $('sel-count').textContent = SEL.size+' of '+ACCOUNTS.length+' selected';
-  $('sel-list').innerHTML = ACCOUNTS.length ? ACCOUNTS.map(a=>`<button class="check ${SEL.has(a.session_name)?'on':''}" onclick="toggleSel('${esc(a.session_name)}')"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')}${a.excluded?' · 🚫 excluded':''}</span></span></button>`).join('')
+  ACCOUNTS.forEach(a=>{ if(a.link_finder_default) SEL.delete(a.session_name); });   // 🔗 default account never runs bulk jobs
+  const selectable = ACCOUNTS.filter(a=>!a.link_finder_default);
+  const all = selectable.length && SEL.size===selectable.length;
+  $('sel-all').classList.toggle('on',all); $('sel-count').textContent = SEL.size+' of '+selectable.length+' selected';
+  const lfAcc = ACCOUNTS.find(a=>a.link_finder_default);
+  $('lf-reserved-note').innerHTML = lfAcc ? `ℹ️ <b>${esc(lfAcc.session_name)} 🔗 Link Finder-এর জন্য reserved — এখানে run হবে না।</b>` : '';
+  $('sel-list').innerHTML = ACCOUNTS.length ? ACCOUNTS.map(a=>{
+    if(a.link_finder_default) return `<button class="check" disabled style="opacity:.55;pointer-events:none"><span class="box"></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')} · 🔗 <b>Link Finder-এর জন্য reserved, এখানে চলবে না</b></span></span></button>`;
+    return `<button class="check ${SEL.has(a.session_name)?'on':''}" onclick="toggleSel('${esc(a.session_name)}')"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')}${a.excluded?' · 🚫 excluded':''}</span></span></button>`;
+  }).join('')
     : emptyState('👤','No accounts','Add an account before running anything.','<button class="btn" onclick="show(\'accounts\');openAdd()">Add account</button>');
   $('run-btn').disabled = SEL.size===0;
 }
 function toggleSel(n){ SEL.has(n)?SEL.delete(n):SEL.add(n); haptic(); renderSel(); }
-function toggleAll(){ const pool=ACCOUNTS.filter(a=>!a.excluded); if(SEL.size>=pool.length && pool.every(a=>SEL.has(a.session_name))) SEL.clear(); else { SEL.clear(); pool.forEach(a=>SEL.add(a.session_name)); } haptic(); renderSel(); }
+function toggleAll(){ const pool=ACCOUNTS.filter(a=>!a.excluded && !a.link_finder_default); if(SEL.size>=pool.length && pool.every(a=>SEL.has(a.session_name))) SEL.clear(); else { SEL.clear(); pool.forEach(a=>SEL.add(a.session_name)); } haptic(); renderSel(); }
 async function startJob(){
   const accounts=[...SEL]; let path, body;
   if(RUNKIND==='refer'){ const link=$('r-link').value.trim(); if(!/^https?:\/\/t\.me\/[A-Za-z0-9_]+/.test(link)) return toast('Enter a valid t.me bot link');
@@ -1190,9 +1198,10 @@ const CAPTCHA_NAME={no_captcha:'None',text_code:'Text code',image:'Image',emoji:
 const SPEED_NAME={fast:'⚡ Fast',single:'🐢 Single',parallel:'🚀 Ultra',custom:'⚙️ Custom'};
 function openConfirm(path,body){
   PENDING_RUN={path,body};
-  const pool=ACCOUNTS.filter(a=>!a.excluded && a.health!=='dead');
-  const dead=ACCOUNTS.filter(a=>!a.excluded && a.health==='dead').length;
-  const excl=ACCOUNTS.length-ACCOUNTS.filter(a=>!a.excluded).length;
+  const runnable=ACCOUNTS.filter(a=>!a.link_finder_default);
+  const pool=runnable.filter(a=>!a.excluded && a.health!=='dead');
+  const dead=runnable.filter(a=>!a.excluded && a.health==='dead').length;
+  const excl=runnable.length-runnable.filter(a=>!a.excluded).length;
   const selAlive=[...SEL].filter(n=>{const a=ACCOUNTS.find(x=>x.session_name===n); return a && a.health!=='dead';});
   const selDead=SEL.size-selAlive.length;
   const rows=[];
@@ -1207,9 +1216,10 @@ function openConfirm(path,body){
   const sp=body.speed||'fast';
   rows.push(['Speed',sp==='custom'?`${SPEED_NAME.custom} · ${body.concurrency} at once · ${body.delay}s`:(SPEED_NAME[sp]||sp)]);
   $('cf-summary').innerHTML=rows.map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(String(v))}</b></div>`).join('');
+  const lfCount=ACCOUNTS.length-runnable.length;
   $('cf-all-t').textContent=`All accounts (${pool.length})`;
-  $('cf-all-d').textContent=[dead?`${dead} dead will be skipped`:'', excl?`${excl} excluded not included`:''].filter(Boolean).join(' · ')||'Every active account runs this';
-  const onlySome = SEL.size!==ACCOUNTS.filter(a=>!a.excluded).length || [...SEL].some(n=>!ACCOUNTS.some(a=>a.session_name===n && !a.excluded));
+  $('cf-all-d').textContent=[dead?`${dead} dead will be skipped`:'', excl?`${excl} excluded not included`:'', lfCount?`🔗 ${lfCount} Link Finder account not included`:''].filter(Boolean).join(' · ')||'Every active account runs this';
+  const onlySome = SEL.size!==runnable.filter(a=>!a.excluded).length || [...SEL].some(n=>!runnable.some(a=>a.session_name===n && !a.excluded));
   $('cf-sel').classList.toggle('hidden',!onlySome);
   $('cf-sel-t').textContent=`Only selected (${SEL.size})`;
   $('cf-sel-d').textContent=selDead?`${SEL.size} of ${ACCOUNTS.length} · ${selDead} dead will be skipped`:`${SEL.size} of ${ACCOUNTS.length} accounts you ticked`;
@@ -1219,7 +1229,7 @@ function openConfirm(path,body){
   haptic();
 }
 function cfPick(which, poolArg, selArg){
-  const pool = poolArg || ACCOUNTS.filter(a=>!a.excluded && a.health!=='dead');
+  const pool = poolArg || ACCOUNTS.filter(a=>!a.excluded && a.health!=='dead' && !a.link_finder_default);
   const selAlive = selArg || [...SEL].filter(n=>{const a=ACCOUNTS.find(x=>x.session_name===n); return a && a.health!=='dead';});
   CF_POOL_NAME = which;
   CF_POOL_LIST = which==='all' ? pool.map(a=>a.session_name) : selAlive;

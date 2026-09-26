@@ -249,6 +249,9 @@ def parse_invite_hash(link):
 def pick_accounts(owner, names, skip_dead=True, exclude=None):
     accs = load_accounts(owner)
     sel = [a for a in accs if not a.get("excluded")] if not names else [a for a in accs if a["session_name"] in names]
+    # The Link Finder default account is reserved for that job only — never let
+    # it run Referral / Join-Leave / Message, even if it was explicitly picked.
+    sel = [a for a in sel if not a.get("link_finder_default")]
     if exclude:
         ex = set(exclude)
         sel = [a for a in sel if a["session_name"] not in ex]
