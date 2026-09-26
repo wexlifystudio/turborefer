@@ -265,6 +265,8 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .arow .d{color:var(--hint);font-size:12px;display:block;margin-top:1px}
 .arow.danger .t{color:var(--bad)}
 .arow.danger .icon{background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.arow.on{background:color-mix(in srgb,var(--turbo) 12%,transparent);outline:1.5px solid var(--turbo)}
+.arow.on .icon{background:color-mix(in srgb,var(--turbo) 22%,transparent)}
 .cf-summary{background:var(--bg2);border-radius:14px;padding:10px 14px;margin-bottom:12px;font-size:13px}
 .cf-summary div{display:flex;justify-content:space-between;gap:12px;padding:5px 0}
 .cf-summary div+div{border-top:1px solid color-mix(in srgb,var(--hint) 18%,transparent)}
@@ -739,10 +741,16 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <div class="sub" style="margin:-10px 0 12px">Which accounts should run this?</div>
   <div class="cf-summary" id="cf-summary"></div>
   <div class="action-list">
-    <button class="arow" id="cf-all" onclick="runConfirmed('all')"><span class="icon">🌐</span><span class="body"><span class="t" id="cf-all-t">All accounts</span><span class="d" id="cf-all-d"></span></span></button>
-    <button class="arow" id="cf-sel" onclick="runConfirmed('selected')"><span class="icon">☑️</span><span class="body"><span class="t" id="cf-sel-t">Only selected</span><span class="d" id="cf-sel-d"></span></span></button>
+    <button class="arow" id="cf-all" onclick="cfPick('all')"><span class="icon">🌐</span><span class="body"><span class="t" id="cf-all-t">All accounts</span><span class="d" id="cf-all-d"></span></span></button>
+    <button class="arow" id="cf-sel" onclick="cfPick('selected')"><span class="icon">☑️</span><span class="body"><span class="t" id="cf-sel-t">Only selected</span><span class="d" id="cf-sel-d"></span></span></button>
   </div>
-  <button class="btn ghost" style="margin-top:6px" onclick="closeSheet7()">Cancel</button>
+  <div class="field" id="cf-amount-wrap" style="margin-top:4px">
+    <label>কয়টা account দিয়ে চালাবেন?</label>
+    <input type="number" id="cf-amount" min="1" inputmode="numeric" placeholder="e.g. 20">
+    <div class="help" id="cf-amount-help"></div>
+  </div>
+  <button class="btn turbo" id="cf-go" style="margin-top:10px" onclick="runConfirmed()">Start</button>
+  <button class="btn ghost" style="margin-top:8px" onclick="closeSheet7()">Cancel</button>
 </div>
 <div id="confetti-layer"></div>
 <div class="milestone-card" id="milestone-card">
@@ -1141,15 +1149,16 @@ async function launchJob(path,body){
 }
 
 /* ── run confirmation ── */
-let PENDING_RUN=null;
+let PENDING_RUN=null, CF_POOL_NAME='all', CF_POOL_LIST=[];
 const CAPTCHA_NAME={no_captcha:'None',text_code:'Text code',image:'Image',emoji:'Emoji',math:'Math',button:'Button'};
 const SPEED_NAME={fast:'⚡ Fast',single:'🐢 Single',parallel:'🚀 Ultra',custom:'⚙️ Custom'};
 function openConfirm(path,body){
   PENDING_RUN={path,body};
-  const pool=ACCOUNTS.filter(a=>!a.excluded);
-  const dead=pool.filter(a=>a.health==='dead').length;
-  const excl=ACCOUNTS.length-pool.length;
-  const selDead=[...SEL].filter(n=>ACCOUNTS.find(a=>a.session_name===n)?.health==='dead').length;
+  const pool=ACCOUNTS.filter(a=>!a.excluded && a.health!=='dead');
+  const dead=ACCOUNTS.filter(a=>!a.excluded && a.health==='dead').length;
+  const excl=ACCOUNTS.length-ACCOUNTS.filter(a=>!a.excluded).length;
+  const selAlive=[...SEL].filter(n=>{const a=ACCOUNTS.find(x=>x.session_name===n); return a && a.health!=='dead';});
+  const selDead=SEL.size-selAlive.length;
   const rows=[];
   if(RUNKIND==='refer'){
     rows.push(['Task','Referral'],['Bot',body.bot_link.replace(/^https?:\/\/t\.me\//,'@')],['Captcha',CAPTCHA_NAME[body.method]||body.method]);
@@ -1164,20 +1173,39 @@ function openConfirm(path,body){
   $('cf-summary').innerHTML=rows.map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(String(v))}</b></div>`).join('');
   $('cf-all-t').textContent=`All accounts (${pool.length})`;
   $('cf-all-d').textContent=[dead?`${dead} dead will be skipped`:'', excl?`${excl} excluded not included`:''].filter(Boolean).join(' · ')||'Every active account runs this';
-  const onlySome = SEL.size!==pool.length || [...SEL].some(n=>!pool.some(a=>a.session_name===n));
+  const onlySome = SEL.size!==ACCOUNTS.filter(a=>!a.excluded).length || [...SEL].some(n=>!ACCOUNTS.some(a=>a.session_name===n && !a.excluded));
   $('cf-sel').classList.toggle('hidden',!onlySome);
   $('cf-sel-t').textContent=`Only selected (${SEL.size})`;
   $('cf-sel-d').textContent=selDead?`${SEL.size} of ${ACCOUNTS.length} · ${selDead} dead will be skipped`:`${SEL.size} of ${ACCOUNTS.length} accounts you ticked`;
   $('cf-all').disabled=!pool.length;
+  cfPick(onlySome && selAlive.length ? 'selected' : 'all', pool, selAlive);
   $('sheet-bg7').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg7').classList.add('on');$('sheet7').classList.add('on');});
   haptic();
 }
+function cfPick(which, poolArg, selArg){
+  const pool = poolArg || ACCOUNTS.filter(a=>!a.excluded && a.health!=='dead');
+  const selAlive = selArg || [...SEL].filter(n=>{const a=ACCOUNTS.find(x=>x.session_name===n); return a && a.health!=='dead';});
+  CF_POOL_NAME = which;
+  CF_POOL_LIST = which==='all' ? pool.map(a=>a.session_name) : selAlive;
+  $('cf-all').classList.toggle('on', which==='all');
+  $('cf-sel').classList.toggle('on', which==='selected');
+  const n = CF_POOL_LIST.length;
+  $('cf-amount').max = n || 1;
+  if(!$('cf-amount').value || +$('cf-amount').value > n) $('cf-amount').value = n;
+  $('cf-amount-help').textContent = `সর্বোচ্চ ${n}টা account পাওয়া যাচ্ছে (${which==='all'?'সব active account':'যেগুলো select করেছেন'})। যতগুলো লিখবেন, শুরুর দিক থেকে ততগুলো account নেওয়া হবে।`;
+  $('cf-amount-wrap').classList.toggle('hidden', n===0);
+  $('cf-go').disabled = n===0;
+  haptic();
+}
 function closeSheet7(){ $('sheet-bg7').classList.remove('on'); $('sheet7').classList.remove('on'); setTimeout(()=>$('sheet-bg7').classList.add('hidden'),220); }
-async function runConfirmed(mode){
+async function runConfirmed(){
   if(!PENDING_RUN) return;
-  const {path,body}=PENDING_RUN; PENDING_RUN=null;
-  body.accounts = mode==='all' ? ACCOUNTS.filter(a=>!a.excluded).map(a=>a.session_name) : [...SEL];
+  const {path,body}=PENDING_RUN;
+  const n = Math.max(1, Math.min(parseInt($('cf-amount').value)||0, CF_POOL_LIST.length));
+  if(!n){ toast('কতগুলো account দিয়ে চালাবেন লিখুন'); return; }
+  body.accounts = CF_POOL_LIST.slice(0, n);
   if(!body.accounts.length){ toast('No accounts to run'); return; }
+  PENDING_RUN=null;
   closeSheet7();
   await launchJob(path,body);
 }
