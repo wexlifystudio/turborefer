@@ -444,6 +444,32 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     <button class="btn turbo" id="run-btn" onclick="startJob()">Start</button>
   </div>
 
+  <!-- ══ Link Finder ══ -->
+  <div class="screen" id="s-links">
+    <div class="top"><div><h1>🔗 Link Finder</h1><div class="sub">Send /start to any bot and grab every sponsor/channel link it shows</div></div></div>
+    <div class="field"><label>Bot username or link</label>
+      <input id="lf-bot" placeholder="@SomeAirdropBot or https://t.me/SomeAirdropBot" inputmode="url">
+      <div class="help">The account sends <b>/start</b> to this bot and reads its reply.</div>
+    </div>
+    <div class="field">
+      <label>Account to use</label>
+      <div id="lf-acc-list" class="list"><div class="empty">Loading…</div></div>
+      <div class="help">⭐ marks your default account. Tap an account to pick it for this run, or tap "Set default" to make it start selected every time.</div>
+    </div>
+    <button class="btn turbo" id="lf-go" onclick="runLinkFinder()">Find links</button>
+
+    <div id="lf-result" class="hidden" style="margin-top:20px">
+      <div class="section" style="margin-top:0">
+        <h2>Found <span id="lf-count">0</span> link(s) <small id="lf-from"></small></h2>
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          <button class="btn sm" onclick="copyAllLinks()">📋 Copy all</button>
+          <button class="btn sm ghost" onclick="runLinkFinder()">🔁 Run again</button>
+        </div>
+        <div class="list" id="lf-links"><div class="empty">No links yet.</div></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ══ Job (live) ══ -->
   <div class="screen" id="s-job">
     <div class="top"><div><h1 id="job-title">Running</h1><div class="sub" id="job-sub"></div></div></div>
@@ -637,6 +663,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <button class="tab" data-s="accounts" onclick="show('accounts')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Accounts</button>
   <button class="tab" data-s="run" onclick="show('run')"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Run</button>
   <button class="tab" data-s="dash" onclick="show('dash')"><svg viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></svg>Stats</button>
+  <button class="tab" data-s="links" onclick="show('links')"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07L11 4.93M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07L13 19.07"/></svg>Links</button>
   <button class="tab hidden" data-s="admin" id="tab-admin" onclick="show('admin')"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>Admin</button>
 </nav>
 
@@ -808,7 +835,7 @@ function show(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.s===name));
   $('tabs').classList.toggle('hidden', name==='gate' || name==='settings' || !ME);
   window.scrollTo(0,0);
-  if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run'){ renderSel(); loadRecentLinks(); } if(name==='dash') loadDash(); if(name==='admin') loadAdmin(); if(name==='settings') loadSettings();
+  if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run'){ renderSel(); loadRecentLinks(); } if(name==='dash') loadDash(); if(name==='admin') loadAdmin(); if(name==='settings') loadSettings(); if(name==='links') loadLinkFinder();
   clearInterval(window._ACT_T); if(name==='admin') window._ACT_T=setInterval(()=>{ loadActivity(); loadServerHealth(); loadRateLimit(); },10000);
   if(tg?.BackButton){ if(name==='job'||name==='admin'||name==='settings'){tg.BackButton.show(); tg.BackButton.onClick(()=>show(name==='job'?'run':'home'));} else tg.BackButton.hide(); }
 }
@@ -1229,6 +1256,54 @@ async function loadRecentLinks(){
   }catch(e){}
 }
 function useLink(l){ $('r-link').value=l; previewLink(); haptic(); }
+
+/* ── link finder ── */
+let LF_ACC=null, LF_LINKS=[];
+function loadLinkFinder(){
+  if(!ACCOUNTS.length){ $('lf-acc-list').innerHTML=emptyState('👤','No accounts','Add an account before using Link Finder.','<button class="btn" onclick="show(\'accounts\');openAdd()">Add account</button>'); LF_ACC=null; return; }
+  const def = ACCOUNTS.find(a=>a.link_finder_default && a.health!=='dead');
+  if(!LF_ACC || !ACCOUNTS.some(a=>a.session_name===LF_ACC && a.health!=='dead')) LF_ACC = (def||ACCOUNTS.find(a=>a.health!=='dead')||ACCOUNTS[0])?.session_name;
+  renderLfAccounts();
+}
+function renderLfAccounts(){
+  $('lf-acc-list').innerHTML = ACCOUNTS.map(a=>{
+    const dead = a.health==='dead';
+    return `<button class="row" style="opacity:${dead?.5:1}" onclick="${dead?'':`pickLfAcc('${esc(a.session_name)}')`}">
+      <span class="av">${a.session_name===LF_ACC?'✅':'👤'}</span>
+      <span class="body"><span class="t">${esc(a.session_name)} ${a.link_finder_default?'⭐':''}</span><span class="d">${esc(a.name||'')}${dead?' · dead':''}</span></span>
+      <button class="btn sm ghost" style="width:auto" onclick="event.stopPropagation();setLfDefault('${esc(a.session_name)}')">${a.link_finder_default?'Default ⭐':'Set default'}</button>
+    </button>`;
+  }).join('');
+}
+function pickLfAcc(name){ LF_ACC=name; haptic(); renderLfAccounts(); }
+async function setLfDefault(name){
+  try{ await post('/api/accounts/'+encodeURIComponent(name)+'/meta',{link_finder_default:true}); ACCOUNTS.forEach(a=>a.link_finder_default=(a.session_name===name)); toast('Default account set ⭐'); haptic('ok'); renderLfAccounts(); }
+  catch(e){ toast(e.message); haptic('bad'); }
+}
+async function runLinkFinder(){
+  const bot=$('lf-bot').value.trim();
+  if(!bot){ toast('Bot username বা link লিখুন'); return; }
+  if(!LF_ACC){ toast('একটা account বাছাই করুন'); return; }
+  busy($('lf-go'),true,'Fetching…');
+  $('lf-result').classList.add('hidden');
+  try{
+    const d=await post('/api/linkfinder',{bot,account:LF_ACC});
+    LF_LINKS=d.all_links||[];
+    $('lf-count').textContent=d.total;
+    $('lf-from').textContent='· @'+d.bot+' · via '+d.account;
+    $('lf-links').innerHTML = LF_LINKS.length ? LF_LINKS.map((l,i)=>`<div class="row"><span class="body"><span class="t" style="word-break:break-all">${esc(l)}</span></span><button class="btn sm ghost" style="width:auto" onclick="copyOneLink(${i})">📋 Copy</button></div>`).join('')
+      : '<div class="empty">No links found in the reply.</div>';
+    $('lf-result').classList.remove('hidden');
+    haptic('ok');
+  }catch(e){ toast(e.message,4000); haptic('bad'); }
+  finally{ busy($('lf-go'),false); }
+}
+function copyOneLink(i){ navigator.clipboard?.writeText(LF_LINKS[i]); toast('Link copied 📋'); haptic('ok'); }
+function copyAllLinks(){
+  if(!LF_LINKS.length) return;
+  navigator.clipboard?.writeText(LF_LINKS.join('\n'));
+  toast(LF_LINKS.length+' links copied 📋'); haptic('ok');
+}
 
 /* ── live job ── */
 const CIRC = 2*Math.PI*88;
