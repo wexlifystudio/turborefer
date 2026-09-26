@@ -265,6 +265,11 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .arow .d{color:var(--hint);font-size:12px;display:block;margin-top:1px}
 .arow.danger .t{color:var(--bad)}
 .arow.danger .icon{background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.cf-summary{background:var(--bg2);border-radius:14px;padding:10px 14px;margin-bottom:12px;font-size:13px}
+.cf-summary div{display:flex;justify-content:space-between;gap:12px;padding:5px 0}
+.cf-summary div+div{border-top:1px solid color-mix(in srgb,var(--hint) 18%,transparent)}
+.cf-summary span{color:var(--hint);flex:none}
+.cf-summary b{text-align:right;word-break:break-all;font-weight:600}
 /* admin */
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .kpi{background:var(--bg2);border-radius:14px;padding:12px 10px;display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--hint)}
@@ -399,8 +404,9 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <div class="help">The bot gets <b>/start 123456</b> from each account.</div></div>
       <div class="field"><label>Captcha type</label>
         <div class="chips" id="r-method">
-          <button class="chip on" data-v="no_captcha">None</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="button">Button</button>
-        </div></div>
+          <button class="chip on" data-v="no_captcha">None</button><button class="chip" data-v="text_code">🔤 Text code</button><button class="chip" data-v="image">🖼️ Image</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="button">Button</button>
+        </div>
+        <div class="help" id="captcha-help"></div></div>
     </div>
     <div id="run-channels" class="hidden">
       <div class="field"><label>Action</label><div class="chips" id="c-action"><button class="chip on" data-v="join">Join</button><button class="chip" data-v="leave">Leave</button><button class="chip" data-v="random">🍃 Auto-leave</button></div></div>
@@ -723,6 +729,20 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   </div>
   <div id="recap-body"><div class="empty">Loading…</div></div>
   <button class="btn" style="margin-top:16px" onclick="closeSheet6()">Nice!</button>
+</div>
+
+<!-- ══ Run confirmation sheet ══ -->
+<div class="sheet-bg hidden" id="sheet-bg7" onclick="closeSheet7()"></div>
+<div class="sheet" id="sheet7">
+  <div class="grab"></div>
+  <h2 id="cf-title">Confirm run</h2>
+  <div class="sub" style="margin:-10px 0 12px">Which accounts should run this?</div>
+  <div class="cf-summary" id="cf-summary"></div>
+  <div class="action-list">
+    <button class="arow" id="cf-all" onclick="runConfirmed('all')"><span class="icon">🌐</span><span class="body"><span class="t" id="cf-all-t">All accounts</span><span class="d" id="cf-all-d"></span></span></button>
+    <button class="arow" id="cf-sel" onclick="runConfirmed('selected')"><span class="icon">☑️</span><span class="body"><span class="t" id="cf-sel-t">Only selected</span><span class="d" id="cf-sel-d"></span></span></button>
+  </div>
+  <button class="btn ghost" style="margin-top:6px" onclick="closeSheet7()">Cancel</button>
 </div>
 <div id="confetti-layer"></div>
 <div class="milestone-card" id="milestone-card">
@@ -1075,6 +1095,15 @@ document.querySelectorAll('.chips').forEach(g=>g.addEventListener('click',e=>{ c
   if(g.id==='c-action'){ const v=b.dataset.v; $('c-list-wrap').classList.toggle('hidden',v==='random'); $('c-random-wrap').classList.toggle('hidden',v!=='random'); $('run-btn').textContent = v==='random'?'Start auto-leave':'Start'; } }));
 const chip = id => document.querySelector('#'+id+' .chip.on')?.dataset.v;
 const SPEED_HELP={fast:'⚡ 8 accounts at once with a short pause. Tuned to be as quick as possible while staying safe on the free server — this is the recommended default.',single:'One account at a time with a 1s pause. Slowest, gentlest on your accounts.',parallel:'🚀 All selected accounts run almost at once. Very fast, but higher flood-ban risk on large batches.',custom:'Choose exactly how many accounts run together and the pause between actions.'};
+const CAPTCHA_HELP={
+  no_captcha:'Just sends /start — use when the bot has no captcha.',
+  text_code:'🔤 Bot shows a code like <code>7LsT4oFd</code> and asks you to send it back. Each account reads its own code and replies with it.',
+  image:'🖼️ Bot sends a picture with numbers/letters (e.g. <b>15473</b>). Each account reads the image and replies with the answer. Retries up to 3× if the bot says wrong.',
+  emoji:'Bot asks you to tap the button matching an emoji.',
+  math:'Bot asks a sum like 5 + 3 — the answer is sent or tapped.',
+  button:'Taps the first button the bot shows.'};
+function paintCaptcha(){ $('captcha-help').innerHTML=CAPTCHA_HELP[chip('r-method')||'no_captcha']||''; }
+document.getElementById('r-method').addEventListener('click',()=>setTimeout(paintCaptcha,0)); paintCaptcha();
 function paintSpeed(){ const v=chip('speed')||'fast'; $('speed-help').textContent=SPEED_HELP[v]; $('speed-custom').classList.toggle('hidden',v!=='custom'); }
 document.getElementById('speed').addEventListener('click',()=>setTimeout(paintSpeed,0)); paintSpeed();
 function speedBody(){ const v=chip('speed')||'fast'; return v==='custom'?{speed:v,concurrency:+$('conc').value,delay:+chip('r-delay')}:{speed:v}; }
@@ -1100,10 +1129,57 @@ async function startJob(){
       path='/api/channels'; body={action,channels,accounts,...speedBody()}; } }
   else { const target=$('m-target').value.trim(), text=$('m-text').value; if(!target||!text.trim()) return toast('Target and message are required');
     path='/api/message'; body={target,text,accounts,...speedBody()}; }
+  // Referral + Join/Leave: always ask which accounts to use before starting
+  if(RUNKIND==='refer'||RUNKIND==='channels'){ openConfirm(path,body); return; }
+  await launchJob(path,body);
+}
+async function launchJob(path,body){
   busy($('run-btn'),true,'Starting…');
   try{ const d=await post(path,body); haptic('ok'); openJob(d.job_id, body); }
   catch(e){ toast(e.message,3500); haptic('bad'); }
   finally{ busy($('run-btn'),false); }
+}
+
+/* ── run confirmation ── */
+let PENDING_RUN=null;
+const CAPTCHA_NAME={no_captcha:'None',text_code:'Text code',image:'Image',emoji:'Emoji',math:'Math',button:'Button'};
+const SPEED_NAME={fast:'⚡ Fast',single:'🐢 Single',parallel:'🚀 Ultra',custom:'⚙️ Custom'};
+function openConfirm(path,body){
+  PENDING_RUN={path,body};
+  const pool=ACCOUNTS.filter(a=>!a.excluded);
+  const dead=pool.filter(a=>a.health==='dead').length;
+  const excl=ACCOUNTS.length-pool.length;
+  const selDead=[...SEL].filter(n=>ACCOUNTS.find(a=>a.session_name===n)?.health==='dead').length;
+  const rows=[];
+  if(RUNKIND==='refer'){
+    rows.push(['Task','Referral'],['Bot',body.bot_link.replace(/^https?:\/\/t\.me\//,'@')],['Captcha',CAPTCHA_NAME[body.method]||body.method]);
+  } else if(path.endsWith('auto-leave')){
+    rows.push(['Task','🍃 Auto-leave'],['Per account',body.count+' channels/groups']);
+  } else {
+    const priv=body.channels.filter(c=>/t\.me\/(\+|joinchat\/)/.test(c)).length;
+    rows.push(['Task',body.action==='join'?'Join channels':'Leave channels'],['Channels',body.channels.length+(priv?` (${priv} private)`:'')]);
+  }
+  const sp=body.speed||'fast';
+  rows.push(['Speed',sp==='custom'?`${SPEED_NAME.custom} · ${body.concurrency} at once · ${body.delay}s`:(SPEED_NAME[sp]||sp)]);
+  $('cf-summary').innerHTML=rows.map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(String(v))}</b></div>`).join('');
+  $('cf-all-t').textContent=`All accounts (${pool.length})`;
+  $('cf-all-d').textContent=[dead?`${dead} dead will be skipped`:'', excl?`${excl} excluded not included`:''].filter(Boolean).join(' · ')||'Every active account runs this';
+  const onlySome = SEL.size!==pool.length || [...SEL].some(n=>!pool.some(a=>a.session_name===n));
+  $('cf-sel').classList.toggle('hidden',!onlySome);
+  $('cf-sel-t').textContent=`Only selected (${SEL.size})`;
+  $('cf-sel-d').textContent=selDead?`${SEL.size} of ${ACCOUNTS.length} · ${selDead} dead will be skipped`:`${SEL.size} of ${ACCOUNTS.length} accounts you ticked`;
+  $('cf-all').disabled=!pool.length;
+  $('sheet-bg7').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg7').classList.add('on');$('sheet7').classList.add('on');});
+  haptic();
+}
+function closeSheet7(){ $('sheet-bg7').classList.remove('on'); $('sheet7').classList.remove('on'); setTimeout(()=>$('sheet-bg7').classList.add('hidden'),220); }
+async function runConfirmed(mode){
+  if(!PENDING_RUN) return;
+  const {path,body}=PENDING_RUN; PENDING_RUN=null;
+  body.accounts = mode==='all' ? ACCOUNTS.filter(a=>!a.excluded).map(a=>a.session_name) : [...SEL];
+  if(!body.accounts.length){ toast('No accounts to run'); return; }
+  closeSheet7();
+  await launchJob(path,body);
 }
 
 /* ── link preview + recent ── */
