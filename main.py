@@ -13,6 +13,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from telethon import TelegramClient, events, errors
 from telethon.sessions import StringSession
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
+from telethon.tl.functions.messages import ImportChatInviteRequest, CheckChatInviteRequest
+from telethon.tl.types import ChatInviteAlready, ChatInvitePeek
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 
@@ -231,6 +233,18 @@ def friendly_error(e):
 def parse_bot_link(link):
     m = re.match(r"https?://t\.me/([A-Za-z0-9_]+)(?:\?start=(.*))?", link.strip())
     return (m.group(1), m.group(2) or "") if m else (None, None)
+
+def parse_invite_hash(link):
+    """Return the invite hash if `link` is a private-channel invite link
+    (t.me/+<hash> or t.me/joinchat/<hash>), else None."""
+    s = link.strip()
+    m = re.match(r"https?://t\.me/\+([A-Za-z0-9_-]+)", s)
+    if m:
+        return m.group(1)
+    m = re.match(r"https?://t\.me/joinchat/([A-Za-z0-9_-]+)", s)
+    if m:
+        return m.group(1)
+    return None
 
 def pick_accounts(owner, names, skip_dead=True, exclude=None):
     accs = load_accounts(owner)
@@ -493,6 +507,43 @@ async def run_refer_job(jid, accs, link, method, delay, concurrency=1):
         return await (refer_plain(acc, link) if solver is None else _captcha_flow(acc, link, solver))
     await _run_pool(jid, accs, worker, concurrency, delay)
 
+async def _join_one(client, ch):
+    """Join a public channel/username or a private invite link (t.me/+hash,
+    t.me/joinchat/hash). Raises on real failure; returns quietly on success
+    (including 'already a member')."""
+    inv_hash = parse_invite_hash(ch)
+    if inv_hash:
+        try:
+            await client(ImportChatInviteRequest(inv_hash))
+        except errors.UserAlreadyParticipantError:
+            pass  # already in the channel — treat as success
+        except (errors.InviteHashExpiredError, errors.InviteHashInvalidError):
+            raise
+        except errors.InviteRequestSentError:
+            # join request submitted, awaiting admin approval — count as success
+            pass
+    else:
+        await client(JoinChannelRequest(ch))
+
+async def _leave_one(client, ch):
+    """Leave a public channel/username or a private invite link. For invite
+    links we must resolve the actual entity first (CheckChatInviteRequest for
+    a link we're not in returns a peek object, not something we can leave)."""
+    inv_hash = parse_invite_hash(ch)
+    if inv_hash:
+        info = await client(CheckChatInviteRequest(inv_hash))
+        if isinstance(info, ChatInviteAlready):
+            entity = info.chat
+        elif isinstance(info, ChatInvitePeek):
+            entity = info.chat
+        else:
+            entity = getattr(info, "chat", None)
+        if entity is None:
+            raise ValueError("not a member of this invite link")
+        await client(LeaveChannelRequest(entity))
+    else:
+        await client(LeaveChannelRequest(await client.get_entity(ch)))
+
 async def run_channel_job(jid, accs, channels, action, delay=2, concurrency=1):
     async def worker(acc):
         client = await get_client(acc); ok = 0; lines = []
@@ -501,9 +552,9 @@ async def run_channel_job(jid, accs, channels, action, delay=2, concurrency=1):
             for ch in channels:
                 try:
                     if action == "join":
-                        await client(JoinChannelRequest(ch))
+                        await _join_one(client, ch)
                     else:
-                        await client(LeaveChannelRequest(await client.get_entity(ch)))
+                        await _leave_one(client, ch)
                     ok += 1; lines.append(f"✓ {ch}")
                 except Exception as e:
                     lines.append(f"✗ {ch}: {str(e)[:60]}")
