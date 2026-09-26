@@ -3,7 +3,7 @@ Turbo Refer V2 — Mini App Backend
 FastAPI + Telethon + MongoDB + Telegram WebApp auth
 """
 
-import os, re, hmac, json, time, uuid, asyncio, hashlib, random, urllib.request
+import os, re, hmac, json, time, uuid, asyncio, hashlib, random, base64, urllib.request, urllib.parse
 from urllib.parse import parse_qsl
 
 import emoji as emoji_lib
@@ -352,30 +352,58 @@ def job_finish(jid):
         print("job alert error:", e)
 
 # ── Referral workers ─────────────────────────────────────────────
+# After an answer is sent, the bot's next reply tells us if it was accepted.
+_CAPTCHA_BAD  = re.compile(r"wrong|incorrect|invalid|failed|not correct|try again|mismatch|❌", re.I)
+_CAPTCHA_GOOD = re.compile(r"success|verified|correct|passed|✅|welcome|thank", re.I)
+CAPTCHA_MAX_TRIES = 3
+
 async def _captcha_flow(acc, bot_link, solver):
     client = await get_client(acc)
-    result = {"account": acc["session_name"], "status": "timeout", "msg": "No captcha response in 20s"}
+    wait_s = getattr(solver, "timeout", 20)
+    result = {"account": acc["session_name"], "status": "timeout", "msg": f"No captcha response in {wait_s}s"}
     try:
         await client.start()
         bot_user, param = parse_bot_link(bot_link)
         if not bot_user:
             return {"account": acc["session_name"], "status": "error", "msg": "Invalid link"}
-        solved = asyncio.Event()
+        answered = asyncio.Event()   # solver sent/clicked an answer
+        done = asyncio.Event()       # bot confirmed (or we gave up after too many wrong answers)
+        state = {"answered": False, "wrong": 0}
 
         @client.on(events.NewMessage(from_users=bot_user))
         async def handler(event):
             try:
+                if state["answered"]:
+                    t = event.raw_text or ""
+                    if _CAPTCHA_BAD.search(t):
+                        state["wrong"] += 1; state["answered"] = False
+                        result.update({"status": "error", "msg": f"Bot rejected answer ({state['wrong']}x)"})
+                        if state["wrong"] >= CAPTCHA_MAX_TRIES:
+                            done.set(); return
+                        # fall through — this same message may carry a fresh captcha
+                    elif _CAPTCHA_GOOD.search(t):
+                        result["status"] = "success"; result["msg"] += " · verified ✓"
+                        done.set(); return
+                    else:
+                        return
                 r = await solver(event, client, bot_user)
                 if r:
-                    result.update(r); solved.set()
+                    result.update(r); state["answered"] = True; answered.set()
             except Exception as ex:
-                result.update({"status": "error", "msg": str(ex)}); solved.set()
+                result.update({"status": "error", "msg": str(ex)[:80]}); answered.set(); done.set()
 
         await client.send_message(bot_user, f"/start {param}".strip())
         try:
-            await asyncio.wait_for(solved.wait(), timeout=20)
+            await asyncio.wait_for(answered.wait(), timeout=wait_s)
         except asyncio.TimeoutError:
             pass
+        if answered.is_set() and getattr(solver, "verify", False) and not done.is_set():
+            # give the bot time to say right/wrong (and to resend a new captcha if wrong)
+            try:
+                await asyncio.wait_for(done.wait(), timeout=wait_s)
+            except asyncio.TimeoutError:
+                if state["answered"] and result["status"] == "success":
+                    result["msg"] += " · (no confirmation from bot)"
         await asave_session(acc["owner"], acc["session_name"], client.session.save())
     except errors.FloodWaitError:
         raise
@@ -417,7 +445,142 @@ async def solve_button(event, client, bot_user):
     await event.buttons[0][0].click()
     return {"status": "success", "msg": f"Clicked '{event.buttons[0][0].text}'"}
 
-SOLVERS = {"no_captcha": None, "emoji": solve_emoji, "math": solve_math, "button": solve_button}
+# ── Text-code captcha ────────────────────────────────────────────
+# Bot shows a code (usually in monospace) and asks you to send it back exactly,
+# e.g. "Your Verification Code: 7LsT4oFd".
+_CODE_HINT = re.compile(r"code|captcha|verif|security|copy|send it|type", re.I)
+_CODE_TOKEN = re.compile(r"^[A-Za-z0-9_\-]{3,32}$")
+
+def _extract_text_code(msg):
+    text = msg.raw_text or ""
+    if not _CODE_HINT.search(text):
+        return None
+    # 1) monospace / pre-formatted entities — the most reliable signal
+    try:
+        for ent, val in (msg.get_entities_text() or []):
+            if type(ent).__name__ in ("MessageEntityCode", "MessageEntityPre"):
+                v = (val or "").strip()
+                if _CODE_TOKEN.match(v) and not v.lower().startswith(("http", "start")):
+                    return v
+    except Exception:
+        pass
+    # 2) plain text: the token right after "code:" / "captcha:" (same or next line)
+    m = re.search(r"(?:code|captcha)[^\n:：]{0,20}[:：]?\s*\n?\s*([A-Za-z0-9]{4,16})\b", text, re.I)
+    if m and m.group(1).lower() not in ("below", "here", "exactly", "the", "your"):
+        return m.group(1)
+    # 3) a line that is nothing but a code-looking token (mixed letters+digits)
+    for line in text.splitlines():
+        s = line.strip()
+        if re.fullmatch(r"(?=.*\d)(?=.*[A-Za-z])[A-Za-z0-9]{5,16}", s):
+            return s
+    return None
+
+async def solve_text_code(event, client, bot_user):
+    code = _extract_text_code(event.message)
+    if not code:
+        return None
+    await client.send_message(bot_user, code)
+    return {"status": "success", "msg": f"Sent code {code}"}
+solve_text_code.verify = True
+
+# ── Image captcha (numbers/letters drawn in a picture) ───────────
+# Uses the free OCR.space API. Set OCR_API_KEY on Render (free key from
+# https://ocr.space/ocrapi) — the built-in "helloworld" demo key is heavily rate-limited.
+# If the optional `ddddocr` package is installed it is tried first (offline, no key).
+OCR_API_KEY = os.getenv("OCR_API_KEY", "helloworld")
+_OCR_CACHE = {}
+_DDDD = {"engine": None, "tried": False}
+_DIGIT_FIX = str.maketrans({"O": "0", "o": "0", "Q": "0", "D": "0", "I": "1", "l": "1", "|": "1", "i": "1",
+                            "S": "5", "s": "5", "B": "8", "Z": "2", "z": "2", "G": "6", "g": "9", "q": "9"})
+
+def _ocr_local(img):
+    if not _DDDD["tried"]:
+        _DDDD["tried"] = True
+        try:
+            import ddddocr
+            try: _DDDD["engine"] = ddddocr.DdddOcr(show_ad=False)
+            except TypeError: _DDDD["engine"] = ddddocr.DdddOcr()
+        except Exception:
+            _DDDD["engine"] = None
+    eng = _DDDD["engine"]
+    return eng.classification(img) if eng else None
+
+def _ocr_space(img):
+    data = urllib.parse.urlencode({
+        "apikey": OCR_API_KEY, "OCREngine": "2", "scale": "true", "isOverlayRequired": "false",
+        "base64Image": "data:image/jpeg;base64," + base64.b64encode(img).decode(),
+    }).encode()
+    req = urllib.request.Request("https://api.ocr.space/parse/image", data=data)
+    with urllib.request.urlopen(req, timeout=25) as r:
+        j = json.loads(r.read().decode())
+    if j.get("IsErroredOnProcessing"):
+        raise RuntimeError("OCR: " + str(j.get("ErrorMessage"))[:70])
+    return "\n".join(p.get("ParsedText", "") for p in (j.get("ParsedResults") or []))
+
+def _pick_captcha_answer(raw):
+    """OCR text may include banner words (e.g. 'SN BOT CREATOR 15473') — pick the captcha."""
+    lines = [l.strip() for l in (raw or "").splitlines() if l.strip()]
+    # 1) longest pure digit run (spaces inside a line removed: '1 5 4 7 3' → 15473)
+    best = ""
+    for l in lines:
+        for run in re.findall(r"\d{3,}", l.replace(" ", "")):
+            if len(run) > len(best): best = run
+    if best:
+        return best
+    # 2) mostly-digit tokens with typical OCR confusions fixed (O→0, S→5, …)
+    for l in lines:
+        tok = l.replace(" ", "")
+        if 3 <= len(tok) <= 10 and any(c.isdigit() for c in tok):
+            fixed = tok.translate(_DIGIT_FIX)
+            if fixed.isdigit(): return fixed
+    # 3) alphanumeric captcha: prefer tokens containing a digit, then the longest
+    toks = [t for t in re.findall(r"[A-Za-z0-9]{4,12}", " ".join(lines))]
+    if not toks: return None
+    with_digit = [t for t in toks if any(c.isdigit() for c in t)]
+    return max(with_digit or toks, key=len)
+
+async def _ocr_image(img):
+    key = hashlib.sha1(img).hexdigest()
+    if key in _OCR_CACHE:
+        return _OCR_CACHE[key]
+    ans = None
+    try:
+        raw = await asyncio.to_thread(_ocr_local, img)
+        if raw: ans = _pick_captcha_answer(raw)
+    except Exception:
+        ans = None
+    if not ans:
+        ans = _pick_captcha_answer(await asyncio.to_thread(_ocr_space, img))
+    if ans:
+        if len(_OCR_CACHE) > 500: _OCR_CACHE.clear()
+        _OCR_CACHE[key] = ans
+    return ans
+
+_IMG_HINT = re.compile(r"captcha|code|enter|verif|solve|type|number|digit", re.I)
+
+async def solve_image(event, client, bot_user):
+    m = event.message
+    is_img = bool(m.photo) or bool(m.document and (m.document.mime_type or "").startswith("image/"))
+    if not is_img:
+        return None
+    text = m.raw_text or ""
+    if text and not _IMG_HINT.search(text):
+        return None   # a banner / welcome picture, not the captcha
+    img = await client.download_media(m, file=bytes)
+    if not img:
+        return None
+    ans = await _ocr_image(img)
+    if not ans:
+        raise RuntimeError("Couldn't read the captcha image")
+    await client.send_message(bot_user, ans)
+    return {"status": "success", "msg": f"Image captcha → {ans}"}
+solve_image.verify = True
+solve_image.timeout = 40   # OCR takes a few seconds; allow more time
+
+solve_math.verify = True
+
+SOLVERS = {"no_captcha": None, "emoji": solve_emoji, "math": solve_math, "button": solve_button,
+           "text_code": solve_text_code, "image": solve_image}
 
 async def refer_plain(acc, bot_link):
     client = await get_client(acc)
