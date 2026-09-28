@@ -14,7 +14,9 @@ from telethon import TelegramClient, events, errors
 from telethon.sessions import StringSession
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
 from telethon.tl.functions.messages import ImportChatInviteRequest, CheckChatInviteRequest
-from telethon.tl.types import ChatInviteAlready, ChatInvitePeek, MessageEntityTextUrl, MessageEntityUrl
+from telethon.tl.functions.account import UpdateNotifySettingsRequest
+from telethon.tl.types import (ChatInviteAlready, ChatInvitePeek, MessageEntityTextUrl, MessageEntityUrl,
+                               InputNotifyPeer, InputPeerNotifySettings)
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 
@@ -246,12 +248,14 @@ def parse_invite_hash(link):
         return m.group(1)
     return None
 
-def pick_accounts(owner, names, skip_dead=True, exclude=None):
+def pick_accounts(owner, names, skip_dead=True, exclude=None, allow_reserved=False):
     accs = load_accounts(owner)
     sel = [a for a in accs if not a.get("excluded")] if not names else [a for a in accs if a["session_name"] in names]
     # The Link Finder default account is reserved for that job only — never let
     # it run Referral / Join-Leave / Message, even if it was explicitly picked.
-    sel = [a for a in sel if not a.get("link_finder_default")]
+    # (Harmless housekeeping like muting passes allow_reserved=True.)
+    if not allow_reserved:
+        sel = [a for a in sel if not a.get("link_finder_default")]
     if exclude:
         ex = set(exclude)
         sel = [a for a in sel if a["session_name"] not in ex]
@@ -297,7 +301,7 @@ def api_call_rate():
     return {"per_minute": last_min, "per_hour": last_hour}
 
 KIND_LABEL = {"refer": "Referral", "channels": "Join / Leave", "message": "Send message",
-              "health": "Health check", "auto_leave": "Auto-leave"}
+              "health": "Health check", "auto_leave": "Auto-leave", "mute": "Mute channels"}
 
 MILESTONES = [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
 
@@ -1345,6 +1349,80 @@ async def auto_leave(request: Request):
 @app.post("/api/channels/random-leave")
 async def random_leave_alias(request: Request):
     return await auto_leave(request)
+
+# ── Mute / unmute every joined channel ───────────────────────────
+MUTE_FOREVER = 2**31 - 1   # Telegram's "muted until forever"
+
+def _is_muted(dl):
+    """True if this dialog's notifications are currently muted."""
+    ns = getattr(getattr(dl, "dialog", None), "notify_settings", None)
+    mu = getattr(ns, "mute_until", None)
+    if not mu:
+        return False
+    ts = mu.timestamp() if hasattr(mu, "timestamp") else mu   # Telethon gives a datetime
+    return ts > time.time()
+
+async def _set_mute(client, dl, mute):
+    peer = InputNotifyPeer(peer=await client.get_input_entity(dl.entity))
+    await client(UpdateNotifySettingsRequest(peer=peer, settings=InputPeerNotifySettings(
+        mute_until=MUTE_FOREVER if mute else 0)))
+
+async def mute_account_dialogs(client, mute=True, include_groups=False, pause=0.35):
+    """Mute (or unmute) every channel — and optionally every group — this account
+    is in. Dialogs already in the wanted state are skipped. Returns (done, skipped, failed, note)."""
+    dialogs = await client.get_dialogs(limit=None)
+    targets = [dl for dl in dialogs if (dl.is_channel and not dl.is_group) or (include_groups and dl.is_group)]
+    todo = [dl for dl in targets if _is_muted(dl) != mute]
+    done = failed = 0; note = ""
+    for dl in todo:
+        try:
+            await _set_mute(client, dl, mute); done += 1
+        except errors.FloodWaitError as e:
+            if e.seconds > FLOOD_AUTO_WAIT_MAX:
+                note = f"stopped: flood wait {e.seconds}s"; break
+            await asyncio.sleep(e.seconds + 1)
+            try: await _set_mute(client, dl, mute); done += 1
+            except Exception: failed += 1
+        except Exception:
+            failed += 1
+        await asyncio.sleep(pause)
+    return done, len(targets) - len(todo), failed, note
+
+@app.post("/api/channels/mute")
+async def mute_channels(request: Request):
+    """Mute (or unmute) all joined channels on each selected account."""
+    u = current_user(request)
+    b = await request.json()
+    accs, skipped = pick_accounts(u["id"], b.get("accounts"), exclude=b.get("exclude"), allow_reserved=True)
+    if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
+    mute = b.get("mute", True) is not False
+    include_groups = bool(b.get("include_groups"))
+    conc, delay = speed_params(b, len(accs))
+    jid = job_new(u["id"], "mute", len(accs), {"mute": mute, "include_groups": include_groups,
+                  "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped})
+    word = "Muted" if mute else "Unmuted"
+    what = "channels + groups" if include_groups else "channels"
+
+    async def worker(acc):
+        client = await get_client(acc)
+        try:
+            await client.connect()
+            if not await client.is_user_authorized():
+                return {"account": acc["session_name"], "status": "error", "msg": "Session expired — needs re-login"}
+            done, already, failed, note = await mute_account_dialogs(client, mute, include_groups)
+            await asave_session(acc["owner"], acc["session_name"], client.session.save())
+            total = done + already + failed
+            msg = f"{word} {done} {what}" + (f" · {already} already {word.lower()}" if already else "") \
+                  + (f" · {failed} failed" if failed else "") + (f" · {note}" if note else "")
+            if not total:
+                return {"account": acc["session_name"], "status": "success", "msg": f"No {what} joined"}
+            st = "success" if not failed and not note else ("partial" if done or already else "error")
+            return {"account": acc["session_name"], "status": st, "msg": msg}
+        finally:
+            try: await client.disconnect()
+            except Exception: pass
+    asyncio.create_task(_run_pool(jid, accs, worker, conc, delay))
+    return {"job_id": jid}
 
 @app.post("/api/channels")
 async def channels(request: Request):
