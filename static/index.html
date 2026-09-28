@@ -411,7 +411,14 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <div class="help" id="captcha-help"></div></div>
     </div>
     <div id="run-channels" class="hidden">
-      <div class="field"><label>Action</label><div class="chips" id="c-action"><button class="chip on" data-v="join">Join</button><button class="chip" data-v="leave">Leave</button><button class="chip" data-v="random">🍃 Auto-leave</button></div></div>
+      <div class="field"><label>Action</label><div class="chips" id="c-action"><button class="chip on" data-v="join">Join</button><button class="chip" data-v="leave">Leave</button><button class="chip" data-v="random">🍃 Auto-leave</button><button class="chip" data-v="mute">🔕 Mute all</button></div></div>
+      <div id="c-mute-wrap" class="field hidden">
+        <label>Mute or unmute?</label>
+        <div class="chips" id="c-mute-mode" style="margin-bottom:10px"><button class="chip on" data-v="mute">🔕 Mute</button><button class="chip" data-v="unmute">🔔 Unmute</button></div>
+        <label>What to mute</label>
+        <div class="chips" id="c-mute-scope"><button class="chip on" data-v="channels">📢 Channels only</button><button class="chip" data-v="all">📢 Channels + 👥 Groups</button></div>
+        <div class="help">প্রতিটা account যত channel-এ join আছে, সবগুলোর notification একবারে mute হয়ে যাবে। আগে থেকে mute থাকলে skip করবে। পরে চাইলে 🔔 Unmute দিয়ে ফেরত আনা যাবে।</div>
+      </div>
       <div id="c-list-wrap" class="field"><label>Channels</label><textarea id="c-list" placeholder="@channel1&#10;@channel2&#10;https://t.me/channel3"></textarea><div class="help">One per line, or separated by commas.</div></div>
       <div id="c-random-wrap" class="field hidden">
         <label>Auto-leave how many channels/groups (per account)?</label>
@@ -663,7 +670,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <button data-v="off" onclick="setSoundPref('off')">Off</button>
       </div>
     </div>
-    <div class="help" style="text-align:center;margin-top:24px" id="app-build">Turbo Refer v23</div>
+    <div class="help" style="text-align:center;margin-top:24px" id="app-build">Turbo Refer v24</div>
   </div>
 </div>
 
@@ -720,6 +727,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     <button class="arow" onclick="amAction('health')"><span class="icon">🩺</span><span class="body"><span class="t">Check health</span><span class="d">See if this account is active, limited, or banned</span></span></button>
     <button class="arow" onclick="amAction('note')"><span class="icon">📝</span><span class="body"><span class="t">Edit note</span><span class="d">Add a personal note about this account</span></span></button>
     <button class="arow" onclick="amAction('exclude')"><span class="icon" id="am-ex-ic">🚫</span><span class="body"><span class="t" id="am-ex-t">Exclude from runs</span><span class="d" id="am-ex-d">Skip this account by default when running tasks</span></span></button>
+    <button class="arow" onclick="amAction('mute')"><span class="icon">🔕</span><span class="body"><span class="t">Mute all channels</span><span class="d">Silence notifications from every channel this account joined</span></span></button>
     <button class="arow danger" onclick="amAction('delete')"><span class="icon">🗑️</span><span class="body"><span class="t">Delete account</span><span class="d">Removes it from this app permanently</span></span></button>
   </div>
   <button class="btn ghost" style="margin-top:6px" onclick="closeSheet3()">Cancel</button>
@@ -884,8 +892,8 @@ async function loadHome(){
     const d=await api('/api/jobs'); const jobs=d.jobs||[];
     $('j-count').textContent = jobs.length?jobs.length+' this session':'';
     $('h-jobs').innerHTML = jobs.length ? jobs.map(j=>`<button class="row" onclick="openJob('${j.id}')">
-      <span class="av" style="font-family:Manrope;font-size:16px">${j.kind==='refer'?'🚀':j.kind==='channels'?'📢':'💬'}</span>
-      <span class="body"><span class="t">${j.kind==='refer'?'Referral':j.kind==='channels'?(j.meta.action==='join'?'Join channels':'Leave channels'):'Message'}</span>
+      <span class="av" style="font-family:Manrope;font-size:16px">${j.kind==='refer'?'🚀':j.kind==='channels'?'📢':j.kind==='mute'?'🔕':(j.kind==='auto_leave'||j.kind==='random_leave')?'🍃':'💬'}</span>
+      <span class="body"><span class="t">${j.kind==='refer'?'Referral':j.kind==='channels'?(j.meta.action==='join'?'Join channels':'Leave channels'):j.kind==='mute'?(j.meta.mute===false?'Unmute channels':'Mute channels'):(j.kind==='auto_leave'||j.kind==='random_leave')?'Auto-leave':'Message'}</span>
       <span class="d">${esc(j.meta.link||j.meta.target||(j.meta.channels||[]).join(', '))}</span></span>
       <span class="r">${j.status==='running'?'<span style="color:var(--turbo)">running</span>':j.success+'/'+j.total+' ok'}</span></button>`).join('')
       : emptyState('⚡','Nothing has run yet','Start your first referral, channel join, or message.','<button class="btn" onclick="goRun(\'refer\')">Start a run</button>');
@@ -1037,6 +1045,14 @@ function amAction(action){ const name=ACC_TARGET; closeSheet3();
   if(action==='note') return openNoteEditor(name);
   if(action==='delete') return deleteAccount(name);
   if(action==='exclude') return toggleExclude(name);
+  if(action==='mute') return muteOneAccount(name);
+}
+async function muteOneAccount(name){
+  if(!await confirmDlg(`🔕 ${name}-এর সব joined channel-এর notification mute করবেন?`)) return;
+  try{
+    const body={mute:true,include_groups:false,accounts:[name],speed:'single'};
+    const d=await post('/api/channels/mute',body); haptic('ok'); openJob(d.job_id, body);
+  }catch(e){ toast(e.message,3500); haptic('bad'); }
 }
 let PENDING_DELETES={};
 function deleteAccount(name){
@@ -1137,7 +1153,14 @@ function setRun(k){ RUNKIND=k; document.querySelectorAll('#run-seg button').forE
   ['refer','channels','message'].forEach(x=>$('run-'+x).classList.toggle('hidden',x!==k));
   $('run-btn').textContent = k==='refer'?'Start referral':k==='channels'?'Start':'Send'; }
 document.querySelectorAll('.chips').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b)return; g.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); haptic();
-  if(g.id==='c-action'){ const v=b.dataset.v; $('c-list-wrap').classList.toggle('hidden',v==='random'); $('c-random-wrap').classList.toggle('hidden',v!=='random'); $('run-btn').textContent = v==='random'?'Start auto-leave':'Start'; } }));
+  if(g.id==='c-action'||g.id==='c-mute-mode') paintChannelAction(); }));
+function paintChannelAction(){
+  const v=chip('c-action');
+  $('c-list-wrap').classList.toggle('hidden',v==='random'||v==='mute');
+  $('c-random-wrap').classList.toggle('hidden',v!=='random');
+  $('c-mute-wrap').classList.toggle('hidden',v!=='mute');
+  $('run-btn').textContent = v==='random'?'Start auto-leave':v==='mute'?(chip('c-mute-mode')==='unmute'?'🔔 Unmute all':'🔕 Mute all'):'Start';
+}
 const chip = id => document.querySelector('#'+id+' .chip.on')?.dataset.v;
 const SPEED_HELP={fast:'⚡ 8 accounts at once with a short pause. Tuned to be as quick as possible while staying safe on the free server — this is the recommended default.',single:'One account at a time with a 1s pause. Slowest, gentlest on your accounts.',parallel:'🚀 All selected accounts run almost at once. Very fast, but higher flood-ban risk on large batches.',custom:'Choose exactly how many accounts run together and the pause between actions.'};
 const CAPTCHA_HELP={
@@ -1177,6 +1200,7 @@ async function startJob(){
     path='/api/refer'; body={bot_link:link,method:chip('r-method'),accounts,...speedBody()}; }
   else if(RUNKIND==='channels'){ const action=chip('c-action');
     if(action==='random'){ path='/api/channels/auto-leave'; body={count:parseInt($('c-count').value)||1,accounts,...speedBody()}; }
+    else if(action==='mute'){ path='/api/channels/mute'; body={mute:chip('c-mute-mode')!=='unmute',include_groups:chip('c-mute-scope')==='all',accounts,...speedBody()}; }
     else{ const channels=$('c-list').value.split(/[\n,]/).map(s=>s.trim()).filter(Boolean); if(!channels.length) return toast('Add at least one channel');
       path='/api/channels'; body={action,channels,accounts,...speedBody()}; } }
   else { const target=$('m-target').value.trim(), text=$('m-text').value; if(!target||!text.trim()) return toast('Target and message are required');
@@ -1209,6 +1233,8 @@ function openConfirm(path,body){
     rows.push(['Task','Referral'],['Bot',body.bot_link.replace(/^https?:\/\/t\.me\//,'@')],['Captcha',CAPTCHA_NAME[body.method]||body.method]);
   } else if(path.endsWith('auto-leave')){
     rows.push(['Task','🍃 Auto-leave'],['Per account',body.count+' channels/groups']);
+  } else if(path.endsWith('/mute')){
+    rows.push(['Task',body.mute?'🔕 Mute all':'🔔 Unmute all'],['What',body.include_groups?'All channels + groups':'All joined channels']);
   } else {
     const priv=body.channels.filter(c=>/t\.me\/(\+|joinchat\/)/.test(c)).length;
     rows.push(['Task',body.action==='join'?'Join channels':'Leave channels'],['Channels',body.channels.length+(priv?` (${priv} private)`:'')]);
@@ -1374,7 +1400,7 @@ let JOB_LAST_QUARTER=-1;
 async function pollJob(){
   try{
     const j=await api('/api/jobs/'+CURJOB);
-    const kindMap={refer:'Referral',channels:j.meta.action==='join'?'Joining channels':'Leaving channels',message:'Sending message',health:'Checking account health',random_leave:'Auto-leave',auto_leave:'Auto-leave'}; const kind = kindMap[j.kind]||j.kind;
+    const kindMap={refer:'Referral',channels:j.meta.action==='join'?'Joining channels':'Leaving channels',message:'Sending message',health:'Checking account health',random_leave:'Auto-leave',auto_leave:'Auto-leave',mute:j.meta&&j.meta.mute===false?'Unmuting channels':'Muting channels'}; const kind = kindMap[j.kind]||j.kind;
     $('job-title').textContent = j.status==='running'?kind:kind+' · done'; $('job-sub').textContent = (j.meta.link||j.meta.target||(j.meta.channels||[]).join(', ')||'') + (j.meta.speed?'  ·  '+(j.meta.speed==='fast'?'⚡ fast · '+j.meta.concurrency+' at once':j.meta.speed==='single'?'🐢 single':j.meta.speed==='parallel'?'🚀 ultra · '+j.meta.concurrency+' at once':'⚙️ '+j.meta.concurrency+' at once'):'');
     $('job-done').textContent=j.done; $('job-total').textContent=j.total; $('job-ok').textContent=j.success; $('job-bad').textContent=j.failed;
     if(j.done>JOB_LAST_DONE){
@@ -1437,7 +1463,7 @@ async function loadDash(){
     const kindLbl={refer:'🚀 Referral',channels:'📢 Join/Leave',message:'💬 Message',health:'🩺 Health check',random_leave:'🍃 Auto-leave'};
     $('d-kind').innerHTML = s.by_kind.length ? s.by_kind.map(k=>`<div class="row"><span class="av" style="font-family:Manrope">${(kindLbl[k.kind]||k.kind)[0]}</span><span class="body"><span class="t">${kindLbl[k.kind]||k.kind}</span><span class="d">${k.jobs} job${k.jobs>1?'s':''}</span></span><span class="r">${k.success}✓ ${k.failed?('/ '+k.failed+'✗'):''}</span></div>`).join('') : emptyState('📊','No activity yet','Run something and your stats will appear here.','<button class="btn" onclick="show(\'run\')">Go to Run</button>');
     $('d-top').innerHTML = s.top_accounts.length ? s.top_accounts.map(a=>`<div class="row"><span class="av">${esc(a.account.slice(-2))}</span><span class="body"><span class="t">${esc(a.account)}</span></span><span class="r">${a.success}✓ ${a.failed?a.failed+'✗':''}</span></div>`).join('') : emptyState('👥','No account activity','Top-performing accounts will show up after a few runs.','');
-    const kindIcon={refer:'🚀',channels:'📢',message:'💬',health:'🩺',auto_leave:'🍃',random_leave:'🍃'};
+    const kindIcon={refer:'🚀',channels:'📢',message:'💬',health:'🩺',auto_leave:'🍃',random_leave:'🍃',mute:'🔕'};
     $('d-jobslist').innerHTML = (s.recent_jobs||[]).length ? s.recent_jobs.map(j=>`<button class="row" onclick="openJobDetail('${j.id}')">
       <span class="av" style="font-family:Manrope">${kindIcon[j.kind]||'⚡'}</span>
       <span class="body"><span class="t">${kindLbl[j.kind]||j.kind} ${j.status==='running'?'<span style=\"color:var(--turbo)\">· running</span>':''}</span>
@@ -1516,7 +1542,7 @@ async function openJobDetail(jid){
   $('sheet-bg5').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg5').classList.add('on');$('sheet5').classList.add('on');});
   try{
     const j=await api('/api/jobs/'+jid);
-    const kindLbl={refer:'🚀 Referral',channels:'📢 Join/Leave',message:'💬 Message',health:'🩺 Health check',random_leave:'🍃 Auto-leave',auto_leave:'🍃 Auto-leave'};
+    const kindLbl={refer:'🚀 Referral',channels:'📢 Join/Leave',message:'💬 Message',health:'🩺 Health check',random_leave:'🍃 Auto-leave',auto_leave:'🍃 Auto-leave',mute:'🔕 Mute channels'};
     $('jd-title').textContent=kindLbl[j.kind]||j.kind;
     $('jd-sub').textContent=(j.meta?.link||j.meta?.target||(j.meta?.channels||[]).join(', ')||'')+' · '+ago(j.ended||j.started);
     $('jd-ok').textContent=j.success; $('jd-bad').textContent=j.failed; $('jd-total').textContent=j.total+' total';
@@ -1588,8 +1614,8 @@ async function loadServerHealth(){
 async function loadActivity(){
   try{
     const d=await api('/api/admin/activity');
-    const lbl={refer:'Referral',channels:'Join / Leave',message:'Message',health:'Health check',auto_leave:'Auto-leave',random_leave:'Auto-leave'};
-    const ic={refer:'🚀',channels:'📢',message:'💬',health:'🩺',auto_leave:'🍃',random_leave:'🍃'};
+    const lbl={refer:'Referral',channels:'Join / Leave',message:'Message',health:'Health check',auto_leave:'Auto-leave',random_leave:'Auto-leave',mute:'Mute channels'};
+    const ic={refer:'🚀',channels:'📢',message:'💬',health:'🩺',auto_leave:'🍃',random_leave:'🍃',mute:'🔕'};
     $('act-list').innerHTML = d.items.length ? d.items.map(i=>{
       if(i.type==='job') return `<button class="row" onclick="openJobDetail('${esc(i.job_id)}')"><span class="av" style="font-family:Manrope">${ic[i.kind]||'⚡'}</span><span class="body"><span class="t">${esc(i.user)} · ${lbl[i.kind]||esc(i.kind)}${i.status==='running'?' <span style="color:var(--turbo)">● running</span>':''}</span><span class="d">${i.success}✓ ${i.failed}✗ of ${i.total} · ${ago(i.ts)}</span></span></button>`;
       if(i.type==='request') return `<div class="row"><span class="av">🔔</span><span class="body"><span class="t">${esc(i.user)} requested access</span><span class="d">ID ${esc(i.user_id)} · ${ago(i.ts)}</span></span></div>`;
