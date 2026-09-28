@@ -363,6 +363,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <button onclick="goRun('message')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.5A8 8 0 1 1 21 12z"/></svg></span>Send message</button>
         <button onclick="show('accounts');openAdd()"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Add account</button>
       </div>
+      <button class="btn ghost" id="home-mute-all" onclick="muteAllAccounts()" style="margin-top:10px">🔕 Mute all channels — every account</button>
     </div>
     <div class="section"><h2>Recent jobs <small id="j-count"></small></h2><div class="list" id="h-jobs"><div class="empty">Nothing has run yet.</div></div></div>
   </div>
@@ -371,6 +372,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <div class="screen" id="s-accounts">
     <div class="top"><div><h1>Accounts</h1><div class="sub" id="acc-sub">Real Telegram accounts used for every run</div></div><button class="btn sm" onclick="openAdd()">＋ Add</button></div>
     <button class="btn ghost sm" id="health-all-btn" onclick="healthCheckAll()" style="width:100%;margin-bottom:10px">🩺 Check health of all accounts</button>
+    <button class="btn ghost sm" id="mute-all-btn" onclick="muteAllAccounts()" style="width:100%;margin-bottom:10px">🔕 Mute all channels on every account</button>
     <div style="display:flex;gap:8px;margin-bottom:6px">
       <button class="btn ghost sm" style="flex:1" onclick="exportBackup()">📤 Export backup</button>
       <button class="btn ghost sm" style="flex:1" onclick="$('import-file').click()">📥 Import backup</button>
@@ -670,7 +672,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <button data-v="off" onclick="setSoundPref('off')">Off</button>
       </div>
     </div>
-    <div class="help" style="text-align:center;margin-top:24px" id="app-build">Turbo Refer v24</div>
+    <div class="help" style="text-align:center;margin-top:24px" id="app-build">Turbo Refer v25</div>
   </div>
 </div>
 
@@ -1046,6 +1048,20 @@ function amAction(action){ const name=ACC_TARGET; closeSheet3();
   if(action==='delete') return deleteAccount(name);
   if(action==='exclude') return toggleExclude(name);
   if(action==='mute') return muteOneAccount(name);
+}
+async function muteAllAccounts(){
+  if(!ACCOUNTS.length){ try{ const d=await api('/api/accounts'); ACCOUNTS=d.accounts||[]; }catch(e){} }
+  const alive=ACCOUNTS.filter(a=>a.health!=='dead');
+  if(!alive.length){ toast('কোনো active account নেই'); return; }
+  const dead=ACCOUNTS.length-alive.length;
+  if(!await confirmDlg(`🔕 সব ${alive.length}টা account-এর সব joined channel mute করবেন?${dead?`\n(${dead}টা dead account skip হবে)`:''}`)) return;
+  const btns=[$('mute-all-btn'),$('home-mute-all')];
+  btns.forEach(b=>busy(b,true,'Starting…'));
+  try{
+    const body={mute:true,include_groups:false,accounts:alive.map(a=>a.session_name),speed:'fast'};
+    const d=await post('/api/channels/mute',body); haptic('ok'); openJob(d.job_id, body);
+  }catch(e){ toast(e.message,3500); haptic('bad'); }
+  finally{ btns.forEach(b=>busy(b,false)); }
 }
 async function muteOneAccount(name){
   if(!await confirmDlg(`🔕 ${name}-এর সব joined channel-এর notification mute করবেন?`)) return;
