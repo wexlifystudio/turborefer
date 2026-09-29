@@ -211,7 +211,7 @@ async def get_client(acc):
 def alert_dead_accounts(owner, dead_names):
     if not dead_names: return
     try:
-        lines = ["🚨 <b>Account problem detected</b>", "",
+        lines = ["<b>Account problem detected</b>", "",
                  f"{len(dead_names)} account(s) need to be re-added:"]
         for n in dead_names[:10]:
             lines.append(f"• <code>{n}</code>")
@@ -337,15 +337,15 @@ def job_finish(jid):
     try:
         if j["total"] >= 1 and j.get("owner"):
             label = KIND_LABEL.get(j["kind"], j["kind"])
-            icon = "🛑" if j["status"] == "cancelled" else ("✅" if not j["failed"] else ("⚠️" if j["success"] else "❌"))
+            icon = "[STOPPED]" if j["status"] == "cancelled" else ("[DONE]" if not j["failed"] else ("[PARTIAL]" if j["success"] else "[FAILED]"))
             took = j["ended"] - j.get("started", j["ended"])
             lines = [f"{icon} <b>{label} {j['status']}</b>",
-                     f"✅ {j['success']} ok · ❌ {j['failed']} failed · {j['total']} total",
-                     f"⏱ {took}s"]
+                     f"{j['success']} ok · {j['failed']} failed · {j['total']} total",
+                     f"Time: {took}s"]
             if j["meta"].get("skipped_dead"):
-                lines.append(f"⏭ Skipped {len(j['meta']['skipped_dead'])} dead account(s)")
+                lines.append(f"Skipped {len(j['meta']['skipped_dead'])} dead account(s)")
             if milestone:
-                lines.append(f"\n🎉 <b>Milestone unlocked: {milestone:,} lifetime successful runs!</b>")
+                lines.append(f"\n<b>Milestone unlocked: {milestone:,} lifetime successful runs!</b>")
             bad = [r for r in j.get("results", []) if r.get("status") != "success"][:5]
             if bad:
                 lines.append("\n<b>Failed:</b>")
@@ -389,7 +389,7 @@ async def _captcha_flow(acc, bot_link, solver):
                             done.set(); return
                         # fall through — this same message may carry a fresh captcha
                     elif _CAPTCHA_GOOD.search(t):
-                        result["status"] = "success"; result["msg"] += " · verified ✓"
+                        result["status"] = "success"; result["msg"] += " · verified"
                         done.set(); return
                     else:
                         return
@@ -605,17 +605,17 @@ async def solve_auto(event, client, bot_user):
     m = event.message
     if m.photo or (m.document and (m.document.mime_type or "").startswith("image/")):
         r = await solve_image(event, client, bot_user)
-        if r: return {**r, "msg": "🖼️ " + r["msg"]}
+        if r: return {**r, "msg": "Image: " + r["msg"]}
     text = m.raw_text or ""
     # math before text-code: "Captcha: what is 5 + 3 = ?" must be answered 8, not "what"
     if _MATH_HINT.search(text) and re.search(r"\d+\s*[+\-*/×÷x]\s*\d+", text):
         r = await solve_math(event, client, bot_user)
-        if r: return {**r, "msg": "➗ " + r["msg"]}
+        if r: return {**r, "msg": "Math: " + r["msg"]}
     r = await solve_text_code(event, client, bot_user)
-    if r: return {**r, "msg": "🔤 " + r["msg"]}
+    if r: return {**r, "msg": "Text: " + r["msg"]}
     if m.buttons and not _has_url_buttons(m) and _TAP_HINT.search(text):
         r = await solve_emoji(event, client, bot_user)
-        if r: return {**r, "msg": "😀 " + r["msg"]}
+        if r: return {**r, "msg": "Emoji: " + r["msg"]}
     return None
 solve_auto.verify = True
 solve_auto.timeout = 40
@@ -759,9 +759,9 @@ async def run_channel_job(jid, accs, channels, action, delay=2, concurrency=1):
                         await _join_one(client, ch)
                     else:
                         await _leave_one(client, ch)
-                    ok += 1; lines.append(f"✓ {ch}")
+                    ok += 1; lines.append(f"OK {ch}")
                 except Exception as e:
-                    lines.append(f"✗ {ch}: {str(e)[:60]}")
+                    lines.append(f"FAIL {ch}: {str(e)[:60]}")
                 await asyncio.sleep(delay)
             await asave_session(acc["owner"], acc["session_name"], client.session.save())
             st = "success" if ok == len(channels) else ("partial" if ok else "error")
@@ -902,7 +902,7 @@ async def request_access(request: Request):
     name = (user.get("first_name", "") + " " + user.get("last_name", "")).strip()
     un = ("@" + user["username"]) if user.get("username") else "no username"
     for _oid in OWNER_IDS:
-        tg_send(_oid, f"🔔 <b>Access request</b>\n\n👤 {name} ({un})\n🆔 <code>{uid}</code>\n\nOpen the app → Admin → Pending to approve.")
+        tg_send(_oid, f"<b>Access request</b>\n\nName: {name} ({un})\nID: <code>{uid}</code>\n\nOpen the app → Admin → Pending to approve.")
     return {"status": "success", "already": False}
 
 # ── Accounts ─────────────────────────────────────────────────────
@@ -1123,7 +1123,7 @@ async def export_accounts(request: Request):
     data = json.dumps(payload, indent=2).encode()
     fname = f"turbo_refer_backup_{time.strftime('%Y-%m-%d')}.json"
     ok = tg_send_document(u["id"], data, fname,
-        caption=f"🔒 <b>Backup file</b> — {len(out)} account(s)\n\nKeep this safe — it contains login sessions. Use Import in the app to restore.")
+        caption=f"<b>Backup file</b> — {len(out)} account(s)\n\nKeep this safe — it contains login sessions. Use Import in the app to restore.")
     if not ok:
         raise HTTPException(502, "Couldn't send the file via the bot. Open a chat with the bot first (send /start), then try again.")
     return {"status": "success", "sent": True, "count": len(out)}
@@ -1286,7 +1286,7 @@ async def _lf_collect(client, bot_username, after_id, solver, captcha_log):
                         solves += 1; captcha_log.append(r.get("msg", "solved"))
                         last_link = None      # expect the real content next
                 except Exception as e:
-                    solves += 1; captcha_log.append("⚠️ " + str(e)[:80])
+                    solves += 1; captcha_log.append("Warning: " + str(e)[:80])
         now = loop.time()
         if link_msgs and last_link and now - last_link >= LF_SETTLE:
             break
@@ -1332,9 +1332,9 @@ async def auto_leave(request: Request):
             for dl in picked:
                 try:
                     await client(LeaveChannelRequest(dl.entity))
-                    ok += 1; lines.append(f"✓ {dl.name}")
+                    ok += 1; lines.append(f"OK {dl.name}")
                 except Exception as e:
-                    lines.append(f"✗ {dl.name}: {str(e)[:50]}")
+                    lines.append(f"FAIL {dl.name}: {str(e)[:50]}")
                 await asyncio.sleep(delay)
             await asave_session(u["id"], acc["session_name"], client.session.save())
             st = "success" if ok else ("error" if picked else "partial")
@@ -1737,7 +1737,7 @@ async def admin_user_action(uid: str, action: str, request: Request):
     if is_owner(uid): raise HTTPException(400, "Owners can't be changed here.")
     if action == "approve":
         user_add("whitelist", uid); user_remove("banlist", uid)
-        tg_send(uid, "✅ <b>Access granted!</b>\nYou can now open Turbo Refer. Send /start to the bot.")
+        tg_send(uid, "<b>Access granted!</b>\nYou can now open Turbo Refer. Send /start to the bot.")
     elif action == "ban":
         user_add("banlist", uid); user_remove("whitelist", uid)
     elif action == "unban":
@@ -1780,7 +1780,7 @@ async def storage_watch():
             if pct >= 80 and time.time() - last > 86400:
                 setting_set("storage_alert_at", int(time.time()))
                 for oid in OWNER_IDS:
-                    tg_send(oid, f"⚠️ <b>Database almost full</b>\n\n💾 {mb:.1f} MB of 512 MB used ({pct:.0f}%)\n\nDelete unused accounts or old data soon, or the app will stop saving.")
+                    tg_send(oid, f"<b>Database almost full</b>\n\n{mb:.1f} MB of 512 MB used ({pct:.0f}%)\n\nDelete unused accounts or old data soon, or the app will stop saving.")
         except Exception as e:
             print("storage_watch:", e)
         await asyncio.sleep(6 * 3600)
