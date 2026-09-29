@@ -357,7 +357,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 
   <!-- ══ Home ══ -->
   <div class="screen" id="s-home">
-    <div class="top"><div><h1 id="hi" onclick="eggTap()">Hey</h1><div class="sub" id="hi-sub">Turbo Refer v2</div></div><span style="display:flex;align-items:center;gap:8px"><span class="role" id="hi-role"></span><button class="icon" style="width:34px;height:34px" onclick="show('settings')"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></span></div>
+    <div class="top"><div><h1 id="hi" onclick="eggTap()">Hey</h1></div><span style="display:flex;align-items:center;gap:8px"><span class="role" id="hi-role"></span><button class="icon" style="width:34px;height:34px" onclick="show('settings')"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.9"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></span></div>
     <div style="display:flex;gap:28px">
       <div class="stat"><span class="num" id="h-acc">–</span><span class="lbl">accounts</span></div>
       <div class="stat"><span class="lbl" id="h-status"><span class="dot"></span>checking</span></div>
@@ -380,7 +380,6 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <button onclick="goRun('message')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.5A8 8 0 1 1 21 12z"/></svg></span>Send message</button>
         <button onclick="show('accounts');openAdd()"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Add account</button>
       </div>
-      <button class="btn ghost" id="home-mute-all" onclick="muteAllAccounts()" style="margin-top:10px"><svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> Mute all channels — every account</button>
     </div>
     <div class="section"><h2>Recent jobs <small id="j-count"></small></h2><div class="list" id="h-jobs"><div class="empty">Nothing has run yet.</div></div></div>
   </div>
@@ -436,7 +435,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <div class="chips" id="c-mute-mode" style="margin-bottom:10px"><button class="chip on" data-v="mute"><svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> Mute</button><button class="chip" data-v="unmute"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg> Unmute</button></div>
         <label>What to mute</label>
         <div class="chips" id="c-mute-scope"><button class="chip on" data-v="channels"><svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg> Channels only</button><button class="chip" data-v="all"><svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg> Channels + <svg class="i" aria-hidden="true"><use href="#i-users"/></svg> Groups</button></div>
-        <div class="help">প্রতিটা account যত channel-এ join আছে, সবগুলোর notification একবারে mute হয়ে যাবে। আগে থেকে mute থাকলে skip করবে। পরে চাইলে <svg class="i" aria-hidden="true"><use href="#i-bell"/></svg> Unmute দিয়ে ফেরত আনা যাবে।</div>
+        <div class="help">Every channel each account has joined will be muted at once. Already-muted ones are skipped. You can bring them back later with <svg class="i" aria-hidden="true"><use href="#i-bell"/></svg> Unmute to restore them.</div>
       </div>
       <div id="c-list-wrap" class="field"><label>Channels</label><textarea id="c-list" placeholder="@channel1&#10;@channel2&#10;https://t.me/channel3"></textarea><div class="help">One per line, or separated by commas.</div></div>
       <div id="c-random-wrap" class="field hidden">
@@ -487,7 +486,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     <div class="field">
       <label>Account to use</label>
       <div id="lf-acc-list" class="list"><div class="empty">Loading…</div></div>
-      <div class="help"><svg class="i i-fill" aria-hidden="true"><use href="#i-star"/></svg> marks your default account. Tap an account to pick it for this run, or tap "Set default" to make it start selected every time.<br><br>ℹ <b>যে account-টা এখানে <svg class="i i-fill" aria-hidden="true"><use href="#i-star"/></svg> Default হিসেবে বাছা থাকবে, সেই account দিয়ে Referral বা Channel Join/Leave কখনোই চলবে না <svg class="i" aria-hidden="true"><use href="#i-x-circle"/></svg> — সেটা শুধু Link Finder-এর জন্যই reserved থাকবে।</b></div>
+      <div class="help"><svg class="i i-fill" aria-hidden="true"><use href="#i-star"/></svg> marks your default account. Tap an account to pick it for this run, or tap "Set default" to make it start selected every time.<br><br>ℹ <b>The account set as <svg class="i i-fill" aria-hidden="true"><use href="#i-star"/></svg> Default here will never be used for Referral or Channel Join/Leave <svg class="i" aria-hidden="true"><use href="#i-x-circle"/></svg> — it is reserved for Link Finder only.</b></div>
     </div>
     <button class="btn turbo" id="lf-go" onclick="runLinkFinder()">Find links</button>
 
@@ -689,7 +688,6 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <button data-v="off" onclick="setSoundPref('off')">Off</button>
       </div>
     </div>
-    <div class="help" style="text-align:center;margin-top:24px" id="app-build">Turbo Refer v25</div>
   </div>
 </div>
 
@@ -809,7 +807,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     <button class="arow" id="cf-sel" onclick="cfPick('selected')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-check-square"/></svg></span><span class="body"><span class="t" id="cf-sel-t">Only selected</span><span class="d" id="cf-sel-d"></span></span></button>
   </div>
   <div class="field" id="cf-amount-wrap" style="margin-top:4px">
-    <label>কয়টা account দিয়ে চালাবেন?</label>
+    <label>How many accounts should run this?</label>
     <input type="number" id="cf-amount" min="1" inputmode="numeric" placeholder="e.g. 20">
     <div class="help" id="cf-amount-help"></div>
   </div>
@@ -866,7 +864,7 @@ function hapticPattern(name){
   }catch(e){}
 }
 function busy(btn,on,label){ if(!btn)return; if(on){btn._l=btn.innerHTML;btn.innerHTML='<span class="spin"></span>'+(label||'');btn.disabled=true;}else{btn.innerHTML=btn._l||btn.innerHTML;btn.disabled=false;} }
-function confirmDlg(msg){ msg=String(msg).replace(/<svg[\s\S]*?<\/svg>\s*/g,''); return new Promise(res=>{ if(tg?.showConfirm) tg.showConfirm(msg,res); else res(confirm(msg)); }); }
+function confirmDlg(msg){ msg=trMsg(msg); return new Promise(res=>{ if(tg?.showConfirm) tg.showConfirm(msg,res); else res(confirm(msg)); }); }
 function show(name){
   if(!ME && name!=='gate') return;
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id==='s-'+name));
@@ -1070,10 +1068,10 @@ function amAction(action){ const name=ACC_TARGET; closeSheet3();
 async function muteAllAccounts(){
   if(!ACCOUNTS.length){ try{ const d=await api('/api/accounts'); ACCOUNTS=d.accounts||[]; }catch(e){} }
   const alive=ACCOUNTS.filter(a=>a.health!=='dead');
-  if(!alive.length){ toast('কোনো active account নেই'); return; }
+  if(!alive.length){ toast('No active accounts'); return; }
   const dead=ACCOUNTS.length-alive.length;
-  if(!await confirmDlg(`<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> সব ${alive.length}টা account-এর সব joined channel mute করবেন?${dead?`\n(${dead}টা dead account skip হবে)`:''}`)) return;
-  const btns=[$('mute-all-btn'),$('home-mute-all')];
+  if(!await confirmDlg(`Mute all ${alive.length} accounts' joined channels?${dead?` (${dead} dead account${dead>1?'s':''} will be skipped)`:''}`)) return;
+  const btns=[$('mute-all-btn')];
   btns.forEach(b=>busy(b,true,'Starting…'));
   try{
     const body={mute:true,include_groups:false,accounts:alive.map(a=>a.session_name),speed:'fast'};
@@ -1082,7 +1080,7 @@ async function muteAllAccounts(){
   finally{ btns.forEach(b=>busy(b,false)); }
 }
 async function muteOneAccount(name){
-  if(!await confirmDlg(`<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> ${name}-এর সব joined channel-এর notification mute করবেন?`)) return;
+  if(!await confirmDlg(`Mute notifications from all channels joined by ${name}?`)) return;
   try{
     const body={mute:true,include_groups:false,accounts:[name],speed:'single'};
     const d=await post('/api/channels/mute',body); haptic('ok'); openJob(d.job_id, body);
@@ -1218,9 +1216,9 @@ function renderSel(){
   const all = selectable.length && SEL.size===selectable.length;
   $('sel-all').classList.toggle('on',all); $('sel-count').textContent = SEL.size+' of '+selectable.length+' selected';
   const lfAcc = ACCOUNTS.find(a=>a.link_finder_default);
-  $('lf-reserved-note').innerHTML = lfAcc ? `ℹ <b>${esc(lfAcc.session_name)} <svg class="i" aria-hidden="true"><use href="#i-link"/></svg> Link Finder-এর জন্য reserved — এখানে run হবে না।</b>` : '';
+  $('lf-reserved-note').innerHTML = lfAcc ? `ℹ <b>${esc(lfAcc.session_name)} <svg class="i" aria-hidden="true"><use href="#i-link"/></svg> reserved for Link Finder — will not run here</b>` : '';
   $('sel-list').innerHTML = ACCOUNTS.length ? ACCOUNTS.map(a=>{
-    if(a.link_finder_default) return `<button class="check" disabled style="opacity:.55;pointer-events:none"><span class="box"></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')} · <svg class="i" aria-hidden="true"><use href="#i-link"/></svg> <b>Link Finder-এর জন্য reserved, এখানে চলবে না</b></span></span></button>`;
+    if(a.link_finder_default) return `<button class="check" disabled style="opacity:.55;pointer-events:none"><span class="box"></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')} · <svg class="i" aria-hidden="true"><use href="#i-link"/></svg> <b>reserved for Link Finder, will not run here</b></span></span></button>`;
     return `<button class="check ${SEL.has(a.session_name)?'on':''}" onclick="toggleSel('${esc(a.session_name)}')"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')}${a.excluded?' · <svg class="i" aria-hidden="true"><use href="#i-ban"/></svg> excluded':''}</span></span></button>`;
   }).join('')
     : emptyState('<svg class="i" aria-hidden="true"><use href="#i-user"/></svg>','No accounts','Add an account before running anything.','<button class="btn" onclick="show(\'accounts\');openAdd()">Add account</button>');
@@ -1298,7 +1296,7 @@ function cfPick(which, poolArg, selArg){
   const n = CF_POOL_LIST.length;
   $('cf-amount').max = n || 1;
   if(!$('cf-amount').value || +$('cf-amount').value > n) $('cf-amount').value = n;
-  $('cf-amount-help').textContent = `সর্বোচ্চ ${n}টা account পাওয়া যাচ্ছে (${which==='all'?'সব active account':'যেগুলো select করেছেন'})। যতগুলো লিখবেন, শুরুর দিক থেকে ততগুলো account নেওয়া হবে।`;
+  $('cf-amount-help').textContent = `Up to ${n} accounts available (${which==='all'?'all active accounts':'the ones you selected'}). Accounts are taken from the top, as many as you enter.`;
   $('cf-amount-wrap').classList.toggle('hidden', n===0);
   $('cf-go').disabled = n===0;
   haptic();
@@ -1308,7 +1306,7 @@ async function runConfirmed(){
   if(!PENDING_RUN) return;
   const {path,body}=PENDING_RUN;
   const n = Math.max(1, Math.min(parseInt($('cf-amount').value)||0, CF_POOL_LIST.length));
-  if(!n){ toast('কতগুলো account দিয়ে চালাবেন লিখুন'); return; }
+  if(!n){ toast('Enter how many accounts to run with'); return; }
   body.accounts = CF_POOL_LIST.slice(0, n);
   if(!body.accounts.length){ toast('No accounts to run'); return; }
   PENDING_RUN=null;
@@ -1360,19 +1358,19 @@ async function setLfDefault(name){
   catch(e){ toast(e.message); haptic('bad'); }
 }
 const LF_CAPTCHA_HELP={
-  auto:'<svg class="i" aria-hidden="true"><use href="#i-bot"/></svg> Captcha এলে নিজে থেকে type বুঝে solve করবে (Image / Text code / Math / Emoji), তারপর links নেবে।',
-  text_code:'<svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Bot একটা code দেখায় (যেমন 7LsT4oFd) — সেটা reply করবে।',
-  image:'<svg class="i" aria-hidden="true"><use href="#i-image"/></svg> ছবির সংখ্যা/অক্ষর পড়ে reply করবে (OCR)।',
-  math:'<svg class="i" aria-hidden="true"><use href="#i-divide"/></svg> 5 + 3 এর মতো অঙ্কের উত্তর দেবে।',
-  emoji:'<svg class="i" aria-hidden="true"><use href="#i-smile"/></svg> Emoji মিলিয়ে button চাপবে।',
-  button:'প্রথম button চাপবে।',
-  no_captcha:'শুধু /start পাঠিয়ে reply থেকে links নেবে।'};
+  auto:'<svg class="i" aria-hidden="true"><use href="#i-bot"/></svg> Auto-detects the captcha type and solves it (Image / Text code / Math / Emoji), then collects the links.',
+  text_code:'<svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Bot shows a code (like 7LsT4oFd) — it replies with that code.',
+  image:'<svg class="i" aria-hidden="true"><use href="#i-image"/></svg> Reads the number/letters in the picture and replies (OCR).',
+  math:'<svg class="i" aria-hidden="true"><use href="#i-divide"/></svg> Answers a sum like 5 + 3.',
+  emoji:'<svg class="i" aria-hidden="true"><use href="#i-smile"/></svg> Matches the emoji and taps the button.',
+  button:'Taps the first button.',
+  no_captcha:'Just sends /start and collects links from the reply.'};
 function paintLfCaptcha(){ $('lf-captcha-help').innerHTML=LF_CAPTCHA_HELP[chip('lf-method')||'auto']||''; }
 document.getElementById('lf-method').addEventListener('click',()=>setTimeout(paintLfCaptcha,0)); paintLfCaptcha();
 async function runLinkFinder(){
   const bot=$('lf-bot').value.trim();
-  if(!bot){ toast('Bot username বা link লিখুন'); return; }
-  if(!LF_ACC){ toast('একটা account বাছাই করুন'); return; }
+  if(!bot){ toast('Enter a bot username or link'); return; }
+  if(!LF_ACC){ toast('Pick an account'); return; }
   const captcha=chip('lf-method')||'auto';
   busy($('lf-go'),true,captcha==='no_captcha'?'Fetching…':'Solving captcha & fetching…');
   $('lf-result').classList.add('hidden');
@@ -1542,10 +1540,277 @@ function closeSheet6(){ $('sheet-bg6').classList.remove('on'); $('sheet6').class
 
 /* ── settings (device-local preferences) ── */
 const ACCENTS={orange:'#ff4d1f',blue:'#2ea6ff',green:'#22c55e',purple:'#a855f7',pink:'#ec4899',yellow:'#eab308'};
-const I18N={
-  en:{hey:'Hey',accounts:'accounts',run:'Run',home:'Home',stats:'Stats',admin:'Admin',settings:'Settings'},
-  bn:{hey:'হ্যালো',accounts:'অ্যাকাউন্ট',run:'চালান',home:'হোম',stats:'পরিসংখ্যান',admin:'অ্যাডমিন',settings:'সেটিংস'}
+/* ── i18n: full English <-> Bangla (DOM text, attributes, toasts, dialogs) ── */
+const BN_EXACT={
+// gate
+'Pull to refresh':'রিফ্রেশ করতে টানুন','Release to refresh':'রিফ্রেশ করতে ছাড়ুন','Refreshing…':'রিফ্রেশ হচ্ছে…',
+'Connecting…':'সংযোগ হচ্ছে…','Access needed':'অ্যাক্সেস প্রয়োজন',
+'This app is invite-only. Ask the owner to approve your ID.':'এই অ্যাপ শুধু আমন্ত্রিতদের জন্য। আপনার আইডি অনুমোদন করতে মালিককে বলুন।',
+'Request access':'অ্যাক্সেসের অনুরোধ করুন','Copy ID':'আইডি কপি করুন',"I've been approved — retry":'আমাকে অনুমোদন দেওয়া হয়েছে — আবার চেষ্টা করুন',
+'Access blocked':'অ্যাক্সেস বন্ধ','Your account has been banned from this app.':'আপনার অ্যাকাউন্ট এই অ্যাপ থেকে নিষিদ্ধ করা হয়েছে।',
+"Can't connect":'সংযোগ করা যাচ্ছে না','Try again':'আবার চেষ্টা করুন','Under maintenance':'রক্ষণাবেক্ষণ চলছে',
+'The app is temporarily down for maintenance. Please try again soon.':'অ্যাপটি রক্ষণাবেক্ষণের জন্য সাময়িকভাবে বন্ধ আছে। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।',
+'The app is temporarily down for maintenance.':'অ্যাপটি রক্ষণাবেক্ষণের জন্য সাময়িকভাবে বন্ধ আছে।',
+'Sending…':'পাঠানো হচ্ছে…','Request already sent':'অনুরোধ আগেই পাঠানো হয়েছে','Request sent to the owner':'মালিকের কাছে অনুরোধ পাঠানো হয়েছে','ID copied':'আইডি কপি হয়েছে',
+// home
+'Hey':'হ্যালো','accounts':'অ্যাকাউন্ট','checking':'যাচাই হচ্ছে','backend online':'সার্ভার অনলাইন','backend offline':'সার্ভার অফলাইন',
+'day streak':'দিনের স্ট্রিক','lifetime runs':'মোট রান','Run':'চালান','Referral':'রেফারেল','Join / Leave':'জয়েন / লিভ','Send message':'মেসেজ পাঠান',
+'Add account':'অ্যাকাউন্ট যোগ করুন','Recent jobs':'সাম্প্রতিক কাজ','Nothing has run yet.':'এখনও কিছু চালানো হয়নি।','Nothing has run yet':'এখনও কিছু চালানো হয়নি',
+'Start your first referral, channel join, or message.':'আপনার প্রথম রেফারেল, চ্যানেল জয়েন বা মেসেজ শুরু করুন।','Start a run':'একটি রান শুরু করুন',
+'Owner':'মালিক','Approved':'অনুমোদিত','Dead or banned — delete and add them again':'মৃত বা নিষিদ্ধ — মুছে আবার যোগ করুন',
+'They will work again after the flood-wait ends':'ফ্লাড-ওয়েট শেষ হলে আবার কাজ করবে','Health not checked yet':'এখনও হেলথ চেক করা হয়নি',
+'Tap to run a health check on all accounts':'সব অ্যাকাউন্টের হেলথ চেক করতে ট্যাপ করুন','All accounts healthy':'সব অ্যাকাউন্ট সুস্থ',
+'never used':'কখনো ব্যবহৃত হয়নি','used just now':'এইমাত্র ব্যবহৃত','excluded':'বাদ দেওয়া',
+'Real Telegram accounts used for every run':'প্রতিটি রানে ব্যবহৃত আসল টেলিগ্রাম অ্যাকাউন্ট',
+// accounts
+'Accounts':'অ্যাকাউন্ট','＋ Add':'＋ যোগ করুন','Check health of all accounts':'সব অ্যাকাউন্টের হেলথ চেক করুন',
+'Mute all channels on every account':'প্রতিটি অ্যাকাউন্টের সব চ্যানেল মিউট করুন','Export backup':'ব্যাকআপ এক্সপোর্ট','Import backup':'ব্যাকআপ ইমপোর্ট',
+'Search accounts…':'অ্যাকাউন্ট খুঁজুন…','Recent':'সাম্প্রতিক','Name':'নাম','Health':'হেলথ','Check':'চেক','Delete':'মুছুন','Done':'শেষ',
+'Export sends a backup file to your Telegram chat with the bot. Save it somewhere safe — anyone with this file can access those accounts.':'এক্সপোর্ট করলে বটের সাথে আপনার টেলিগ্রাম চ্যাটে একটি ব্যাকআপ ফাইল যাবে। এটি নিরাপদ জায়গায় রাখুন — এই ফাইল যার কাছে থাকবে সে ওই অ্যাকাউন্টগুলো ব্যবহার করতে পারবে।',
+'Loading…':'লোড হচ্ছে…','Failed to fetch':'সার্ভারের সাথে সংযোগ করা যায়নি','Load failed':'লোড করা যায়নি','NetworkError when attempting to fetch resource.':'সার্ভারের সাথে সংযোগ করা যায়নি',"Couldn't load accounts":'অ্যাকাউন্ট লোড করা যায়নি','No accounts yet':'এখনও কোনো অ্যাকাউন্ট নেই','Add a real Telegram account to start running tasks.':'কাজ শুরু করতে একটি আসল টেলিগ্রাম অ্যাকাউন্ট যোগ করুন।',
+'Add your first account':'প্রথম অ্যাকাউন্ট যোগ করুন','No matches':'কিছু মেলেনি','Select accounts first':'আগে অ্যাকাউন্ট নির্বাচন করুন',
+'Health check done':'হেলথ চেক শেষ','Undo':'পূর্বাবস্থায়','Note saved':'নোট সংরক্ষিত','Saving…':'সংরক্ষণ হচ্ছে…','Checking…':'যাচাই হচ্ছে…','Starting…':'শুরু হচ্ছে…',
+'No accounts to check':'যাচাই করার মতো কোনো অ্যাকাউন্ট নেই','Phone must start with + and country code':'ফোন নম্বর + এবং দেশের কোড দিয়ে শুরু হতে হবে',
+'Could not send code':'কোড পাঠানো যায়নি','Enter the code':'কোড দিন','Wrong code':'ভুল কোড','Enter the password':'পাসওয়ার্ড দিন','Wrong password':'ভুল পাসওয়ার্ড',
+'Healthy':'সুস্থ','Limited':'সীমিত','Banned':'নিষিদ্ধ','Session dead':'সেশন মৃত','Error':'ত্রুটি','dead':'মৃত',
+// run
+'Pick a task, choose accounts, start':'একটি কাজ বাছুন, অ্যাকাউন্ট নির্বাচন করুন, শুরু করুন','Message':'মেসেজ','Bot referral link':'বটের রেফারেল লিংক',
+'The bot gets':'বট পাবে','from each account.':'প্রতিটি অ্যাকাউন্ট থেকে।','Captcha type':'ক্যাপচার ধরন','None':'কিছু নয়','Text code':'টেক্সট কোড','Image':'ছবি','Emoji':'ইমোজি','Math':'অঙ্ক','Button':'বাটন',
+'Action':'অ্যাকশন','Join':'জয়েন','Leave':'লিভ','Auto-leave':'অটো-লিভ','Mute all':'সব মিউট','Mute or unmute?':'মিউট নাকি আনমিউট?','Mute':'মিউট','Unmute':'আনমিউট',
+'What to mute':'কী মিউট করবেন','Channels only':'শুধু চ্যানেল','Channels +':'চ্যানেল +','Groups':'গ্রুপ',
+'Every channel each account has joined will be muted at once. Already-muted ones are skipped. You can bring them back later with':'প্রতিটি অ্যাকাউন্ট যত চ্যানেলে জয়েন আছে, সবগুলোর নোটিফিকেশন একবারে মিউট হয়ে যাবে। আগে থেকে মিউট থাকলে বাদ যাবে। পরে চাইলে',
+'Unmute to restore them.':'আনমিউট দিয়ে ফেরত আনা যাবে।',
+'Channels':'চ্যানেল','One per line, or separated by commas.':'প্রতি লাইনে একটি, অথবা কমা দিয়ে আলাদা করুন।',
+'Auto-leave how many channels/groups (per account)?':'প্রতি অ্যাকাউন্টে কতগুলো চ্যানেল/গ্রুপ অটো-লিভ করবেন?','e.g. 5, 20, 100…':'যেমন 5, 20, 100…',
+'Each account randomly picks this many of its own joined channels/groups and leaves them. Every account leaves a different random set.':'প্রতিটি অ্যাকাউন্ট নিজের জয়েন করা চ্যানেল/গ্রুপ থেকে এতগুলো এলোমেলোভাবে বেছে লিভ করবে। প্রতিটি অ্যাকাউন্ট আলাদা আলাদা সেট ছাড়বে।',
+'Send to':'যাকে পাঠাবেন','@username or user ID':'@ইউজারনেম বা ইউজার আইডি','Hello!':'হ্যালো!','Speed':'গতি','Fast':'দ্রুত','Single':'একক','Ultra':'আলট্রা','Custom':'কাস্টম',
+'Accounts at the same time:':'একসাথে অ্যাকাউন্ট:','Delay between actions':'কাজের মাঝে বিরতি','All accounts':'সব অ্যাকাউন্ট','Start':'শুরু করুন','Start referral':'রেফারেল শুরু করুন','Send':'পাঠান','Start auto-leave':'অটো-লিভ শুরু করুন',
+'Unmute all':'সব আনমিউট','No accounts':'কোনো অ্যাকাউন্ট নেই','Add an account before running anything.':'কিছু চালানোর আগে একটি অ্যাকাউন্ট যোগ করুন।',
+'Enter a valid t.me bot link':'সঠিক t.me বট লিংক দিন','Add at least one channel':'অন্তত একটি চ্যানেল যোগ করুন','Target and message are required':'প্রাপক ও মেসেজ দুটোই লাগবে',
+'Task':'কাজ','Bot':'বট','Captcha':'ক্যাপচা','Per account':'প্রতি অ্যাকাউন্টে','What':'কী','All channels + groups':'সব চ্যানেল + গ্রুপ','All joined channels':'জয়েন করা সব চ্যানেল',
+'Join channels':'চ্যানেলে জয়েন','Leave channels':'চ্যানেল থেকে লিভ','Mute channels':'চ্যানেল মিউট',
+'Every active account runs this':'প্রতিটি সক্রিয় অ্যাকাউন্ট এটি চালাবে','No accounts to run':'চালানোর মতো কোনো অ্যাকাউন্ট নেই',
+'8 accounts at once with a short pause. Tuned to be as quick as possible while staying safe on the free server — this is the recommended default.':'অল্প বিরতি দিয়ে একসাথে ৮টি অ্যাকাউন্ট। ফ্রি সার্ভারে নিরাপদ থেকে যতটা সম্ভব দ্রুত হওয়ার জন্য সাজানো — এটাই প্রস্তাবিত ডিফল্ট।',
+'One account at a time with a 1s pause. Slowest, gentlest on your accounts.':'১ সেকেন্ড বিরতিতে একবারে একটি অ্যাকাউন্ট। সবচেয়ে ধীর, অ্যাকাউন্টের জন্য সবচেয়ে নিরাপদ।',
+'All selected accounts run almost at once. Very fast, but higher flood-ban risk on large batches.':'নির্বাচিত সব অ্যাকাউন্ট প্রায় একসাথে চলবে। খুব দ্রুত, কিন্তু বড় ব্যাচে ফ্লাড-ব্যানের ঝুঁকি বেশি।',
+'Choose exactly how many accounts run together and the pause between actions.':'কতগুলো অ্যাকাউন্ট একসাথে চলবে এবং কাজের মাঝে কত বিরতি হবে তা নিজে ঠিক করুন।',
+'Just sends /start — use when the bot has no captcha.':'শুধু /start পাঠায় — বটে ক্যাপচা না থাকলে ব্যবহার করুন।',
+'Bot shows a code like':'বট একটি কোড দেখায়, যেমন','and asks you to send it back. Each account reads its own code and replies with it.':'এবং সেটি ফেরত পাঠাতে বলে। প্রতিটি অ্যাকাউন্ট নিজের কোড পড়ে সেটিই রিপ্লাই করে।',
+'Bot sends a picture with numbers/letters (e.g.':'বট সংখ্যা/অক্ষর সহ একটি ছবি পাঠায় (যেমন','). Each account reads the image and replies with the answer. Retries up to 3× if the bot says wrong.':')। প্রতিটি অ্যাকাউন্ট ছবিটি পড়ে উত্তর দেয়। বট ভুল বললে ৩ বার পর্যন্ত আবার চেষ্টা করে।',
+'Bot asks you to tap the button matching an emoji.':'বট একটি ইমোজির সাথে মেলানো বাটন চাপতে বলে।','Bot asks a sum like 5 + 3 — the answer is sent or tapped.':'বট ৫ + ৩ এর মতো যোগফল জিজ্ঞেস করে — উত্তর পাঠানো বা চাপা হয়।',
+'Taps the first button the bot shows.':'বটের দেখানো প্রথম বাটনটি চাপে।',
+// confirm sheet
+'Confirm run':'রান নিশ্চিত করুন','Which accounts should run this?':'কোন অ্যাকাউন্টগুলো এটি চালাবে?','Only selected':'শুধু নির্বাচিতগুলো','How many accounts should run this?':'কতটি অ্যাকাউন্ট দিয়ে চালাবেন?','e.g. 20':'যেমন 20',
+'Enter how many accounts to run with':'কতগুলো অ্যাকাউন্ট দিয়ে চালাবেন লিখুন','No active accounts':'কোনো সক্রিয় অ্যাকাউন্ট নেই','all active accounts':'সব সক্রিয় অ্যাকাউন্ট','the ones you selected':'আপনার নির্বাচিতগুলো',
+'Milestone!':'মাইলফলক!','Nice!':'দারুণ!',
+// link finder
+'Link Finder':'লিংক ফাইন্ডার','Send /start to any bot and grab every sponsor/channel link it shows':'যেকোনো বটে /start পাঠিয়ে সে যত স্পনসর/চ্যানেল লিংক দেখায় সব নিয়ে নিন',
+'Bot username or link':'বটের ইউজারনেম বা লিংক','The account sends':'অ্যাকাউন্টটি এই বটে','to this bot and reads its reply.':'পাঠায় এবং তার রিপ্লাই পড়ে।',
+'Captcha (if the bot asks first)':'ক্যাপচা (বট আগে চাইলে)','Auto':'অটো','Account to use':'যে অ্যাকাউন্ট ব্যবহার করবেন',
+'marks your default account. Tap an account to pick it for this run, or tap "Set default" to make it start selected every time.':'চিহ্নিত অ্যাকাউন্টটি আপনার ডিফল্ট। এই রানের জন্য একটি অ্যাকাউন্টে ট্যাপ করে বাছুন, অথবা প্রতিবার নির্বাচিত থাকতে "ডিফল্ট করুন" চাপুন।',
+'The account set as':'যে অ্যাকাউন্টটি এখানে','Default here will never be used for Referral or Channel Join/Leave':'ডিফল্ট হিসেবে বাছা থাকবে, সেই অ্যাকাউন্ট দিয়ে রেফারেল বা চ্যানেল জয়েন/লিভ কখনোই চলবে না',
+'— it is reserved for Link Finder only.':'— সেটা শুধু লিংক ফাইন্ডারের জন্যই সংরক্ষিত থাকবে।',
+'Find links':'লিংক খুঁজুন','Found':'পাওয়া গেছে','link(s)':'টি লিংক','Copy all':'সব কপি করুন','Run again':'আবার চালান','No links yet.':'এখনও কোনো লিংক নেই।','Copy':'কপি',
+'Set default':'ডিফল্ট করুন','Default':'ডিফল্ট','reserved for Link Finder, will not run here':'লিংক ফাইন্ডারের জন্য সংরক্ষিত, এখানে চলবে না',
+'reserved for Link Finder — will not run here':'লিংক ফাইন্ডারের জন্য সংরক্ষিত — এখানে চলবে না',
+'Add an account before using Link Finder.':'লিংক ফাইন্ডার ব্যবহারের আগে একটি অ্যাকাউন্ট যোগ করুন।','Not a valid t.me bot link':'এটি সঠিক t.me বট লিংক নয়',
+'Bot':'বট','sends':'পাঠাবে',
+'Captcha: none detected':'ক্যাপচা: পাওয়া যায়নি','Captcha:':'ক্যাপচা:',
+'Auto-detects the captcha type and solves it (Image / Text code / Math / Emoji), then collects the links.':'ক্যাপচার ধরন নিজে থেকে বুঝে সমাধান করবে (ছবি / টেক্সট কোড / অঙ্ক / ইমোজি), তারপর লিংক নেবে।',
+'Bot shows a code (like 7LsT4oFd) — it replies with that code.':'বট একটি কোড দেখায় (যেমন 7LsT4oFd) — সেটাই রিপ্লাই করবে।',
+'Reads the number/letters in the picture and replies (OCR).':'ছবির সংখ্যা/অক্ষর পড়ে রিপ্লাই করবে (OCR)।','Answers a sum like 5 + 3.':'৫ + ৩ এর মতো অঙ্কের উত্তর দেবে।',
+'Matches the emoji and taps the button.':'ইমোজি মিলিয়ে বাটন চাপবে।','Taps the first button.':'প্রথম বাটন চাপবে।','Just sends /start and collects links from the reply.':'শুধু /start পাঠিয়ে রিপ্লাই থেকে লিংক নেবে।',
+'Enter a bot username or link':'বটের ইউজারনেম বা লিংক লিখুন','Pick an account':'একটি অ্যাকাউন্ট বাছুন','Fetching…':'আনা হচ্ছে…','Solving captcha & fetching…':'ক্যাপচা সমাধান ও লিংক আনা হচ্ছে…',
+'No links found.':'কোনো লিংক পাওয়া যায়নি।',' Bot did not reply':' বট কোনো রিপ্লাই দেয়নি',' — if it asked a captcha, pick its type above and try again':' — ক্যাপচা চাইলে উপরে তার ধরন বেছে আবার চেষ্টা করুন',
+'Default account set':'ডিফল্ট অ্যাকাউন্ট সেট হয়েছে','Link copied':'লিংক কপি হয়েছে','links copied':'টি লিংক কপি হয়েছে',
+// job
+'Running':'চলছে','working…':'কাজ চলছে…','accounts/sec':'অ্যাকাউন্ট/সেকেন্ড','ok':'সফল','failed':'ব্যর্থ','Results':'ফলাফল','Waiting for the first account…':'প্রথম অ্যাকাউন্টের অপেক্ষা…',
+'Stop this run':'এই রান বন্ধ করুন','Run another':'আরেকটি চালান','stopped':'বন্ধ হয়েছে','finished':'শেষ হয়েছে','all done':'সব শেষ',
+'Stop this run? Accounts already processed will keep their results.':'এই রান বন্ধ করবেন? যেসব অ্যাকাউন্টের কাজ হয়ে গেছে তাদের ফলাফল থাকবে।','Stopping…':'বন্ধ হচ্ছে…',
+'Joining channels':'চ্যানেলে জয়েন হচ্ছে','Leaving channels':'চ্যানেল থেকে লিভ হচ্ছে','Sending message':'মেসেজ পাঠানো হচ্ছে','Checking account health':'অ্যাকাউন্টের হেলথ যাচাই হচ্ছে','Unmuting channels':'চ্যানেল আনমিউট হচ্ছে','Muting channels':'চ্যানেল মিউট হচ্ছে',
+'done':'শেষ','fast':'দ্রুত','single':'একক','ultra':'আলট্রা','at once':'একসাথে','dead':'মৃত','No results recorded.':'কোনো ফলাফল রেকর্ড হয়নি।',
+'Preparing backup…':'ব্যাকআপ তৈরি হচ্ছে…','Not a valid backup file':'এটি সঠিক ব্যাকআপ ফাইল নয়','This is not a Turbo Refer backup file':'এটি টার্বো রেফারের ব্যাকআপ ফাইল নয়',
+// stats
+'Stats':'পরিসংখ্যান','Last 14 days':'গত ১৪ দিন','jobs run':'কাজ চলেছে','successful':'সফল','Your weekly recap is ready':'আপনার সাপ্তাহিক সারসংক্ষেপ প্রস্তুত',
+"Tap to see this week's highlights":'এই সপ্তাহের হাইলাইট দেখতে ট্যাপ করুন','Estimated vs. running everything one at a time':'একটি একটি করে চালানোর তুলনায় আনুমানিক',
+'Daily activity':'দৈনিক কার্যকলাপ','Speed over time':'সময়ের সাথে গতি','By task type':'কাজের ধরন অনুযায়ী','No data yet.':'এখনও কোনো ডেটা নেই।','Top accounts':'সেরা অ্যাকাউন্ট',
+'tap for details':'বিস্তারিত দেখতে ট্যাপ করুন','No jobs yet.':'এখনও কোনো কাজ নেই।','No jobs yet':'এখনও কোনো কাজ নেই','Your run history will show up here.':'আপনার রানের ইতিহাস এখানে দেখা যাবে।',
+'Join/Leave':'জয়েন/লিভ','Health check':'হেলথ চেক','No activity yet':'এখনও কোনো কার্যকলাপ নেই','Run something and your stats will appear here.':'কিছু চালান, আপনার পরিসংখ্যান এখানে দেখা যাবে।',
+'Go to Run':'চালান পেজে যান','No account activity':'কোনো অ্যাকাউন্টের কার্যকলাপ নেই','Top-performing accounts will show up after a few runs.':'কয়েকটি রানের পর সেরা অ্যাকাউন্টগুলো এখানে দেখা যাবে।',
+'No timed runs yet':'এখনও সময় মাপা কোনো রান নেই','Speed data appears after a completed run.':'রান শেষ হলে গতির ডেটা দেখা যাবে।',
+'successful actions this week':'এই সপ্তাহে সফল কাজ','your MVP account — ':'আপনার সেরা অ্যাকাউন্ট — ','your fastest run this week':'এই সপ্তাহের আপনার দ্রুততম রান','your most-used task type':'আপনার সবচেয়ে বেশি ব্যবহৃত কাজের ধরন',
+'Your week, wrapped':'আপনার সপ্তাহের সারসংক্ষেপ','Last 7 days on Turbo Refer':'টার্বো রেফারে গত ৭ দিন','Close':'বন্ধ করুন',
+// admin
+'Admin':'অ্যাডমিন','Users, access and data':'ইউজার, অ্যাক্সেস ও ডেটা','users':'ইউজার','active 24h':'২৪ ঘণ্টায় সক্রিয়','approved':'অনুমোদিত','banned':'নিষিদ্ধ','jobs 24h':'২৪ ঘণ্টায় কাজ',
+'Lockdown is active':'লকডাউন চালু আছে','Only owners can use the app right now':'এখন শুধু মালিকরা অ্যাপ ব্যবহার করতে পারবেন','Server health':'সার্ভারের অবস্থা','MongoDB':'মঙ্গোডিবি','Bot API':'বট এপিআই','active jobs':'সক্রিয় কাজ',
+'Database storage':'ডেটাবেস স্টোরেজ','Telegram activity (this server)':'টেলিগ্রাম কার্যকলাপ (এই সার্ভার)','calls/min':'কল/মিনিট','calls/hr':'কল/ঘণ্টা','Live activity':'লাইভ কার্যকলাপ','auto-refreshes':'স্বয়ংক্রিয় রিফ্রেশ',
+'Platform-wide stats':'পুরো প্ল্যাটফর্মের পরিসংখ্যান','all accounts':'সব অ্যাকাউন্ট','all jobs':'সব কাজ','total success':'মোট সফল','total failed':'মোট ব্যর্থ','owners':'মালিক','Emergency lockdown':'জরুরি লকডাউন',
+'App is open':'অ্যাপ খোলা আছে','App is locked down':'অ্যাপ লকডাউনে আছে','Tap to lock the app for everyone except owners':'মালিক ছাড়া সবার জন্য অ্যাপ লক করতে ট্যাপ করুন','Tap to unlock — everyone can use it again':'আনলক করতে ট্যাপ করুন — সবাই আবার ব্যবহার করতে পারবে',
+'Lock the app for everyone except owners?':'মালিক ছাড়া সবার জন্য অ্যাপ লক করবেন?','App locked down':'অ্যাপ লকডাউন করা হয়েছে','App unlocked':'অ্যাপ আনলক করা হয়েছে',
+'Lockdown message (shown to blocked users)':'লকডাউন বার্তা (ব্লক হওয়া ইউজারদের দেখানো হয়)','Log channel':'লগ চ্যানেল','Log channel saved':'লগ চ্যানেল সংরক্ষিত',
+'Post every job summary here too (channel/group ID or @username)':'প্রতিটি কাজের সারসংক্ষেপ এখানেও পোস্ট করুন (চ্যানেল/গ্রুপ আইডি বা @ইউজারনেম)','@my_private_log or -1001234567890':'@my_private_log বা -1001234567890','Save':'সংরক্ষণ',
+"Add the bot as admin to that channel first, or it can't post there.":'আগে বটকে ওই চ্যানেলের অ্যাডমিন বানান, নইলে সে সেখানে পোস্ট করতে পারবে না।',
+'Who can use the app':'কারা অ্যাপ ব্যবহার করতে পারবে','Approved only':'শুধু অনুমোদিতরা','Everyone':'সবাই','Approve by ID':'আইডি দিয়ে অনুমোদন','Telegram user ID':'টেলিগ্রাম ইউজার আইডি','Approve':'অনুমোদন',
+'Users':'ইউজার','All':'সব','Pending':'অপেক্ষমাণ','Broadcast':'ব্রডকাস্ট','Message to send from the bot (HTML allowed)':'বট থেকে পাঠানোর বার্তা (HTML চলবে)','All users':'সব ইউজার','Send broadcast':'ব্রডকাস্ট পাঠান',
+'Nobody here':'এখানে কেউ নেই','No user matches this filter yet.':'এই ফিল্টারে কোনো ইউজার মেলেনি।','Runs and new users will show up here live.':'রান ও নতুন ইউজার এখানে লাইভ দেখা যাবে।',
+'App is open to everyone':'অ্যাপ সবার জন্য খোলা','Approved users only':'শুধু অনুমোদিত ইউজার',
+'Anyone who opens the app can use it with their own accounts. Banned users are still blocked.':'যে কেউ অ্যাপ খুললে নিজের অ্যাকাউন্ট দিয়ে ব্যবহার করতে পারবে। নিষিদ্ধ ইউজাররা তবুও ব্লক থাকবে।',
+'Only users you approve can use the app. Others see their ID and a request screen.':'শুধু আপনার অনুমোদিত ইউজাররা অ্যাপ ব্যবহার করতে পারবে। অন্যরা তাদের আইডি ও অনুরোধের স্ক্রিন দেখবে।',
+'Storage info unavailable':'স্টোরেজের তথ্য পাওয়া যাচ্ছে না','Almost full —':'প্রায় ভরে গেছে —','User ID must be numbers only':'ইউজার আইডি শুধু সংখ্যা হতে হবে',
+'Unbanned':'নিষেধাজ্ঞা তোলা হয়েছে','Access revoked':'অ্যাক্সেস প্রত্যাহার হয়েছে','Accounts deleted':'অ্যাকাউন্ট মুছে ফেলা হয়েছে','No accounts':'কোনো অ্যাকাউন্ট নেই','Write a message first':'আগে একটি মেসেজ লিখুন',
+'approved users':'অনুমোদিত ইউজার','all users':'সব ইউজার','opened the app first time':'প্রথমবার অ্যাপ খুলেছে','requested access':'অ্যাক্সেস চেয়েছে','running':'চলছে',
+// settings
+'Settings':'সেটিংস','Language, look, and feel':'ভাষা, চেহারা ও অনুভূতি','Language':'ভাষা','Accent color':'অ্যাকসেন্ট রঙ','Haptic intensity':'ভাইব্রেশনের তীব্রতা','Off':'বন্ধ','Light':'হালকা','Normal':'স্বাভাবিক','Strong':'জোরালো',
+'Test vibration':'ভাইব্রেশন পরীক্ষা','Sound on job complete':'কাজ শেষে শব্দ','On':'চালু','Language updated':'ভাষা পরিবর্তন হয়েছে','Accent color updated':'অ্যাকসেন্ট রঙ পরিবর্তন হয়েছে',
+'Home':'হোম','Links':'লিংক','Sound on':'শব্দ চালু','Sound off':'শব্দ বন্ধ',
+// sheets
+'Enter the phone number of the Telegram account. A login code will be sent to that account.':'টেলিগ্রাম অ্যাকাউন্টের ফোন নম্বর দিন। ওই অ্যাকাউন্টে একটি লগইন কোড পাঠানো হবে।','Phone number':'ফোন নম্বর','Send login code':'লগইন কোড পাঠান',
+'Telegram sent a login code to':'টেলিগ্রাম একটি লগইন কোড পাঠিয়েছে','. Check the Telegram app on that account.':'-এ। ওই অ্যাকাউন্টের টেলিগ্রাম অ্যাপ দেখুন।','Confirm code':'কোড নিশ্চিত করুন','Two-step password':'দুই-ধাপ পাসওয়ার্ড',
+'This account has two-step verification on. Enter its cloud password.':'এই অ্যাকাউন্টে দুই-ধাপ যাচাইকরণ চালু আছে। এর ক্লাউড পাসওয়ার্ড দিন।','Password':'পাসওয়ার্ড','Confirm password':'পাসওয়ার্ড নিশ্চিত করুন','Note':'নোট',
+'e.g. Bought from XYZ on 12 Sep, used for crypto channels':'যেমন: ১২ সেপ্টেম্বর XYZ থেকে কেনা, ক্রিপ্টো চ্যানেলে ব্যবহৃত','Save note':'নোট সংরক্ষণ','Account':'অ্যাকাউন্ট','Check health':'হেলথ চেক',
+'See if this account is active, limited, or banned':'দেখুন অ্যাকাউন্টটি সক্রিয়, সীমিত নাকি নিষিদ্ধ','Edit note':'নোট এডিট','Add a personal note about this account':'এই অ্যাকাউন্ট সম্পর্কে ব্যক্তিগত নোট যোগ করুন',
+'Exclude from runs':'রান থেকে বাদ দিন','Include in runs':'রানে অন্তর্ভুক্ত করুন','Skip this account by default when running tasks':'কাজ চালানোর সময় ডিফল্টভাবে এই অ্যাকাউন্ট বাদ যাবে','This account is currently skipped by default':'এই অ্যাকাউন্টটি এখন ডিফল্টভাবে বাদ যাচ্ছে',
+'Mute all channels':'সব চ্যানেল মিউট','Silence notifications from every channel this account joined':'এই অ্যাকাউন্টের জয়েন করা সব চ্যানেলের নোটিফিকেশন বন্ধ করুন','Delete account':'অ্যাকাউন্ট মুছুন','Removes it from this app permanently':'অ্যাপ থেকে স্থায়ীভাবে মুছে যাবে',
+'Cancel':'বাতিল','User':'ইউজার','Let this person use the app':'এই ব্যক্তিকে অ্যাপ ব্যবহার করতে দিন','Revoke access':'অ্যাক্সেস প্রত্যাহার','Ban':'নিষিদ্ধ করুন','Unban':'নিষেধাজ্ঞা তুলুন','View their accounts':'তাদের অ্যাকাউন্ট দেখুন','Delete their accounts':'তাদের অ্যাকাউন্ট মুছুন','Job':'কাজ',
+'Only owners can use the app right now.':'এখন শুধু মালিকরা অ্যাপ ব্যবহার করতে পারবেন।',
+// secret messages
+'You found the secret! Turbo Refer salutes you.':'আপনি গোপন রহস্য খুঁজে পেয়েছেন! টার্বো রেফার আপনাকে স্যালুট জানাচ্ছে।',
+'The turtle is just resting, not judging your speed settings.':'কচ্ছপটা শুধু বিশ্রাম নিচ্ছে, আপনার গতির সেটিং নিয়ে বিচার করছে না।',
+'Fun fact: this bolt has seen every one of your referrals.':'মজার তথ্য: এই বজ্রটি আপনার প্রতিটি রেফারেল দেখেছে।','Somewhere, a channel is grateful you left it alone.':'কোথাও একটি চ্যানেল কৃতজ্ঞ যে আপনি ওকে ছেড়ে দিয়েছেন।','Your accounts are doing great. Probably.':'আপনার অ্যাকাউন্টগুলো দারুণ চলছে। সম্ভবত।',
+'this session':'এই সেশনে','Keep it up!':'চালিয়ে যান!',
+// backend / errors
+'Open this app from Telegram.':'এই অ্যাপ টেলিগ্রাম থেকে খুলুন।','You are banned.':'আপনি নিষিদ্ধ।','Owner only.':'শুধু মালিকের জন্য।','no_access':'অ্যাক্সেস নেই','Account not found':'অ্যাকাউন্ট পাওয়া যায়নি','No accounts to check.':'যাচাই করার মতো কোনো অ্যাকাউন্ট নেই।',
+'No accounts to back up.':'ব্যাকআপ করার মতো কোনো অ্যাকাউন্ট নেই।',"Couldn't send the file via the bot. Open a chat with the bot first (send /start), then try again.":'বটের মাধ্যমে ফাইল পাঠানো যায়নি। আগে বটের সাথে চ্যাট খুলুন (/start পাঠান), তারপর আবার চেষ্টা করুন।',
+'No accounts found in this file.':'এই ফাইলে কোনো অ্যাকাউন্ট পাওয়া যায়নি।','Enter a valid bot username or t.me link.':'সঠিক বটের ইউজারনেম বা t.me লিংক দিন।','Add at least one account first.':'আগে অন্তত একটি অ্যাকাউন্ট যোগ করুন।',
+'Invalid bot link.':'বটের লিংক সঠিক নয়।','No usable accounts — all selected accounts are dead. Re-add them first.':'ব্যবহারযোগ্য কোনো অ্যাকাউন্ট নেই — নির্বাচিত সব অ্যাকাউন্ট মৃত। আগে আবার যোগ করুন।','No channels given.':'কোনো চ্যানেল দেওয়া হয়নি।',
+'Target and message are required.':'প্রাপক ও মেসেজ দুটোই লাগবে।','Job not found (server may have restarted).':'কাজ পাওয়া যায়নি (সার্ভার হয়তো রিস্টার্ট হয়েছে)।','Not your job.':'এটি আপনার কাজ নয়।','Job not found or already finished.':'কাজ পাওয়া যায়নি বা আগেই শেষ হয়েছে।',
+"Owners can't be changed here.":'এখানে মালিকদের পরিবর্তন করা যাবে না।','Unknown action.':'অজানা অ্যাকশন।','Message is empty.':'মেসেজ খালি।','BOT_TOKEN is not set on the server.':'সার্ভারে BOT_TOKEN সেট করা নেই।',
+'Session expired — needs re-login':'সেশন মেয়াদোত্তীর্ণ — আবার লগইন দরকার','Session expired':'সেশন মেয়াদোত্তীর্ণ','Logged out from this device':'এই ডিভাইস থেকে লগআউট হয়েছে','Logged out':'লগআউট হয়েছে',
+'Account deleted/banned by Telegram':'টেলিগ্রাম অ্যাকাউন্ট মুছে/নিষিদ্ধ করেছে','Banned by Telegram':'টেলিগ্রাম নিষিদ্ধ করেছে','Invalid link':'লিংক সঠিক নয়','Started':'শুরু হয়েছে','Sent':'পাঠানো হয়েছে','verified':'যাচাই হয়েছে',
+'(no confirmation from bot)':'(বট থেকে নিশ্চিতকরণ আসেনি)','Account busy with another task — try again in a moment':'অ্যাকাউন্ট অন্য কাজে ব্যস্ত — একটু পরে আবার চেষ্টা করুন','No channels/groups to leave':'ছাড়ার মতো কোনো চ্যানেল/গ্রুপ নেই',
+"Couldn't read the captcha image":'ক্যাপচার ছবি পড়া যায়নি','Warning':'সতর্কতা','Image':'ছবি','Text':'টেক্সট','Math':'অঙ্ক','Emoji':'ইমোজি',
+'unknown':'অজানা','error':'ত্রুটি','limited':'সীমিত','Skipped':'বাদ',
 };
+const BN_PAT=[
+[/^(\d+) selected$/,'$1টি নির্বাচিত'],[/^No account matches "(.*)"\.$/,'"$1" এর সাথে কোনো অ্যাকাউন্ট মেলেনি।'],
+[/^(\d+(?:\.\d+)?)s$/,'$1 সে'],
+[/^(\d+)m ago$/,'$1 মিনিট আগে'],[/^(\d+)h ago$/,'$1 ঘণ্টা আগে'],[/^(\d+)d ago$/,'$1 দিন আগে'],
+[/^used (\d+)m ago$/,'$1 মিনিট আগে ব্যবহৃত'],[/^used (\d+)h ago$/,'$1 ঘণ্টা আগে ব্যবহৃত'],[/^used (\d+)d ago$/,'$1 দিন আগে ব্যবহৃত'],
+[/^(\d+) this session$/,'এই সেশনে $1টি'],
+[/^([\d,]+) successful runs!$/,'$1টি সফল রান!'],
+[/^Your accounts have completed ([\d,]+) successful actions lifetime\. Keep it up!$/,'আপনার অ্যাকাউন্টগুলো মোট $1টি সফল কাজ সম্পন্ন করেছে। চালিয়ে যান!'],
+[/^(\d+) accounts? need attention$/,'$1টি অ্যাকাউন্টে মনোযোগ দরকার'],[/^(\d+) accounts? rate-limited$/,'$1টি অ্যাকাউন্ট রেট-লিমিটেড'],
+[/^(\d+) of (\d+) verified working$/,'$2টির মধ্যে $1টি সচল যাচাই হয়েছে'],
+[/^(\d+) jobs?$/,'$1টি কাজ'],[/^(\d+) accounts?$/,'$1টি অ্যাকাউন্ট'],[/^(\d+) acc$/,'$1টি অ্যাকাউন্ট'],
+[/^Checking (\d+) account\(s\)…$/,'$1টি অ্যাকাউন্ট যাচাই হচ্ছে…'],[/^Checking (.+)…$/,'$1 যাচাই হচ্ছে…'],
+[/^Delete (\d+) account\(s\)\? This cannot be undone\.$/,'$1টি অ্যাকাউন্ট মুছবেন? এটি ফেরানো যাবে না।'],[/^Deleted (\d+) account\(s\)$/,'$1টি অ্যাকাউন্ট মুছে ফেলা হয়েছে'],[/^Deleted (.+)$/,'$1 মুছে ফেলা হয়েছে'],
+[/^Could not delete (.+?): (.+)$/,(m)=>m[1]+' মুছতে পারেনি: '+trText(m[2])],[/^Restored (.+)$/,'$1 ফিরিয়ে আনা হয়েছে'],[/^Note · (.+)$/,'নোট · $1'],
+[/^Account added · (.*)$/,'অ্যাকাউন্ট যোগ হয়েছে · $1'],
+[/^(.+) excluded from runs$/,'$1 রান থেকে বাদ দেওয়া হয়েছে'],[/^(.+) included in runs$/,'$1 রানে অন্তর্ভুক্ত করা হয়েছে'],
+[/^Mute all (\d+) accounts' joined channels\?(?: \((\d+) dead accounts? will be skipped\))?$/,(m)=>'সব '+m[1]+'টি অ্যাকাউন্টের জয়েন করা সব চ্যানেল মিউট করবেন?'+(m[2]?'\n('+m[2]+'টি মৃত অ্যাকাউন্ট বাদ যাবে)':'')],
+[/^Mute notifications from all channels joined by (.+)\?$/,'$1-এর জয়েন করা সব চ্যানেলের নোটিফিকেশন মিউট করবেন?'],
+[/^(ok|dead|banned|limited|error|unknown) — (.*)$/,(m)=>trWord(m[1])+' — '+trText(m[2])],
+[/^Active as (.+)$/,'$1 হিসেবে সক্রিয়'],[/^Flood-wait (\d+)s — too long to auto-retry$/,'ফ্লাড-ওয়েট $1 সে — অটো-রিট্রাইয়ের জন্য অনেক বেশি'],[/^Flood-wait (\d+)s$/,'ফ্লাড-ওয়েট $1 সে'],
+[/^\(auto-retried after (\d+)s flood-wait\) (.*)$/,(m)=>'(ফ্লাড-ওয়েটের '+m[1]+' সে পর অটো-রিট্রাই করা হয়েছে) '+trText(m[2])],
+[/^No captcha response in (\d+)s$/,'$1 সেকেন্ডে ক্যাপচার কোনো সাড়া নেই'],[/^Bot rejected answer \((\d+)x\)$/,'বট উত্তর গ্রহণ করেনি ($1 বার)'],
+[/^Emoji (.+)$/,'ইমোজি $1'],[/^Answered (.+)$/,'উত্তর দেওয়া হয়েছে $1'],[/^Clicked '(.*)'$/,"'$1' চাপা হয়েছে"],[/^Sent code (.+)$/,'কোড পাঠানো হয়েছে $1'],[/^Image captcha → (\S+)$/,'ছবির ক্যাপচা → $1'],
+[/^(Image|Math|Text|Emoji): (.*)$/,(m)=>trWord(m[1])+': '+trText(m[2])],
+[/^Connection hiccup \((.*)\)$/,'সংযোগে সমস্যা ($1)'],
+[/^Left (\d+)\/(\d+)$/,'$2 এর মধ্যে $1টি লিভ হয়েছে'],[/^(\d+)\/(\d+)$/,'$1/$2'],
+[/^(Muted|Unmuted) (\d+) (channels(?: \+ groups)?)(.*)$/,(m)=>(m[1]==='Muted'?'মিউট হয়েছে ':'আনমিউট হয়েছে ')+m[2]+'টি '+(m[3]==='channels'?'চ্যানেল':'চ্যানেল + গ্রুপ')+trText(m[4])],
+[/^(Joined|Left) (\d+) (channels)(.*)$/,(m)=>(m[1]==='Joined'?'জয়েন হয়েছে ':'লিভ হয়েছে ')+m[2]+'টি চ্যানেল'+trText(m[4])],
+[/^(\d+) already (muted|unmuted|joined|left)$/,(m)=>m[1]+'টি আগে থেকেই '+({muted:'মিউট',unmuted:'আনমিউট',joined:'জয়েন করা',left:'লিভ করা'}[m[2]])],
+[/^(\d+) failed$/,'$1টি ব্যর্থ'],[/^No (channels(?: \+ groups)?) joined$/,'কোনো চ্যানেল জয়েন করা নেই'],[/^stopped: flood wait (\d+)s$/,'থামানো হয়েছে: ফ্লাড-ওয়েট $1 সে'],
+[/^(\d+) dead accounts? skipped$/,'$1টি মৃত অ্যাকাউন্ট বাদ দেওয়া হয়েছে'],[/^(\d+) dead will be skipped$/,'$1টি মৃত অ্যাকাউন্ট বাদ যাবে'],[/^(\d+) excluded not included$/,'$1টি বাদ দেওয়া অ্যাকাউন্ট অন্তর্ভুক্ত নয়'],
+[/^(\d+) Link Finder account not included$/,'$1টি লিংক ফাইন্ডার অ্যাকাউন্ট অন্তর্ভুক্ত নয়'],
+[/^All accounts \((\d+)\)$/,'সব অ্যাকাউন্ট ($1)'],[/^Only selected \((\d+)\)$/,'শুধু নির্বাচিতগুলো ($1)'],
+[/^(\d+) of (\d+) · (\d+) dead will be skipped$/,'$2টির মধ্যে $1টি · $3টি মৃত অ্যাকাউন্ট বাদ যাবে'],[/^(\d+) of (\d+) accounts you ticked$/,'আপনার বাছা $2টির মধ্যে $1টি অ্যাকাউন্ট'],
+[/^Up to (\d+) accounts available \((.*)\)\. Accounts are taken from the top, as many as you enter\.$/,(m)=>'সর্বোচ্চ '+m[1]+'টি অ্যাকাউন্ট পাওয়া যাচ্ছে ('+trText(m[2])+')। যতগুলো লিখবেন, শুরুর দিক থেকে ততগুলো অ্যাকাউন্ট নেওয়া হবে।'],
+[/^(.+) · (\d+) at once · (\d+(?:\.\d+)?)s$/,(m)=>trText(m[1])+' · একসাথে '+m[2]+'টি · '+m[3]+' সে'],
+[/^(\d+) at once$/,'একসাথে $1টি'],[/^(fast|ultra) · (\d+) at once$/,(m)=>trWord(m[1])+' · একসাথে '+m[2]+'টি'],
+[/^Bot sent (\d+) message\(s\) but none had links$/,'বট $1টি মেসেজ পাঠিয়েছে কিন্তু কোনোটিতে লিংক ছিল না'],[/^ Bot sent (\d+) message\(s\) but none had links$/,' বট $1টি মেসেজ পাঠিয়েছে কিন্তু কোনোটিতে লিংক ছিল না'],
+[/^Captcha: (.+)$/,(m)=>'ক্যাপচা: '+trText(m[1])],[/^@(.+) · via (.+)$/,'@$1 · $2 দিয়ে'],
+[/^(.+) \((\d+) private\)$/,'$1 ($2টি প্রাইভেট)'],[/^Imported (\d+) · skipped (\d+) \(duplicates\)$/,'$1টি ইমপোর্ট হয়েছে · $2টি বাদ (ডুপ্লিকেট)'],
+[/^Import (\d+) account\(s\) from this backup\?$/,'এই ব্যাকআপ থেকে $1টি অ্যাকাউন্ট ইমপোর্ট করবেন?'],
+[/^Sent to your Telegram chat with the bot · (\d+) account\(s\)$/,'বটের সাথে আপনার টেলিগ্রাম চ্যাটে পাঠানো হয়েছে · $1টি অ্যাকাউন্ট'],
+[/^(\d+(?:\.\d+)?) hours? saved$/,'$1 ঘণ্টা সাশ্রয়'],[/^(\d+(?:\.\d+)?) minutes? saved$/,'$1 মিনিট সাশ্রয়'],[/^(\d+) hours saved$/,'$1 ঘণ্টা সাশ্রয়'],
+[/^Saved about (.+) vs\. running one at a time$/,'একটি একটি করে চালানোর তুলনায় প্রায় $1 সাশ্রয়'],
+[/^jobs run across (\d+) accounts?$/,'কাজ চলেছে $1টি অ্যাকাউন্টে'],[/^your MVP account — (\d+) successful runs$/,'আপনার সেরা অ্যাকাউন্ট — $1টি সফল রান'],
+[/^([\d.]+) accounts\/sec$/,'$1 অ্যাকাউন্ট/সেকেন্ড'],
+[/^([\d.]+) MB of 512 MB used \(([\d.]+)%\)$/,'৫১২ MB এর মধ্যে $1 MB ব্যবহৃত ($2%)'],
+[/^(\d+) skipped$/,'$1টি বাদ'],[/^(\d+) skipped: (.*)$/,'$1টি বাদ: $2'],
+[/^Haptic set to (.+)$/,(m)=>'ভাইব্রেশন সেট হয়েছে: '+trWord(m[1])],[/^Sound (on|off)$/,(m)=>m[1]==='on'?'শব্দ চালু':'শব্দ বন্ধ'],
+[/^Delete all accounts of (.+)\?$/,'$1-এর সব অ্যাকাউন্ট মুছবেন?'],[/^Ban (.+)\?$/,'$1 কে নিষিদ্ধ করবেন?'],[/^Accounts of (.+)$/,'$1-এর অ্যাকাউন্ট'],
+[/^Send to (approved users|all users)\?$/,(m)=>trText(m[1])+' কে পাঠাবেন?'],[/^Sent to (\d+) of (\d+)$/,'$2 জনের মধ্যে $1 জনকে পাঠানো হয়েছে'],
+[/^(Approved|Banned|Unbanned|Access revoked|Accounts deleted) · (.+)$/,(m)=>trText(m[1])+' · '+m[2]],
+[/^ID (\S+) · (.+)$/,(m)=>'আইডি '+m[1]+' · '+trText(m[2])],
+[/^(.+) requested access$/,'$1 অ্যাক্সেস চেয়েছে'],[/^(.+) opened the app first time$/,'$1 প্রথমবার অ্যাপ খুলেছে'],
+[/^(\d+) of (\d+)$/,'$1 / $2'],[/^(\d+) total$/,'মোট $1'],[/^(\d+) accounts? · (.+)$/,'$1টি অ্যাকাউন্ট · $2'],
+];
+const BN_WORD={ok:'সফল',dead:'মৃত',banned:'নিষিদ্ধ',limited:'সীমিত',error:'ত্রুটি',unknown:'অজানা',fast:'দ্রুত',ultra:'আলট্রা',Image:'ছবি',Math:'অঙ্ক',Text:'টেক্সট',Emoji:'ইমোজি',light:'হালকা',normal:'স্বাভাবিক',strong:'জোরালো',off:'বন্ধ'};
+function trWord(w){ return BN_WORD[w]||w; }
+function trText(s){ return trTo(s,'bn'); }
+const _lead=s=>s.match(/^\s*/)[0], _trail=s=>s.match(/\s*$/)[0];
+function _norm(s){ return s.replace(/\s+/g,' ').trim(); }
+function _trCore(k){
+  if(BN_EXACT[k]!==undefined && BN_EXACT[k]!=='') return BN_EXACT[k];
+  for(const [re,rep] of BN_PAT){ const m=k.match(re); if(m){ return typeof rep==='function'?rep(m):k.replace(re,rep); } }
+  { const m=k.match(/^([^A-Za-z0-9]+)(.+)$/); if(m && /[A-Za-z]/.test(m[2])){ const r=_trCore(m[2]); if(r!==null) return m[1]+r; } }
+  { const m=k.match(/^(.+?)([^A-Za-z0-9)\]]+)$/); if(m && /[A-Za-z]/.test(m[1]) && m[2]!=='.'  && m[2]!=='…' && m[2]!=='?' && m[2]!=='!'){ const r=_trCore(m[1]); if(r!==null) return r+m[2]; } }
+  if(k.includes(' · ')){ const parts=k.split(' · '); const out=parts.map(p=>{const r=_trCore(p); return r===null?p:r;}); if(out.some((p,i)=>p!==parts[i])) return out.join(' · '); }
+  return null;
+}
+function trTo(s,lang){
+  if(lang!=='bn' || s==null) return s;
+  s=String(s); const k=_norm(s); if(!k) return s;
+  const r=_trCore(k); if(r===null) return s;
+  return _lead(s)+r+_trail(s);
+}
+/* ── DOM engine ── */
+const TR_ATTRS=['placeholder','title','aria-label'];
+const _origAttr=new WeakMap();
+function _procText(n){
+  const cur=n.nodeValue;
+  if(n.__t===undefined || cur!==n.__t){ n.__o=cur; }
+  const want=trTo(n.__o,PREFS.lang);
+  if(want!==cur) n.nodeValue=want;
+  n.__t=want;
+}
+function _procEl(el){
+  if(el.hasAttribute && el.hasAttribute('data-nt')) return;
+  TR_ATTRS.forEach(a=>{ if(!el.hasAttribute(a)) return;
+    let rec=_origAttr.get(el)||{}; const cur=el.getAttribute(a);
+    if(rec[a]===undefined || cur!==rec[a+'_t']){ rec[a]=cur; }
+    const want=trTo(rec[a],PREFS.lang); if(want!==cur) el.setAttribute(a,want);
+    rec[a+'_t']=want; _origAttr.set(el,rec); });
+  if(el.tagName==='TEXTAREA' && el.placeholder!==undefined) {/* handled by attr */}
+}
+function trWalk(root){
+  if(!root) return;
+  if(root.nodeType===3){ if(root.parentNode && !/^(SCRIPT|STYLE)$/.test(root.parentNode.nodeName)) _procText(root); return; }
+  if(root.nodeType!==1) return;
+  if(/^(SCRIPT|STYLE|svg|SVG|symbol)$/.test(root.nodeName)) return;
+  _procEl(root);
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT|NodeFilter.SHOW_ELEMENT);
+  let n; while((n=w.nextNode())){
+    if(n.nodeType===3){ const p=n.parentNode; if(p && !/^(SCRIPT|STYLE)$/.test(p.nodeName) && !(p.closest && p.closest('svg'))) _procText(n); }
+    else if(!/^(svg|SVG)$/.test(n.nodeName)) _procEl(n);
+  }
+}
+let _trQueue=new Set(), _trBusy=false;
+function _trFlush(){ _trBusy=false; const q=[..._trQueue]; _trQueue.clear(); q.forEach(n=>{ if(document.contains(n)) trWalk(n); }); }
+function trStart(){
+  new MutationObserver(ms=>{ for(const m of ms){
+      if(m.type==='childList'){ m.addedNodes.forEach(n=>_trQueue.add(n)); }
+      else if(m.type==='characterData'){ _trQueue.add(m.target); }
+      else if(m.type==='attributes'){ _trQueue.add(m.target); } }
+    if(!_trBusy){ _trBusy=true; queueMicrotask(_trFlush); } })
+  .observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:TR_ATTRS});
+  trWalk(document.body);
+}
+/* dialogs / popups that live outside the DOM */
+function trMsg(m){ return trTo(String(m).replace(/<svg[\s\S]*?<\/svg>\s*/g,''),PREFS.lang); }
+
 function loadPrefs(){
   let p={}; try{ p=JSON.parse(localStorage.getItem('tr_prefs')||'{}'); }catch(e){}
   return {lang:p.lang||'en', accent:p.accent||'orange', haptic:p.haptic||'normal', sound:p.sound!==false};
@@ -1555,18 +1820,14 @@ let PREFS=loadPrefs();
 function applyAccent(v){ const c=ACCENTS[v]||ACCENTS.orange; const r=document.documentElement.style;
   r.setProperty('--turbo',c); r.setProperty('--btn',c); r.setProperty('--btn-text','#ffffff');
   try{ tg?.setHeaderColor?.('bg_color'); }catch(e){} }
-function applyLang(v){
-  const t=I18N[v]||I18N.en;
-  document.querySelectorAll('.tab').forEach(el=>{ const key=el.dataset.s; const label={home:'home',accounts:'accounts',run:'run',dash:'stats',admin:'admin'}[key];
-    if(label && t[label]){ const span=el.childNodes[el.childNodes.length-1]; if(span && span.nodeType===3) span.textContent=t[label]; } });
-}
+function applyLang(v){ document.documentElement.lang=(v==='bn'?'bn':'en'); if(document.body) trWalk(document.body); }
 function loadSettings(){
   document.querySelectorAll('#lang-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===PREFS.lang));
   document.querySelectorAll('#theme-swatches .swatch').forEach(b=>b.classList.toggle('on',b.dataset.v===PREFS.accent));
   document.querySelectorAll('#haptic-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===PREFS.haptic));
   document.querySelectorAll('#sound-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===(PREFS.sound?'on':'off')));
 }
-function setLang(v){ PREFS.lang=v; savePrefs(PREFS); applyLang(v); loadSettings(); if(ME) $('hi').textContent=greeting()+', '+((ME.name)||'').split(' ')[0]; haptic('ok'); toast(v==='bn'?'ভাষা পরিবর্তন হয়েছে':'Language updated'); }
+function setLang(v){ PREFS.lang=v; savePrefs(PREFS); applyLang(v); loadSettings(); if(ME) $('hi').textContent=greeting()+', '+((ME.name)||'').split(' ')[0]; haptic('ok'); toast('Language updated'); }
 function setAccent(v){ PREFS.accent=v; savePrefs(PREFS); applyAccent(v); loadSettings(); haptic('ok'); toast('Accent color updated'); }
 function setHapticLevel(v){ PREFS.haptic=v; savePrefs(PREFS); loadSettings(); if(v!=='off') haptic('ok'); toast('Haptic set to '+v); }
 function setSoundPref(v){ PREFS.sound=(v==='on'); savePrefs(PREFS); loadSettings(); haptic('ok'); toast('Sound '+(PREFS.sound?'on':'off')); }
@@ -1703,7 +1964,7 @@ async function adminAct(uid,action,fromInput){
 async function viewUserAccounts(uid){
   try{ const d=await api('/api/admin/user/'+uid+'/accounts');
     const msg=d.accounts.length? d.accounts.map(a=>'• '+a.session_name+(a.name?' — '+a.name:'')+(a.username?' @'+a.username:'')).join('\n') : 'No accounts';
-    tg?.showPopup ? tg.showPopup({title:'Accounts of '+uid,message:msg.slice(0,250),buttons:[{type:'ok'}]}) : alert(msg);
+    tg?.showPopup ? tg.showPopup({title:trMsg('Accounts of '+uid),message:trMsg(msg).slice(0,250),buttons:[{type:'ok'}]}) : alert(trMsg(msg));
   }catch(e){ toast(e.message); }
 }
 async function broadcast(){
@@ -1739,7 +2000,7 @@ async function broadcast(){
   });
 })();
 
-applyAccent(PREFS.accent); applyLang(PREFS.lang);
+applyAccent(PREFS.accent); applyLang(PREFS.lang); trStart();
 boot();
 </script>
 </body>
