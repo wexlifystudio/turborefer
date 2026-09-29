@@ -52,6 +52,7 @@ a{color:var(--link)}
 .top .sub{color:var(--hint);font-size:13px;margin-top:4px}
 .section{margin-top:26px}
 .section h2{margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.section h2>span{display:inline-flex;align-items:center;gap:8px}
 .section h2 small{font:500 13px Manrope;color:var(--hint)}
 
 /* tabs */
@@ -220,7 +221,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .swatches{display:flex;gap:12px;flex-wrap:wrap}
 .swatch{width:42px;height:42px;border-radius:50%;border:3px solid transparent;position:relative}
 .swatch.on{border-color:var(--text)}
-.swatch.on::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.swatch.on::after{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center/55% no-repeat;filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
 
 /* weekly recap */
 .recap-hero{text-align:center;padding:6px 0 18px}
@@ -304,9 +305,25 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .gate .id{font-family:Unbounded;font-size:20px;background:var(--bg2);padding:12px;border-radius:12px;user-select:all;margin-bottom:6px}
 .gate .btn{margin-top:2px}
 .role{font-size:12px;font-weight:700;color:var(--turbo);background:color-mix(in srgb,var(--turbo) 12%,transparent);padding:4px 10px;border-radius:999px}
+/* icons (inline SVG sprite, replaces emoji) */
+.i{width:1em;height:1em;flex:none;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em;display:inline-block}
+.i-fill{fill:currentColor}
+.i-ok{color:var(--ok)}.i-bad{color:var(--bad)}
+.chip .i,h1 .i{margin-right:2px}
+.btn .i{width:1.15em;height:1.15em;margin:0}
+.empty .art .i,.recap-emoji .i,.milestone-card .emoji .i{stroke-width:1.4}
+.empty .art,.recap-emoji,.milestone-card .emoji{color:var(--turbo)}
+.hcard .ic{color:var(--ok)}.hcard.warn .ic{color:var(--warn)}.hcard.bad .ic{color:var(--bad)}
+.streak-fire,.rate-row .bolt{color:var(--turbo)}
+.i-star{color:var(--warn)}
+.row .av .i{width:18px;height:18px}
+.arow .icon .i,.icon .i{width:20px;height:20px}
+.recap-stat .ic .i{width:22px;height:22px;color:var(--turbo)}
+.hcard .ic .i{width:22px;height:22px}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol><symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol><symbol id="i-bar-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol><symbol id="i-bell-off" viewBox="0 0 24 24"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-check-square" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol><symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol><symbol id="i-crown" viewBox="0 0 24 24"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 20h14"/></symbol><symbol id="i-divide" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"/><line x1="5" x2="19" y1="12" y2="12"/><circle cx="12" cy="18" r="1"/></symbol><symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol><symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></symbol><symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol><symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol><symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol><symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol><symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol><symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol><symbol id="i-octagon-x" viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol><symbol id="i-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></symbol><symbol id="i-party" viewBox="0 0 24 24"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></symbol><symbol id="i-radio" viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol><symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol><symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-siren" viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></symbol><symbol id="i-skip" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></symbol><symbol id="i-skull" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol><symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></symbol><symbol id="i-sort" viewBox="0 0 24 24"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol><symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/></symbol><symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></symbol><symbol id="i-trending" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol><symbol id="i-type" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></symbol><symbol id="i-unlock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol><symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="19" y1="11" y2="11"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol><symbol id="i-vibrate" viewBox="0 0 24 24"><path d="m2 8 2 2-2 2 2 2-2 2"/><path d="m22 8-2 2 2 2-2 2 2 2"/><rect width="8" height="14" x="8" y="5" rx="1"/></symbol><symbol id="i-volume" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol><symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol><symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol></defs></svg>
 <div class="ptr" id="ptr"><span class="spin"></span><span id="ptr-text">Pull to refresh</span></div>
 <div id="app">
 
@@ -332,7 +349,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <button class="btn" onclick="boot()">Try again</button>
     </div>
     <div class="gate hidden" id="gate-lockdown">
-      <h1>🔧 Under maintenance</h1>
+      <h1><svg class="i" aria-hidden="true"><use href="#i-wrench"/></svg> Under maintenance</h1>
       <p style="color:var(--hint)" id="gate-lockdown-msg">The app is temporarily down for maintenance. Please try again soon.</p>
       <button class="btn" onclick="boot()">Try again</button>
     </div>
@@ -346,13 +363,13 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <div class="stat"><span class="lbl" id="h-status"><span class="dot"></span>checking</span></div>
     </div>
     <div class="streak-row hidden" id="streak-row">
-      <span class="streak-fire" id="streak-fire">🔥</span>
+      <span class="streak-fire" id="streak-fire"><svg class="i" aria-hidden="true"><use href="#i-flame"/></svg></span>
       <span><b id="streak-n">0</b> day streak</span>
       <span class="streak-sep">·</span>
       <span><b id="streak-total">0</b> lifetime runs</span>
     </div>
     <button class="hcard hidden" id="h-health" onclick="show('accounts')">
-      <span class="ic" id="hh-ic">🩺</span>
+      <span class="ic" id="hh-ic"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg></span>
       <span style="flex:1"><span class="t" id="hh-t"></span><span class="d" id="hh-d"></span></span>
       <span class="r" style="color:var(--hint)">›</span>
     </button>
@@ -363,7 +380,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <button onclick="goRun('message')"><span class="icon"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 21l1.8-5.5A8 8 0 1 1 21 12z"/></svg></span>Send message</button>
         <button onclick="show('accounts');openAdd()"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Add account</button>
       </div>
-      <button class="btn ghost" id="home-mute-all" onclick="muteAllAccounts()" style="margin-top:10px">🔕 Mute all channels — every account</button>
+      <button class="btn ghost" id="home-mute-all" onclick="muteAllAccounts()" style="margin-top:10px"><svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> Mute all channels — every account</button>
     </div>
     <div class="section"><h2>Recent jobs <small id="j-count"></small></h2><div class="list" id="h-jobs"><div class="empty">Nothing has run yet.</div></div></div>
   </div>
@@ -371,21 +388,21 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <!-- ══ Accounts ══ -->
   <div class="screen" id="s-accounts">
     <div class="top"><div><h1>Accounts</h1><div class="sub" id="acc-sub">Real Telegram accounts used for every run</div></div><button class="btn sm" onclick="openAdd()">＋ Add</button></div>
-    <button class="btn ghost sm" id="health-all-btn" onclick="healthCheckAll()" style="width:100%;margin-bottom:10px">🩺 Check health of all accounts</button>
-    <button class="btn ghost sm" id="mute-all-btn" onclick="muteAllAccounts()" style="width:100%;margin-bottom:10px">🔕 Mute all channels on every account</button>
+    <button class="btn ghost sm" id="health-all-btn" onclick="healthCheckAll()" style="width:100%;margin-bottom:10px"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg> Check health of all accounts</button>
+    <button class="btn ghost sm" id="mute-all-btn" onclick="muteAllAccounts()" style="width:100%;margin-bottom:10px"><svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> Mute all channels on every account</button>
     <div style="display:flex;gap:8px;margin-bottom:6px">
-      <button class="btn ghost sm" style="flex:1" onclick="exportBackup()">📤 Export backup</button>
-      <button class="btn ghost sm" style="flex:1" onclick="$('import-file').click()">📥 Import backup</button>
+      <button class="btn ghost sm" style="flex:1" onclick="exportBackup()"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg> Export backup</button>
+      <button class="btn ghost sm" style="flex:1" onclick="$('import-file').click()"><svg class="i" aria-hidden="true"><use href="#i-download"/></svg> Import backup</button>
       <input type="file" id="import-file" accept="application/json" class="hidden" onchange="importBackup(event)">
     </div>
     <div class="searchbar">
-      <input id="acc-search" placeholder="🔍 Search accounts…" oninput="renderAccounts()">
-      <button class="sortbtn" id="sort-btn" onclick="cycleSort()">↕ Recent</button>
+      <input id="acc-search" placeholder="Search accounts…" oninput="renderAccounts()">
+      <button class="sortbtn" id="sort-btn" onclick="cycleSort()"><svg class="i" aria-hidden="true"><use href="#i-sort"/></svg> Recent</button>
     </div>
     <div class="batchbar hidden" id="batch-bar">
       <span class="n" id="batch-n">0 selected</span>
-      <button class="btn sm ghost" onclick="batchHealth()">🩺 Check</button>
-      <button class="btn sm danger" onclick="batchDelete()">🗑 Delete</button>
+      <button class="btn sm ghost" onclick="batchHealth()"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg> Check</button>
+      <button class="btn sm danger" onclick="batchDelete()"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg> Delete</button>
       <button class="btn sm ghost" onclick="exitBatch()">Done</button>
     </div>
     <div class="help" style="margin-bottom:14px">Export sends a backup file to your Telegram chat with the bot. Save it somewhere safe — anyone with this file can access those accounts.</div>
@@ -408,18 +425,18 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <div class="help">The bot gets <b>/start 123456</b> from each account.</div></div>
       <div class="field"><label>Captcha type</label>
         <div class="chips" id="r-method">
-          <button class="chip on" data-v="no_captcha">None</button><button class="chip" data-v="text_code">🔤 Text code</button><button class="chip" data-v="image">🖼️ Image</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="button">Button</button>
+          <button class="chip on" data-v="no_captcha">None</button><button class="chip" data-v="text_code"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Text code</button><button class="chip" data-v="image"><svg class="i" aria-hidden="true"><use href="#i-image"/></svg> Image</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="button">Button</button>
         </div>
         <div class="help" id="captcha-help"></div></div>
     </div>
     <div id="run-channels" class="hidden">
-      <div class="field"><label>Action</label><div class="chips" id="c-action"><button class="chip on" data-v="join">Join</button><button class="chip" data-v="leave">Leave</button><button class="chip" data-v="random">🍃 Auto-leave</button><button class="chip" data-v="mute">🔕 Mute all</button></div></div>
+      <div class="field"><label>Action</label><div class="chips" id="c-action"><button class="chip on" data-v="join">Join</button><button class="chip" data-v="leave">Leave</button><button class="chip" data-v="random"><svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg> Auto-leave</button><button class="chip" data-v="mute"><svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> Mute all</button></div></div>
       <div id="c-mute-wrap" class="field hidden">
         <label>Mute or unmute?</label>
-        <div class="chips" id="c-mute-mode" style="margin-bottom:10px"><button class="chip on" data-v="mute">🔕 Mute</button><button class="chip" data-v="unmute">🔔 Unmute</button></div>
+        <div class="chips" id="c-mute-mode" style="margin-bottom:10px"><button class="chip on" data-v="mute"><svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> Mute</button><button class="chip" data-v="unmute"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg> Unmute</button></div>
         <label>What to mute</label>
-        <div class="chips" id="c-mute-scope"><button class="chip on" data-v="channels">📢 Channels only</button><button class="chip" data-v="all">📢 Channels + 👥 Groups</button></div>
-        <div class="help">প্রতিটা account যত channel-এ join আছে, সবগুলোর notification একবারে mute হয়ে যাবে। আগে থেকে mute থাকলে skip করবে। পরে চাইলে 🔔 Unmute দিয়ে ফেরত আনা যাবে।</div>
+        <div class="chips" id="c-mute-scope"><button class="chip on" data-v="channels"><svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg> Channels only</button><button class="chip" data-v="all"><svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg> Channels + <svg class="i" aria-hidden="true"><use href="#i-users"/></svg> Groups</button></div>
+        <div class="help">প্রতিটা account যত channel-এ join আছে, সবগুলোর notification একবারে mute হয়ে যাবে। আগে থেকে mute থাকলে skip করবে। পরে চাইলে <svg class="i" aria-hidden="true"><use href="#i-bell"/></svg> Unmute দিয়ে ফেরত আনা যাবে।</div>
       </div>
       <div id="c-list-wrap" class="field"><label>Channels</label><textarea id="c-list" placeholder="@channel1&#10;@channel2&#10;https://t.me/channel3"></textarea><div class="help">One per line, or separated by commas.</div></div>
       <div id="c-random-wrap" class="field hidden">
@@ -435,7 +452,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 
     <div class="section"><h2>Speed</h2>
       <div class="chips" id="speed" style="margin-bottom:10px">
-        <button class="chip on" data-v="fast">⚡ Fast</button><button class="chip" data-v="single">🐢 Single</button><button class="chip" data-v="parallel">🚀 Ultra</button><button class="chip" data-v="custom">⚙️ Custom</button>
+        <button class="chip on" data-v="fast"><svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> Fast</button><button class="chip" data-v="single"><svg class="i" aria-hidden="true"><use href="#i-timer"/></svg> Single</button><button class="chip" data-v="parallel"><svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> Ultra</button><button class="chip" data-v="custom"><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg> Custom</button>
       </div>
       <div class="help" id="speed-help" style="font-size:12px;color:var(--hint)"></div>
       <div id="speed-custom" class="hidden" style="margin-top:12px">
@@ -456,21 +473,21 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 
   <!-- ══ Link Finder ══ -->
   <div class="screen" id="s-links">
-    <div class="top"><div><h1>🔗 Link Finder</h1><div class="sub">Send /start to any bot and grab every sponsor/channel link it shows</div></div></div>
+    <div class="top"><div><h1><svg class="i" aria-hidden="true"><use href="#i-link"/></svg> Link Finder</h1><div class="sub">Send /start to any bot and grab every sponsor/channel link it shows</div></div></div>
     <div class="field"><label>Bot username or link</label>
       <input id="lf-bot" placeholder="@SomeAirdropBot or https://t.me/SomeAirdropBot" inputmode="url">
       <div class="help">The account sends <b>/start</b> to this bot and reads its reply.</div>
     </div>
     <div class="field"><label>Captcha (if the bot asks first)</label>
       <div class="chips" id="lf-method">
-        <button class="chip on" data-v="auto">🤖 Auto</button><button class="chip" data-v="text_code">🔤 Text code</button><button class="chip" data-v="image">🖼️ Image</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="button">Button</button><button class="chip" data-v="no_captcha">None</button>
+        <button class="chip on" data-v="auto"><svg class="i" aria-hidden="true"><use href="#i-bot"/></svg> Auto</button><button class="chip" data-v="text_code"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Text code</button><button class="chip" data-v="image"><svg class="i" aria-hidden="true"><use href="#i-image"/></svg> Image</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="button">Button</button><button class="chip" data-v="no_captcha">None</button>
       </div>
       <div class="help" id="lf-captcha-help"></div>
     </div>
     <div class="field">
       <label>Account to use</label>
       <div id="lf-acc-list" class="list"><div class="empty">Loading…</div></div>
-      <div class="help">⭐ marks your default account. Tap an account to pick it for this run, or tap "Set default" to make it start selected every time.<br><br>ℹ️ <b>যে account-টা এখানে ⭐ Default হিসেবে বাছা থাকবে, সেই account দিয়ে Referral বা Channel Join/Leave কখনোই চলবে না ❌ — সেটা শুধু Link Finder-এর জন্যই reserved থাকবে।</b></div>
+      <div class="help"><svg class="i i-fill" aria-hidden="true"><use href="#i-star"/></svg> marks your default account. Tap an account to pick it for this run, or tap "Set default" to make it start selected every time.<br><br>ℹ <b>যে account-টা এখানে <svg class="i i-fill" aria-hidden="true"><use href="#i-star"/></svg> Default হিসেবে বাছা থাকবে, সেই account দিয়ে Referral বা Channel Join/Leave কখনোই চলবে না <svg class="i" aria-hidden="true"><use href="#i-x-circle"/></svg> — সেটা শুধু Link Finder-এর জন্যই reserved থাকবে।</b></div>
     </div>
     <button class="btn turbo" id="lf-go" onclick="runLinkFinder()">Find links</button>
 
@@ -480,8 +497,8 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <div class="help" id="lf-from" style="margin:0 0 6px"></div>
         <div class="help" id="lf-captcha" style="margin:0 0 12px"></div>
         <div style="display:flex;gap:10px;margin-bottom:10px">
-          <button class="btn sm" onclick="copyAllLinks()">📋 Copy all</button>
-          <button class="btn sm ghost" onclick="runLinkFinder()">🔁 Run again</button>
+          <button class="btn sm" onclick="copyAllLinks()"><svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg> Copy all</button>
+          <button class="btn sm ghost" onclick="runLinkFinder()"><svg class="i" aria-hidden="true"><use href="#i-repeat"/></svg> Run again</button>
         </div>
         <div class="list" id="lf-links"><div class="empty">No links yet.</div></div>
       </div>
@@ -497,31 +514,31 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <div class="sparks" id="sparks"></div>
       <div class="mid"><div class="num"><b id="job-done">0</b><span> / <span id="job-total">0</span></span></div><div class="lbl" id="job-lbl">working…</div></div>
     </div>
-    <div class="rate-row" id="rate-row"><span class="bolt">⚡</span><b id="job-rate">0.0</b> accounts/sec</div>
+    <div class="rate-row" id="rate-row"><span class="bolt"><svg class="i" aria-hidden="true"><use href="#i-zap"/></svg></span><b id="job-rate">0.0</b> accounts/sec</div>
     <div style="display:flex;justify-content:center;gap:24px;color:var(--hint);font-size:13px;margin-bottom:8px">
       <span><span class="dot ok"></span><b id="job-ok" style="color:var(--text)">0</b> ok</span>
       <span><span class="dot bad"></span><b id="job-bad" style="color:var(--text)">0</b> failed</span>
     </div>
     <div class="section"><h2>Results</h2><div class="list feed" id="job-feed"><div class="empty">Waiting for the first account…</div></div></div>
     <div style="height:18px"></div>
-    <button class="btn danger hidden" id="job-cancel" onclick="cancelJob()" style="margin-bottom:8px">🛑 Stop this run</button>
+    <button class="btn danger hidden" id="job-cancel" onclick="cancelJob()" style="margin-bottom:8px"><svg class="i" aria-hidden="true"><use href="#i-octagon-x"/></svg> Stop this run</button>
     <button class="btn ghost" id="job-back" onclick="show('run')">Run another</button>
   </div>
 
   <!-- ══ Dashboard ══ -->
   <div class="screen" id="s-dash">
-    <div class="top"><div><h1>Stats</h1><div class="sub">Last 14 days</div></div><button class="btn sm ghost" onclick="loadDash()">↻</button></div>
+    <div class="top"><div><h1>Stats</h1><div class="sub">Last 14 days</div></div><button class="btn sm ghost" onclick="loadDash()"><svg class="i" aria-hidden="true"><use href="#i-refresh"/></svg></button></div>
     <div class="grid3">
       <div class="kpi"><span class="num" id="d-jobs">–</span><span>jobs run</span></div>
       <div class="kpi"><span class="num" id="d-success">–</span><span>successful</span></div>
       <div class="kpi"><span class="num" id="d-failed">–</span><span>failed</span></div>
     </div>
     <button class="hcard hidden" id="recap-card" onclick="openWeeklyRecap()" style="margin-top:14px">
-      <span class="ic">🎁</span><span style="flex:1"><span class="t">Your weekly recap is ready</span><span class="d">Tap to see this week's highlights</span></span>
+      <span class="ic"><svg class="i" aria-hidden="true"><use href="#i-gift"/></svg></span><span style="flex:1"><span class="t">Your weekly recap is ready</span><span class="d">Tap to see this week's highlights</span></span>
       <span class="r" style="color:var(--hint)">›</span>
     </button>
     <div class="hcard hidden" id="time-saved-card" style="margin-top:10px;cursor:default">
-      <span class="ic">⏱️</span><span style="flex:1"><span class="t" id="ts-text">–</span><span class="d">Estimated vs. running everything one at a time</span></span>
+      <span class="ic"><svg class="i" aria-hidden="true"><use href="#i-timer"/></svg></span><span style="flex:1"><span class="t" id="ts-text">–</span><span class="d">Estimated vs. running everything one at a time</span></span>
     </div>
     <div class="section"><h2>Daily activity</h2>
       <div class="bars" id="d-bars"></div>
@@ -542,7 +559,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 
   <!-- ══ Admin ══ -->
   <div class="screen" id="s-admin">
-    <div class="top"><div><h1>Admin</h1><div class="sub">Users, access and data</div></div><button class="btn sm ghost" onclick="loadAdmin()">↻</button></div>
+    <div class="top"><div><h1>Admin</h1><div class="sub">Users, access and data</div></div><button class="btn sm ghost" onclick="loadAdmin()"><svg class="i" aria-hidden="true"><use href="#i-refresh"/></svg></button></div>
 
     <div class="grid3">
       <div class="kpi"><span class="num" id="k-users">–</span><span>users</span></div>
@@ -554,10 +571,10 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     </div>
 
     <button class="hcard hidden" id="lock-banner" onclick="show('admin')" style="margin-top:14px">
-      <span class="ic">🔒</span><span style="flex:1"><span class="t">Lockdown is active</span><span class="d">Only owners can use the app right now</span></span>
+      <span class="ic"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg></span><span style="flex:1"><span class="t">Lockdown is active</span><span class="d">Only owners can use the app right now</span></span>
     </button>
 
-    <div class="section"><h2>🖥️ Server health</h2>
+    <div class="section"><h2><span><svg class="i" aria-hidden="true"><use href="#i-server"/></svg> Server health</span></h2>
       <div class="grid3" id="sh-grid">
         <div class="kpi"><span class="num" id="sh-mongo">–</span><span>MongoDB</span></div>
         <div class="kpi"><span class="num" id="sh-bot">–</span><span>Bot API</span></div>
@@ -579,11 +596,11 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       </div>
     </div>
 
-    <div class="section"><h2>📡 Live activity <small>auto-refreshes</small></h2>
+    <div class="section"><h2><span><svg class="i" aria-hidden="true"><use href="#i-radio"/></svg> Live activity </span><small>auto-refreshes</small></h2>
       <div class="list" id="act-list"><div class="empty">Loading…</div></div>
     </div>
 
-    <div class="section"><h2>📊 Platform-wide stats</h2>
+    <div class="section"><h2><span><svg class="i" aria-hidden="true"><use href="#i-bar-chart"/></svg> Platform-wide stats</span></h2>
       <div class="grid3">
         <div class="kpi"><span class="num" id="sw-accs">–</span><span>all accounts</span></div>
         <div class="kpi"><span class="num" id="sw-jobs">–</span><span>all jobs</span></div>
@@ -594,15 +611,15 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       </div>
     </div>
 
-    <div class="section"><h2>🚨 Emergency lockdown</h2>
+    <div class="section"><h2><span><svg class="i" aria-hidden="true"><use href="#i-siren"/></svg> Emergency lockdown</span></h2>
       <button class="hcard bad" id="lockdown-toggle" onclick="toggleLockdown()" style="cursor:pointer">
-        <span class="ic" id="lock-ic">🔓</span><span style="flex:1"><span class="t" id="lock-t">App is open</span><span class="d" id="lock-d">Tap to lock the app for everyone except owners</span></span>
+        <span class="ic" id="lock-ic"><svg class="i" aria-hidden="true"><use href="#i-unlock"/></svg></span><span style="flex:1"><span class="t" id="lock-t">App is open</span><span class="d" id="lock-d">Tap to lock the app for everyone except owners</span></span>
       </button>
       <div class="field" style="margin-top:10px"><label>Lockdown message (shown to blocked users)</label>
         <input id="lock-msg" placeholder="The app is temporarily down for maintenance."></div>
     </div>
 
-    <div class="section"><h2>📢 Log channel</h2>
+    <div class="section"><h2><span><svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg> Log channel</span></h2>
       <div class="field"><label>Post every job summary here too (channel/group ID or @username)</label>
         <div style="display:flex;gap:8px"><input id="log-chan" placeholder="@my_private_log or -1001234567890"><button class="btn sm" onclick="saveLogChannel()">Save</button></div>
         <div class="help">Add the bot as admin to that channel first, or it can't post there.</div></div>
@@ -638,14 +655,14 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <div class="screen" id="s-settings">
     <div class="top"><div style="display:flex;align-items:center;gap:12px"><button class="icon" onclick="show('home')"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><path d="M15 18l-6-6 6-6"/></svg></button><div><h1>Settings</h1><div class="sub">Language, look, and feel</div></div></div></div>
 
-    <div class="section"><h2>🌐 Language</h2>
+    <div class="section"><h2><span><svg class="i" aria-hidden="true"><use href="#i-globe"/></svg> Language</span></h2>
       <div class="seg" id="lang-seg">
         <button data-v="en" onclick="setLang('en')">English</button>
         <button data-v="bn" onclick="setLang('bn')">বাংলা</button>
       </div>
     </div>
 
-    <div class="section"><h2>🎨 Accent color</h2>
+    <div class="section"><h2><span><svg class="i" aria-hidden="true"><use href="#i-palette"/></svg> Accent color</span></h2>
       <div class="swatches" id="theme-swatches">
         <button class="swatch" data-v="orange" style="background:#ff4d1f" onclick="setAccent('orange')"></button>
         <button class="swatch" data-v="blue" style="background:#2ea6ff" onclick="setAccent('blue')"></button>
@@ -656,7 +673,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       </div>
     </div>
 
-    <div class="section"><h2>📳 Haptic intensity</h2>
+    <div class="section"><h2><span><svg class="i" aria-hidden="true"><use href="#i-vibrate"/></svg> Haptic intensity</span></h2>
       <div class="seg" id="haptic-seg">
         <button data-v="off" onclick="setHapticLevel('off')">Off</button>
         <button data-v="light" onclick="setHapticLevel('light')">Light</button>
@@ -666,7 +683,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <button class="btn ghost sm" style="margin-top:10px" onclick="haptic('medium');hapticPattern('streak')">Test vibration</button>
     </div>
 
-    <div class="section"><h2>🔊 Sound on job complete</h2>
+    <div class="section"><h2><span><svg class="i" aria-hidden="true"><use href="#i-volume"/></svg> Sound on job complete</span></h2>
       <div class="seg" id="sound-seg">
         <button data-v="on" onclick="setSoundPref('on')">On</button>
         <button data-v="off" onclick="setSoundPref('off')">Off</button>
@@ -726,11 +743,11 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <div class="sub" id="am-sub" style="margin:-10px 0 6px"></div>
   <div class="sub" id="am-note" style="margin-bottom:14px"></div>
   <div class="action-list">
-    <button class="arow" onclick="amAction('health')"><span class="icon">🩺</span><span class="body"><span class="t">Check health</span><span class="d">See if this account is active, limited, or banned</span></span></button>
-    <button class="arow" onclick="amAction('note')"><span class="icon">📝</span><span class="body"><span class="t">Edit note</span><span class="d">Add a personal note about this account</span></span></button>
-    <button class="arow" onclick="amAction('exclude')"><span class="icon" id="am-ex-ic">🚫</span><span class="body"><span class="t" id="am-ex-t">Exclude from runs</span><span class="d" id="am-ex-d">Skip this account by default when running tasks</span></span></button>
-    <button class="arow" onclick="amAction('mute')"><span class="icon">🔕</span><span class="body"><span class="t">Mute all channels</span><span class="d">Silence notifications from every channel this account joined</span></span></button>
-    <button class="arow danger" onclick="amAction('delete')"><span class="icon">🗑️</span><span class="body"><span class="t">Delete account</span><span class="d">Removes it from this app permanently</span></span></button>
+    <button class="arow" onclick="amAction('health')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg></span><span class="body"><span class="t">Check health</span><span class="d">See if this account is active, limited, or banned</span></span></button>
+    <button class="arow" onclick="amAction('note')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-pencil"/></svg></span><span class="body"><span class="t">Edit note</span><span class="d">Add a personal note about this account</span></span></button>
+    <button class="arow" onclick="amAction('exclude')"><span class="icon" id="am-ex-ic"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg></span><span class="body"><span class="t" id="am-ex-t">Exclude from runs</span><span class="d" id="am-ex-d">Skip this account by default when running tasks</span></span></button>
+    <button class="arow" onclick="amAction('mute')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg></span><span class="body"><span class="t">Mute all channels</span><span class="d">Silence notifications from every channel this account joined</span></span></button>
+    <button class="arow danger" onclick="amAction('delete')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg></span><span class="body"><span class="t">Delete account</span><span class="d">Removes it from this app permanently</span></span></button>
   </div>
   <button class="btn ghost" style="margin-top:6px" onclick="closeSheet3()">Cancel</button>
 </div>
@@ -742,12 +759,12 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <h2 id="ua-title">User</h2>
   <div class="sub" id="ua-sub" style="margin:-10px 0 14px"></div>
   <div class="action-list">
-    <button class="arow" id="ua-approve" onclick="uaAction('approve')"><span class="icon">✅</span><span class="body"><span class="t">Approve</span><span class="d">Let this person use the app</span></span></button>
-    <button class="arow" id="ua-revoke" onclick="uaAction('revoke')"><span class="icon">➖</span><span class="body"><span class="t">Revoke access</span></span></button>
-    <button class="arow danger" id="ua-ban" onclick="uaAction('ban')"><span class="icon">🚫</span><span class="body"><span class="t">Ban</span></span></button>
-    <button class="arow" id="ua-unban" onclick="uaAction('unban')"><span class="icon">✅</span><span class="body"><span class="t">Unban</span></span></button>
-    <button class="arow" id="ua-view" onclick="uaAction('view')"><span class="icon">👁️</span><span class="body"><span class="t">View their accounts</span></span></button>
-    <button class="arow danger" id="ua-wipe" onclick="uaAction('wipe')"><span class="icon">🗑️</span><span class="body"><span class="t">Delete their accounts</span></span></button>
+    <button class="arow" id="ua-approve" onclick="uaAction('approve')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg></span><span class="body"><span class="t">Approve</span><span class="d">Let this person use the app</span></span></button>
+    <button class="arow" id="ua-revoke" onclick="uaAction('revoke')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-minus"/></svg></span><span class="body"><span class="t">Revoke access</span></span></button>
+    <button class="arow danger" id="ua-ban" onclick="uaAction('ban')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-ban"/></svg></span><span class="body"><span class="t">Ban</span></span></button>
+    <button class="arow" id="ua-unban" onclick="uaAction('unban')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg></span><span class="body"><span class="t">Unban</span></span></button>
+    <button class="arow" id="ua-view" onclick="uaAction('view')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-eye"/></svg></span><span class="body"><span class="t">View their accounts</span></span></button>
+    <button class="arow danger" id="ua-wipe" onclick="uaAction('wipe')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg></span><span class="body"><span class="t">Delete their accounts</span></span></button>
   </div>
   <button class="btn ghost" style="margin-top:6px" onclick="closeSheet4()">Cancel</button>
 </div>
@@ -772,7 +789,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 <div class="sheet" id="sheet6">
   <div class="grab"></div>
   <div class="recap-hero">
-    <span class="recap-emoji">🎁</span>
+    <span class="recap-emoji"><svg class="i" aria-hidden="true"><use href="#i-gift"/></svg></span>
     <h2>Your week, wrapped</h2>
     <p class="sub" style="margin:0">Last 7 days on Turbo Refer</p>
   </div>
@@ -788,8 +805,8 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
   <div class="sub" style="margin:-10px 0 12px">Which accounts should run this?</div>
   <div class="cf-summary" id="cf-summary"></div>
   <div class="action-list">
-    <button class="arow" id="cf-all" onclick="cfPick('all')"><span class="icon">🌐</span><span class="body"><span class="t" id="cf-all-t">All accounts</span><span class="d" id="cf-all-d"></span></span></button>
-    <button class="arow" id="cf-sel" onclick="cfPick('selected')"><span class="icon">☑️</span><span class="body"><span class="t" id="cf-sel-t">Only selected</span><span class="d" id="cf-sel-d"></span></span></button>
+    <button class="arow" id="cf-all" onclick="cfPick('all')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-globe"/></svg></span><span class="body"><span class="t" id="cf-all-t">All accounts</span><span class="d" id="cf-all-d"></span></span></button>
+    <button class="arow" id="cf-sel" onclick="cfPick('selected')"><span class="icon"><svg class="i" aria-hidden="true"><use href="#i-check-square"/></svg></span><span class="body"><span class="t" id="cf-sel-t">Only selected</span><span class="d" id="cf-sel-d"></span></span></button>
   </div>
   <div class="field" id="cf-amount-wrap" style="margin-top:4px">
     <label>কয়টা account দিয়ে চালাবেন?</label>
@@ -801,7 +818,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 </div>
 <div id="confetti-layer"></div>
 <div class="milestone-card" id="milestone-card">
-  <span class="emoji" id="ms-emoji">🎉</span>
+  <span class="emoji" id="ms-emoji"><svg class="i" aria-hidden="true"><use href="#i-party"/></svg></span>
   <h3 id="ms-title">Milestone!</h3>
   <p id="ms-sub"></p>
   <button class="btn" onclick="closeMilestone()">Nice!</button>
@@ -812,6 +829,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 const tg = window.Telegram?.WebApp; tg?.ready(); tg?.expand();
 try{ tg?.setHeaderColor?.(getComputedStyle(document.body).getPropertyValue('--bg').trim()||'#0f1216'); }catch(e){}
 const $ = id => document.getElementById(id);
+const escI = s => String(s??'').split(/(<svg[\s\S]*?<\/svg>)/).map((p,i)=>i%2?p:esc(p)).join('');
 const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 let ME=null, ACCOUNTS=[], SEL=new Set(), RUNKIND='refer', POLL=null, CURJOB=null;
 
@@ -832,7 +850,7 @@ function greeting(){ const h=bdHour(); const bn=(typeof PREFS!=='undefined'&&PRE
   if(bn) return h<5?'শুভ রাত্রি':h<12?'শুভ সকাল':h<16?'শুভ দুপুর':h<20?'শুভ সন্ধ্যা':'শুভ রাত্রি';
   return h<5?'Late night':h<12?'Good morning':h<16?'Good afternoon':h<20?'Good evening':'Good night'; }
 function emptyState(art,title,text,btn){ return `<div class="empty"><div class="art">${art}</div><b>${title}</b><p>${text}</p>${btn||''}</div>`; }
-function toast(m,ms=2200){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),ms); }
+function toast(m,ms=2200){ const t=$('toast'); t.textContent=''; String(m??'').split(/(<svg[\s\S]*?<\/svg>)/).forEach((p,i)=>{ if(!p) return; if(i%2) t.insertAdjacentHTML('beforeend',p); else t.appendChild(document.createTextNode(p)); }); t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),ms); }
 function haptic(k='light'){ if(PREFS.haptic==='off') return; try{ k==='ok'?tg.HapticFeedback.notificationOccurred('success'):k==='bad'?tg.HapticFeedback.notificationOccurred('error'):tg.HapticFeedback.impactOccurred(k); }catch(e){} }
 function hapticPattern(name){
   if(PREFS.haptic==='off') return;
@@ -848,7 +866,7 @@ function hapticPattern(name){
   }catch(e){}
 }
 function busy(btn,on,label){ if(!btn)return; if(on){btn._l=btn.innerHTML;btn.innerHTML='<span class="spin"></span>'+(label||'');btn.disabled=true;}else{btn.innerHTML=btn._l||btn.innerHTML;btn.disabled=false;} }
-function confirmDlg(msg){ return new Promise(res=>{ if(tg?.showConfirm) tg.showConfirm(msg,res); else res(confirm(msg)); }); }
+function confirmDlg(msg){ msg=String(msg).replace(/<svg[\s\S]*?<\/svg>\s*/g,''); return new Promise(res=>{ if(tg?.showConfirm) tg.showConfirm(msg,res); else res(confirm(msg)); }); }
 function show(name){
   if(!ME && name!=='gate') return;
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id==='s-'+name));
@@ -894,11 +912,11 @@ async function loadHome(){
     const d=await api('/api/jobs'); const jobs=d.jobs||[];
     $('j-count').textContent = jobs.length?jobs.length+' this session':'';
     $('h-jobs').innerHTML = jobs.length ? jobs.map(j=>`<button class="row" onclick="openJob('${j.id}')">
-      <span class="av" style="font-family:Manrope;font-size:16px">${j.kind==='refer'?'🚀':j.kind==='channels'?'📢':j.kind==='mute'?'🔕':(j.kind==='auto_leave'||j.kind==='random_leave')?'🍃':'💬'}</span>
+      <span class="av" style="font-family:Manrope;font-size:16px">${j.kind==='refer'?'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg>':j.kind==='channels'?'<svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg>':j.kind==='mute'?'<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg>':(j.kind==='auto_leave'||j.kind==='random_leave')?'<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg>':'<svg class="i" aria-hidden="true"><use href="#i-message"/></svg>'}</span>
       <span class="body"><span class="t">${j.kind==='refer'?'Referral':j.kind==='channels'?(j.meta.action==='join'?'Join channels':'Leave channels'):j.kind==='mute'?(j.meta.mute===false?'Unmute channels':'Mute channels'):(j.kind==='auto_leave'||j.kind==='random_leave')?'Auto-leave':'Message'}</span>
       <span class="d">${esc(j.meta.link||j.meta.target||(j.meta.channels||[]).join(', '))}</span></span>
       <span class="r">${j.status==='running'?'<span style="color:var(--turbo)">running</span>':j.success+'/'+j.total+' ok'}</span></button>`).join('')
-      : emptyState('⚡','Nothing has run yet','Start your first referral, channel join, or message.','<button class="btn" onclick="goRun(\'refer\')">Start a run</button>');
+      : emptyState('<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg>','Nothing has run yet','Start your first referral, channel join, or message.','<button class="btn" onclick="goRun(\'refer\')">Start a run</button>');
   }catch(e){}
 }
 const CONFETTI_COLORS=['#ff4d1f','#22c55e','#2ea6ff','#f59e0b','#e879f9','#fbbf24'];
@@ -916,7 +934,7 @@ function fireConfetti(n=60){
   }
 }
 function showMilestone(count){
-  $('ms-emoji').textContent = count>=5000?'👑':count>=1000?'🏆':count>=100?'🎉':'✨';
+  $('ms-emoji').innerHTML = count>=5000?'<svg class="i" aria-hidden="true"><use href="#i-crown"/></svg>':count>=1000?'<svg class="i" aria-hidden="true"><use href="#i-trophy"/></svg>':count>=100?'<svg class="i" aria-hidden="true"><use href="#i-party"/></svg>':'<svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg>';
   $('ms-title').textContent = count.toLocaleString()+' successful runs!';
   $('ms-sub').textContent = 'Your accounts have completed '+count.toLocaleString()+' successful actions lifetime. Keep it up!';
   $('milestone-card').classList.add('on');
@@ -930,10 +948,10 @@ function eggTap(){
   EGG_TAPS++; clearTimeout(EGG_T); EGG_T=setTimeout(()=>EGG_TAPS=0,1200);
   if(EGG_TAPS===7){
     EGG_TAPS=0; haptic('ok'); fireConfetti(40);
-    toast('⚡ You found the secret! Turbo Refer salutes you. 🐢', 3000);
+    toast('<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> You found the secret! Turbo Refer salutes you. <svg class="i" aria-hidden="true"><use href="#i-timer"/></svg>', 3000);
   }
 }
-const EASTER_MESSAGES=['🐢 The turtle is just resting, not judging your speed settings.','⚡ Fun fact: this bolt has seen every one of your referrals.','🍃 Somewhere, a channel is grateful you left it alone.','🩺 Your accounts are doing great. Probably.'];
+const EASTER_MESSAGES=['<svg class="i" aria-hidden="true"><use href="#i-timer"/></svg> The turtle is just resting, not judging your speed settings.','<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> Fun fact: this bolt has seen every one of your referrals.','<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg> Somewhere, a channel is grateful you left it alone.','<svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg> Your accounts are doing great. Probably.'];
 function maybeEasterEmpty(){ return Math.random()<0.08 ? EASTER_MESSAGES[Math.floor(Math.random()*EASTER_MESSAGES.length)] : null; }
 async function loadStreak(){
   try{
@@ -950,15 +968,15 @@ async function loadHealthCard(){
     const h=await api('/api/health-summary'); const card=$('h-health');
     if(!h.total){ card.classList.add('hidden'); return; }
     card.classList.remove('hidden'); card.classList.remove('warn','bad');
-    if(h.needs_attention){ card.classList.add('bad'); $('hh-ic').textContent='🚨';
+    if(h.needs_attention){ card.classList.add('bad'); $('hh-ic').innerHTML='<svg class="i" aria-hidden="true"><use href="#i-siren"/></svg>';
       $('hh-t').textContent=h.needs_attention+' account'+(h.needs_attention>1?'s':'')+' need attention';
       $('hh-d').textContent='Dead or banned — delete and add them again'; }
-    else if(h.counts.limited){ card.classList.add('warn'); $('hh-ic').textContent='⚠️';
+    else if(h.counts.limited){ card.classList.add('warn'); $('hh-ic').innerHTML='<svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>';
       $('hh-t').textContent=h.counts.limited+' account'+(h.counts.limited>1?'s':'')+' rate-limited';
       $('hh-d').textContent='They will work again after the flood-wait ends'; }
-    else if(h.counts.unknown===h.total){ $('hh-ic').textContent='🩺';
+    else if(h.counts.unknown===h.total){ $('hh-ic').innerHTML='<svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg>';
       $('hh-t').textContent='Health not checked yet'; $('hh-d').textContent='Tap to run a health check on all accounts'; }
-    else { $('hh-ic').textContent='✅'; $('hh-t').textContent='All accounts healthy';
+    else { $('hh-ic').innerHTML='<svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg>'; $('hh-t').textContent='All accounts healthy';
       $('hh-d').textContent=h.counts.ok+' of '+h.total+' verified working'; }
   }catch(e){ $('h-health').classList.add('hidden'); }
 }
@@ -967,7 +985,7 @@ async function loadHealthCard(){
 function initials(a){ const n=(a.name||a.session_name||'?').trim(); return n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 function agoLong(t){ if(!t) return 'never used'; const d=(Date.now()/1000-t); if(d<60) return 'used just now'; if(d<3600) return 'used '+Math.round(d/60)+'m ago'; if(d<86400) return 'used '+Math.round(d/3600)+'h ago'; return 'used '+Math.round(d/86400)+'d ago'; }
 let SORT_MODE='recent', BATCH=false, BATCH_SEL=new Set();
-const SORT_LABEL={recent:'↕ Recent',name:'↕ Name',health:'↕ Health'};
+const SORT_LABEL={recent:'<svg class="i" aria-hidden="true"><use href="#i-sort"/></svg> Recent',name:'<svg class="i" aria-hidden="true"><use href="#i-sort"/></svg> Name',health:'<svg class="i" aria-hidden="true"><use href="#i-sort"/></svg> Health'};
 async function loadAccounts(quiet){
   if(!quiet) $('acc-list').innerHTML=SK_ROWS(3);
   try{
@@ -976,10 +994,10 @@ async function loadAccounts(quiet){
     $('acc-sub').textContent = ACCOUNTS.length? ACCOUNTS.length+' account'+(ACCOUNTS.length>1?'s':'')+' ready' : 'Real Telegram accounts used for every run';
     if(quiet) return;
     renderAccounts();
-  }catch(e){ if(!quiet) $('acc-list').innerHTML=emptyState('⚠️',"Couldn't load accounts",esc(e.message),'<button class="btn ghost" onclick="loadAccounts()">Try again</button>'); }
+  }catch(e){ if(!quiet) $('acc-list').innerHTML=emptyState('<svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>',"Couldn't load accounts",esc(e.message),'<button class="btn ghost" onclick="loadAccounts()">Try again</button>'); }
 }
 function cycleSort(){ SORT_MODE = SORT_MODE==='recent'?'name':SORT_MODE==='name'?'health':'recent';
-  $('sort-btn').textContent=SORT_LABEL[SORT_MODE]; haptic(); renderAccounts(); }
+  $('sort-btn').innerHTML=SORT_LABEL[SORT_MODE]; haptic(); renderAccounts(); }
 const HEALTH_RANK={dead:0,banned:1,error:2,limited:3,unknown:4,ok:5};
 function renderAccounts(){
   const q=($('acc-search')?.value||'').trim().toLowerCase();
@@ -990,10 +1008,10 @@ function renderAccounts(){
   $('batch-bar').classList.toggle('hidden',!BATCH);
   $('batch-n').textContent=BATCH_SEL.size+' selected';
   if(!ACCOUNTS.length){
-    $('acc-list').innerHTML=emptyState('👤','No accounts yet',maybeEasterEmpty()||'Add a real Telegram account to start running tasks.','<button class="btn" onclick="openAdd()">Add your first account</button>');
+    $('acc-list').innerHTML=emptyState('<svg class="i" aria-hidden="true"><use href="#i-user"/></svg>','No accounts yet',maybeEasterEmpty()||'Add a real Telegram account to start running tasks.','<button class="btn" onclick="openAdd()">Add your first account</button>');
     return;
   }
-  if(!list.length){ $('acc-list').innerHTML=emptyState('🔍','No matches','No account matches "'+esc(q)+'".',''); return; }
+  if(!list.length){ $('acc-list').innerHTML=emptyState('<svg class="i" aria-hidden="true"><use href="#i-search"/></svg>','No matches','No account matches "'+esc(q)+'".',''); return; }
   $('acc-list').innerHTML=list.map(a=>{
     const sel=BATCH_SEL.has(a.session_name);
     const click = BATCH ? `toggleBatch('${esc(a.session_name)}')` : `accMenu('${esc(a.session_name)}')`;
@@ -1001,7 +1019,7 @@ function renderAccounts(){
       ${BATCH?`<span class="acc-check ${sel?'on':''}"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span>`:`<span class="av">${esc(initials(a))}</span>`}
       <span class="body"><span class="t"><span class="hdot ${a.health||'unknown'}"></span>${esc(a.session_name)}</span>
       <span class="d">${esc(a.name||'')} ${a.username?'· @'+esc(a.username):''} · ${esc(a.phone||'')}</span>
-      <span class="d">${a.excluded?'🚫 excluded · ':''}${agoLong(a.last_used)}${a.note?' · 📝 '+esc(a.note.slice(0,40)):''}</span></span>
+      <span class="d">${a.excluded?'<svg class="i" aria-hidden="true"><use href="#i-ban"/></svg> excluded · ':''}${agoLong(a.last_used)}${a.note?' · <svg class="i" aria-hidden="true"><use href="#i-pencil"/></svg> '+esc(a.note.slice(0,40)):''}</span></span>
       <span class="r">${BATCH?'':'›'}</span></button>`;
   }).join('');
 }
@@ -1026,9 +1044,9 @@ function accMenu(name){
   ACC_TARGET=name;
   $('am-title').textContent=name;
   $('am-sub').textContent=(a.name?a.name+' · ':'')+(a.username?'@'+a.username+' · ':'')+agoLong(a.last_used);
-  $('am-note').textContent = a.note ? '📝 '+a.note : '';
+  $('am-note').innerHTML = a.note ? '<svg class="i" aria-hidden="true"><use href="#i-pencil"/></svg> '+esc(a.note) : '';
   $('am-note').classList.toggle('hidden', !a.note);
-  $('am-ex-ic').textContent = a.excluded ? '✅' : '🚫';
+  $('am-ex-ic').innerHTML = a.excluded ? '<svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg>' : '<svg class="i" aria-hidden="true"><use href="#i-ban"/></svg>';
   $('am-ex-t').textContent = a.excluded ? 'Include in runs' : 'Exclude from runs';
   $('am-ex-d').textContent = a.excluded ? 'This account is currently skipped by default' : 'Skip this account by default when running tasks';
   $('sheet-bg3').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg3').classList.add('on');$('sheet3').classList.add('on');});
@@ -1038,7 +1056,7 @@ async function toggleExclude(name){
   const next=!a.excluded;
   try{ await post('/api/accounts/'+encodeURIComponent(name)+'/meta',{excluded:next});
     a.excluded=next; if(next) SEL.delete(name); else SEL.add(name);
-    renderAccounts(); haptic('ok'); toast(next?'🚫 '+name+' excluded from runs':'✅ '+name+' included in runs');
+    renderAccounts(); haptic('ok'); toast(next?'<svg class="i" aria-hidden="true"><use href="#i-ban"/></svg> '+name+' excluded from runs':'<svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg> '+name+' included in runs');
   }catch(e){ toast(e.message); haptic('bad'); }
 }
 function closeSheet3(){ $('sheet-bg3').classList.remove('on'); $('sheet3').classList.remove('on'); setTimeout(()=>$('sheet-bg3').classList.add('hidden'),220); }
@@ -1054,7 +1072,7 @@ async function muteAllAccounts(){
   const alive=ACCOUNTS.filter(a=>a.health!=='dead');
   if(!alive.length){ toast('কোনো active account নেই'); return; }
   const dead=ACCOUNTS.length-alive.length;
-  if(!await confirmDlg(`🔕 সব ${alive.length}টা account-এর সব joined channel mute করবেন?${dead?`\n(${dead}টা dead account skip হবে)`:''}`)) return;
+  if(!await confirmDlg(`<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> সব ${alive.length}টা account-এর সব joined channel mute করবেন?${dead?`\n(${dead}টা dead account skip হবে)`:''}`)) return;
   const btns=[$('mute-all-btn'),$('home-mute-all')];
   btns.forEach(b=>busy(b,true,'Starting…'));
   try{
@@ -1064,7 +1082,7 @@ async function muteAllAccounts(){
   finally{ btns.forEach(b=>busy(b,false)); }
 }
 async function muteOneAccount(name){
-  if(!await confirmDlg(`🔕 ${name}-এর সব joined channel-এর notification mute করবেন?`)) return;
+  if(!await confirmDlg(`<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> ${name}-এর সব joined channel-এর notification mute করবেন?`)) return;
   try{
     const body={mute:true,include_groups:false,accounts:[name],speed:'single'};
     const d=await post('/api/channels/mute',body); haptic('ok'); openJob(d.job_id, body);
@@ -1110,7 +1128,7 @@ async function saveNote(){ const note=$('note-text').value; busy($('note-save'),
 async function checkOneHealth(name){
   toast('Checking '+name+'…');
   try{ const r=await post('/api/accounts/'+encodeURIComponent(name)+'/health',{});
-    const map={ok:'✅ Healthy',limited:'⚠️ Limited',banned:'🚫 Banned',dead:'💀 Session dead',error:'❌ Error'};
+    const map={ok:'<svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg> Healthy',limited:'<svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> Limited',banned:'<svg class="i" aria-hidden="true"><use href="#i-ban"/></svg> Banned',dead:'<svg class="i" aria-hidden="true"><use href="#i-skull"/></svg> Session dead',error:'<svg class="i" aria-hidden="true"><use href="#i-x-circle"/></svg> Error'};
     toast((map[r.status]||r.status)+' — '+(r.detail||''),3500); haptic(r.status==='ok'?'ok':'bad'); loadAccounts();
   }catch(e){ toast(e.message); haptic('bad'); }
 }
@@ -1167,7 +1185,7 @@ function done(msg){ closeSheet(); toast('Account added · '+(msg||''),3000); hap
 function goRun(k){ show('run'); setRun(k); }
 function setRun(k){ RUNKIND=k; document.querySelectorAll('#run-seg button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
   ['refer','channels','message'].forEach(x=>$('run-'+x).classList.toggle('hidden',x!==k));
-  $('run-btn').textContent = k==='refer'?'Start referral':k==='channels'?'Start':'Send'; }
+  $('run-btn').innerHTML = k==='refer'?'Start referral':k==='channels'?'Start':'Send'; }
 document.querySelectorAll('.chips').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b)return; g.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); haptic();
   if(g.id==='c-action'||g.id==='c-mute-mode') paintChannelAction(); }));
 function paintChannelAction(){
@@ -1175,37 +1193,37 @@ function paintChannelAction(){
   $('c-list-wrap').classList.toggle('hidden',v==='random'||v==='mute');
   $('c-random-wrap').classList.toggle('hidden',v!=='random');
   $('c-mute-wrap').classList.toggle('hidden',v!=='mute');
-  $('run-btn').textContent = v==='random'?'Start auto-leave':v==='mute'?(chip('c-mute-mode')==='unmute'?'🔔 Unmute all':'🔕 Mute all'):'Start';
+  $('run-btn').innerHTML = v==='random'?'Start auto-leave':v==='mute'?(chip('c-mute-mode')==='unmute'?'<svg class="i" aria-hidden="true"><use href="#i-bell"/></svg> Unmute all':'<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> Mute all'):'Start';
 }
 const chip = id => document.querySelector('#'+id+' .chip.on')?.dataset.v;
-const SPEED_HELP={fast:'⚡ 8 accounts at once with a short pause. Tuned to be as quick as possible while staying safe on the free server — this is the recommended default.',single:'One account at a time with a 1s pause. Slowest, gentlest on your accounts.',parallel:'🚀 All selected accounts run almost at once. Very fast, but higher flood-ban risk on large batches.',custom:'Choose exactly how many accounts run together and the pause between actions.'};
+const SPEED_HELP={fast:'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> 8 accounts at once with a short pause. Tuned to be as quick as possible while staying safe on the free server — this is the recommended default.',single:'One account at a time with a 1s pause. Slowest, gentlest on your accounts.',parallel:'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> All selected accounts run almost at once. Very fast, but higher flood-ban risk on large batches.',custom:'Choose exactly how many accounts run together and the pause between actions.'};
 const CAPTCHA_HELP={
   no_captcha:'Just sends /start — use when the bot has no captcha.',
-  text_code:'🔤 Bot shows a code like <code>7LsT4oFd</code> and asks you to send it back. Each account reads its own code and replies with it.',
-  image:'🖼️ Bot sends a picture with numbers/letters (e.g. <b>15473</b>). Each account reads the image and replies with the answer. Retries up to 3× if the bot says wrong.',
+  text_code:'<svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Bot shows a code like <code>7LsT4oFd</code> and asks you to send it back. Each account reads its own code and replies with it.',
+  image:'<svg class="i" aria-hidden="true"><use href="#i-image"/></svg> Bot sends a picture with numbers/letters (e.g. <b>15473</b>). Each account reads the image and replies with the answer. Retries up to 3× if the bot says wrong.',
   emoji:'Bot asks you to tap the button matching an emoji.',
   math:'Bot asks a sum like 5 + 3 — the answer is sent or tapped.',
   button:'Taps the first button the bot shows.'};
 function paintCaptcha(){ $('captcha-help').innerHTML=CAPTCHA_HELP[chip('r-method')||'no_captcha']||''; }
 document.getElementById('r-method').addEventListener('click',()=>setTimeout(paintCaptcha,0)); paintCaptcha();
-function paintSpeed(){ const v=chip('speed')||'fast'; $('speed-help').textContent=SPEED_HELP[v]; $('speed-custom').classList.toggle('hidden',v!=='custom'); }
+function paintSpeed(){ const v=chip('speed')||'fast'; $('speed-help').innerHTML=SPEED_HELP[v]; $('speed-custom').classList.toggle('hidden',v!=='custom'); }
 document.getElementById('speed').addEventListener('click',()=>setTimeout(paintSpeed,0)); paintSpeed();
 function speedBody(){ const v=chip('speed')||'fast'; return v==='custom'?{speed:v,concurrency:+$('conc').value,delay:+chip('r-delay')}:{speed:v}; }
 let SEL_INIT=false;
 function renderSel(){
   if(!SEL_INIT && ACCOUNTS.length){ SEL_INIT=true; ACCOUNTS.forEach(a=>{ if(!a.excluded && !a.link_finder_default) SEL.add(a.session_name); }); }
   SEL.forEach(n=>{ if(!ACCOUNTS.some(a=>a.session_name===n)) SEL.delete(n); });
-  ACCOUNTS.forEach(a=>{ if(a.link_finder_default) SEL.delete(a.session_name); });   // 🔗 default account never runs bulk jobs
+  ACCOUNTS.forEach(a=>{ if(a.link_finder_default) SEL.delete(a.session_name); });   // <svg class="i" aria-hidden="true"><use href="#i-link"/></svg> default account never runs bulk jobs
   const selectable = ACCOUNTS.filter(a=>!a.link_finder_default);
   const all = selectable.length && SEL.size===selectable.length;
   $('sel-all').classList.toggle('on',all); $('sel-count').textContent = SEL.size+' of '+selectable.length+' selected';
   const lfAcc = ACCOUNTS.find(a=>a.link_finder_default);
-  $('lf-reserved-note').innerHTML = lfAcc ? `ℹ️ <b>${esc(lfAcc.session_name)} 🔗 Link Finder-এর জন্য reserved — এখানে run হবে না।</b>` : '';
+  $('lf-reserved-note').innerHTML = lfAcc ? `ℹ <b>${esc(lfAcc.session_name)} <svg class="i" aria-hidden="true"><use href="#i-link"/></svg> Link Finder-এর জন্য reserved — এখানে run হবে না।</b>` : '';
   $('sel-list').innerHTML = ACCOUNTS.length ? ACCOUNTS.map(a=>{
-    if(a.link_finder_default) return `<button class="check" disabled style="opacity:.55;pointer-events:none"><span class="box"></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')} · 🔗 <b>Link Finder-এর জন্য reserved, এখানে চলবে না</b></span></span></button>`;
-    return `<button class="check ${SEL.has(a.session_name)?'on':''}" onclick="toggleSel('${esc(a.session_name)}')"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')}${a.excluded?' · 🚫 excluded':''}</span></span></button>`;
+    if(a.link_finder_default) return `<button class="check" disabled style="opacity:.55;pointer-events:none"><span class="box"></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')} · <svg class="i" aria-hidden="true"><use href="#i-link"/></svg> <b>Link Finder-এর জন্য reserved, এখানে চলবে না</b></span></span></button>`;
+    return `<button class="check ${SEL.has(a.session_name)?'on':''}" onclick="toggleSel('${esc(a.session_name)}')"><span class="box"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span><span class="body"><span class="t">${esc(a.session_name)}</span> <span class="d" style="display:inline">${esc(a.name||'')}${a.excluded?' · <svg class="i" aria-hidden="true"><use href="#i-ban"/></svg> excluded':''}</span></span></button>`;
   }).join('')
-    : emptyState('👤','No accounts','Add an account before running anything.','<button class="btn" onclick="show(\'accounts\');openAdd()">Add account</button>');
+    : emptyState('<svg class="i" aria-hidden="true"><use href="#i-user"/></svg>','No accounts','Add an account before running anything.','<button class="btn" onclick="show(\'accounts\');openAdd()">Add account</button>');
   $('run-btn').disabled = SEL.size===0;
 }
 function toggleSel(n){ SEL.has(n)?SEL.delete(n):SEL.add(n); haptic(); renderSel(); }
@@ -1235,7 +1253,7 @@ async function launchJob(path,body){
 /* ── run confirmation ── */
 let PENDING_RUN=null, CF_POOL_NAME='all', CF_POOL_LIST=[];
 const CAPTCHA_NAME={no_captcha:'None',text_code:'Text code',image:'Image',emoji:'Emoji',math:'Math',button:'Button'};
-const SPEED_NAME={fast:'⚡ Fast',single:'🐢 Single',parallel:'🚀 Ultra',custom:'⚙️ Custom'};
+const SPEED_NAME={fast:'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> Fast',single:'<svg class="i" aria-hidden="true"><use href="#i-timer"/></svg> Single',parallel:'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> Ultra',custom:'<svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg> Custom'};
 function openConfirm(path,body){
   PENDING_RUN={path,body};
   const runnable=ACCOUNTS.filter(a=>!a.link_finder_default);
@@ -1248,19 +1266,19 @@ function openConfirm(path,body){
   if(RUNKIND==='refer'){
     rows.push(['Task','Referral'],['Bot',body.bot_link.replace(/^https?:\/\/t\.me\//,'@')],['Captcha',CAPTCHA_NAME[body.method]||body.method]);
   } else if(path.endsWith('auto-leave')){
-    rows.push(['Task','🍃 Auto-leave'],['Per account',body.count+' channels/groups']);
+    rows.push(['Task','<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg> Auto-leave'],['Per account',body.count+' channels/groups']);
   } else if(path.endsWith('/mute')){
-    rows.push(['Task',body.mute?'🔕 Mute all':'🔔 Unmute all'],['What',body.include_groups?'All channels + groups':'All joined channels']);
+    rows.push(['Task',body.mute?'<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> Mute all':'<svg class="i" aria-hidden="true"><use href="#i-bell"/></svg> Unmute all'],['What',body.include_groups?'All channels + groups':'All joined channels']);
   } else {
     const priv=body.channels.filter(c=>/t\.me\/(\+|joinchat\/)/.test(c)).length;
     rows.push(['Task',body.action==='join'?'Join channels':'Leave channels'],['Channels',body.channels.length+(priv?` (${priv} private)`:'')]);
   }
   const sp=body.speed||'fast';
   rows.push(['Speed',sp==='custom'?`${SPEED_NAME.custom} · ${body.concurrency} at once · ${body.delay}s`:(SPEED_NAME[sp]||sp)]);
-  $('cf-summary').innerHTML=rows.map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(String(v))}</b></div>`).join('');
+  $('cf-summary').innerHTML=rows.map(([k,v])=>`<div><span>${esc(k)}</span><b>${escI(String(v))}</b></div>`).join('');
   const lfCount=ACCOUNTS.length-runnable.length;
   $('cf-all-t').textContent=`All accounts (${pool.length})`;
-  $('cf-all-d').textContent=[dead?`${dead} dead will be skipped`:'', excl?`${excl} excluded not included`:'', lfCount?`🔗 ${lfCount} Link Finder account not included`:''].filter(Boolean).join(' · ')||'Every active account runs this';
+  $('cf-all-d').innerHTML=[dead?`${dead} dead will be skipped`:'', excl?`${excl} excluded not included`:'', lfCount?`<svg class="i" aria-hidden="true"><use href="#i-link"/></svg> ${lfCount} Link Finder account not included`:''].filter(Boolean).join(' · ')||'Every active account runs this';
   const onlySome = SEL.size!==runnable.filter(a=>!a.excluded).length || [...SEL].some(n=>!runnable.some(a=>a.session_name===n && !a.excluded));
   $('cf-sel').classList.toggle('hidden',!onlySome);
   $('cf-sel-t').textContent=`Only selected (${SEL.size})`;
@@ -1306,9 +1324,9 @@ function previewLink(){
     if(!v){ box.classList.add('hidden'); return; }
     box.classList.remove('hidden');
     const m=v.match(/^https?:\/\/t\.me\/([A-Za-z0-9_]{4,})(?:\?start=(.*))?$/);
-    if(!m){ box.innerHTML='<span class="bad">✕</span> <span>Not a valid t.me bot link</span>'; return; }
+    if(!m){ box.innerHTML='<span class="bad"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></span> <span>Not a valid t.me bot link</span>'; return; }
     const bot=m[1], param=m[2]||'';
-    box.innerHTML=`<span class="ok">✓</span> <span>Bot <b>@${esc(bot)}</b>${param?` · sends <code>/start ${esc(param.slice(0,24))}</code>`:' · sends <code>/start</code>'}</span>`;
+    box.innerHTML=`<span class="ok"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span> <span>Bot <b>@${esc(bot)}</b>${param?` · sends <code>/start ${esc(param.slice(0,24))}</code>`:' · sends <code>/start</code>'}</span>`;
   },250);
 }
 async function loadRecentLinks(){
@@ -1321,7 +1339,7 @@ function useLink(l){ $('r-link').value=l; previewLink(); haptic(); }
 /* ── link finder ── */
 let LF_ACC=null, LF_LINKS=[];
 function loadLinkFinder(){
-  if(!ACCOUNTS.length){ $('lf-acc-list').innerHTML=emptyState('👤','No accounts','Add an account before using Link Finder.','<button class="btn" onclick="show(\'accounts\');openAdd()">Add account</button>'); LF_ACC=null; return; }
+  if(!ACCOUNTS.length){ $('lf-acc-list').innerHTML=emptyState('<svg class="i" aria-hidden="true"><use href="#i-user"/></svg>','No accounts','Add an account before using Link Finder.','<button class="btn" onclick="show(\'accounts\');openAdd()">Add account</button>'); LF_ACC=null; return; }
   const def = ACCOUNTS.find(a=>a.link_finder_default && a.health!=='dead');
   if(!LF_ACC || !ACCOUNTS.some(a=>a.session_name===LF_ACC && a.health!=='dead')) LF_ACC = (def||ACCOUNTS.find(a=>a.health!=='dead')||ACCOUNTS[0])?.session_name;
   renderLfAccounts();
@@ -1330,26 +1348,26 @@ function renderLfAccounts(){
   $('lf-acc-list').innerHTML = ACCOUNTS.map(a=>{
     const dead = a.health==='dead';
     return `<button class="row" style="opacity:${dead?.5:1}" onclick="${dead?'':`pickLfAcc('${esc(a.session_name)}')`}">
-      <span class="av">${a.session_name===LF_ACC?'✅':'👤'}</span>
-      <span class="body"><span class="t">${esc(a.session_name)} ${a.link_finder_default?'⭐':''}</span><span class="d">${esc(a.name||'')}${dead?' · dead':''}</span></span>
-      <button class="btn sm ghost" style="width:auto" onclick="event.stopPropagation();setLfDefault('${esc(a.session_name)}')">${a.link_finder_default?'Default ⭐':'Set default'}</button>
+      <span class="av">${a.session_name===LF_ACC?'<svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg>':'<svg class="i" aria-hidden="true"><use href="#i-user"/></svg>'}</span>
+      <span class="body"><span class="t">${esc(a.session_name)} ${a.link_finder_default?'<svg class="i i-fill" aria-hidden="true"><use href="#i-star"/></svg>':''}</span><span class="d">${esc(a.name||'')}${dead?' · dead':''}</span></span>
+      <button class="btn sm ghost" style="width:auto" onclick="event.stopPropagation();setLfDefault('${esc(a.session_name)}')">${a.link_finder_default?'Default <svg class="i i-fill" aria-hidden="true"><use href="#i-star"/></svg>':'Set default'}</button>
     </button>`;
   }).join('');
 }
 function pickLfAcc(name){ LF_ACC=name; haptic(); renderLfAccounts(); }
 async function setLfDefault(name){
-  try{ await post('/api/accounts/'+encodeURIComponent(name)+'/meta',{link_finder_default:true}); ACCOUNTS.forEach(a=>a.link_finder_default=(a.session_name===name)); toast('Default account set ⭐'); haptic('ok'); renderLfAccounts(); }
+  try{ await post('/api/accounts/'+encodeURIComponent(name)+'/meta',{link_finder_default:true}); ACCOUNTS.forEach(a=>a.link_finder_default=(a.session_name===name)); toast('Default account set <svg class="i i-fill" aria-hidden="true"><use href="#i-star"/></svg>'); haptic('ok'); renderLfAccounts(); }
   catch(e){ toast(e.message); haptic('bad'); }
 }
 const LF_CAPTCHA_HELP={
-  auto:'🤖 Captcha এলে নিজে থেকে type বুঝে solve করবে (Image / Text code / Math / Emoji), তারপর links নেবে।',
-  text_code:'🔤 Bot একটা code দেখায় (যেমন 7LsT4oFd) — সেটা reply করবে।',
-  image:'🖼️ ছবির সংখ্যা/অক্ষর পড়ে reply করবে (OCR)।',
-  math:'➗ 5 + 3 এর মতো অঙ্কের উত্তর দেবে।',
-  emoji:'😀 Emoji মিলিয়ে button চাপবে।',
+  auto:'<svg class="i" aria-hidden="true"><use href="#i-bot"/></svg> Captcha এলে নিজে থেকে type বুঝে solve করবে (Image / Text code / Math / Emoji), তারপর links নেবে।',
+  text_code:'<svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Bot একটা code দেখায় (যেমন 7LsT4oFd) — সেটা reply করবে।',
+  image:'<svg class="i" aria-hidden="true"><use href="#i-image"/></svg> ছবির সংখ্যা/অক্ষর পড়ে reply করবে (OCR)।',
+  math:'<svg class="i" aria-hidden="true"><use href="#i-divide"/></svg> 5 + 3 এর মতো অঙ্কের উত্তর দেবে।',
+  emoji:'<svg class="i" aria-hidden="true"><use href="#i-smile"/></svg> Emoji মিলিয়ে button চাপবে।',
   button:'প্রথম button চাপবে।',
   no_captcha:'শুধু /start পাঠিয়ে reply থেকে links নেবে।'};
-function paintLfCaptcha(){ $('lf-captcha-help').textContent=LF_CAPTCHA_HELP[chip('lf-method')||'auto']||''; }
+function paintLfCaptcha(){ $('lf-captcha-help').innerHTML=LF_CAPTCHA_HELP[chip('lf-method')||'auto']||''; }
 document.getElementById('lf-method').addEventListener('click',()=>setTimeout(paintLfCaptcha,0)); paintLfCaptcha();
 async function runLinkFinder(){
   const bot=$('lf-bot').value.trim();
@@ -1364,19 +1382,19 @@ async function runLinkFinder(){
     $('lf-count').textContent=d.total;
     $('lf-from').textContent='@'+d.bot+' · via '+d.account;
     const cap=d.captcha||[];
-    $('lf-captcha').textContent = cap.length ? '🧩 Captcha: '+cap.join(' → ') : (captcha==='no_captcha'?'':'🧩 Captcha: none detected');
-    $('lf-links').innerHTML = LF_LINKS.length ? LF_LINKS.map((l,i)=>`<div class="row"><span class="body"><span class="t" style="word-break:break-all">${esc(l)}</span></span><button class="btn sm ghost" style="width:auto" onclick="copyOneLink(${i})">📋 Copy</button></div>`).join('')
+    $('lf-captcha').innerHTML = cap.length ? '<svg class="i" aria-hidden="true"><use href="#i-shield-check"/></svg> Captcha: '+esc(cap.join(' → ')) : (captcha==='no_captcha'?'':'<svg class="i" aria-hidden="true"><use href="#i-shield-check"/></svg> Captcha: none detected');
+    $('lf-links').innerHTML = LF_LINKS.length ? LF_LINKS.map((l,i)=>`<div class="row"><span class="body"><span class="t" style="word-break:break-all">${esc(l)}</span></span><button class="btn sm ghost" style="width:auto" onclick="copyOneLink(${i})"><svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg> Copy</button></div>`).join('')
       : `<div class="empty">No links found.${d.replies?` Bot sent ${d.replies} message(s) but none had links`:' Bot did not reply'}${cap.length?'':' — if it asked a captcha, pick its type above and try again'}.</div>`;
     $('lf-result').classList.remove('hidden');
     haptic(LF_LINKS.length?'ok':'bad');
   }catch(e){ toast(e.message,4000); haptic('bad'); }
   finally{ busy($('lf-go'),false); }
 }
-function copyOneLink(i){ navigator.clipboard?.writeText(LF_LINKS[i]); toast('Link copied 📋'); haptic('ok'); }
+function copyOneLink(i){ navigator.clipboard?.writeText(LF_LINKS[i]); toast('Link copied <svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg>'); haptic('ok'); }
 function copyAllLinks(){
   if(!LF_LINKS.length) return;
   navigator.clipboard?.writeText(LF_LINKS.join('\n'));
-  toast(LF_LINKS.length+' links copied 📋'); haptic('ok');
+  toast(LF_LINKS.length+' links copied <svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg>'); haptic('ok');
 }
 
 /* ── live job ── */
@@ -1417,7 +1435,7 @@ async function pollJob(){
   try{
     const j=await api('/api/jobs/'+CURJOB);
     const kindMap={refer:'Referral',channels:j.meta.action==='join'?'Joining channels':'Leaving channels',message:'Sending message',health:'Checking account health',random_leave:'Auto-leave',auto_leave:'Auto-leave',mute:j.meta&&j.meta.mute===false?'Unmuting channels':'Muting channels'}; const kind = kindMap[j.kind]||j.kind;
-    $('job-title').textContent = j.status==='running'?kind:kind+' · done'; $('job-sub').textContent = (j.meta.link||j.meta.target||(j.meta.channels||[]).join(', ')||'') + (j.meta.speed?'  ·  '+(j.meta.speed==='fast'?'⚡ fast · '+j.meta.concurrency+' at once':j.meta.speed==='single'?'🐢 single':j.meta.speed==='parallel'?'🚀 ultra · '+j.meta.concurrency+' at once':'⚙️ '+j.meta.concurrency+' at once'):'');
+    $('job-title').textContent = j.status==='running'?kind:kind+' · done'; $('job-sub').innerHTML = esc(j.meta.link||j.meta.target||(j.meta.channels||[]).join(', ')||'') + (j.meta.speed?'  ·  '+(j.meta.speed==='fast'?'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> fast · '+j.meta.concurrency+' at once':j.meta.speed==='single'?'<svg class="i" aria-hidden="true"><use href="#i-timer"/></svg> single':j.meta.speed==='parallel'?'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> ultra · '+j.meta.concurrency+' at once':'<svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg> '+j.meta.concurrency+' at once'):'');
     $('job-done').textContent=j.done; $('job-total').textContent=j.total; $('job-ok').textContent=j.success; $('job-bad').textContent=j.failed;
     if(j.done>JOB_LAST_DONE){
       spawnSparks(j.done-JOB_LAST_DONE);
@@ -1433,8 +1451,8 @@ async function pollJob(){
     $('ring').classList.toggle('running',j.status==='running');
     $('job-lbl').textContent = j.status==='running'?'working…':j.status==='cancelled'?'stopped':(j.failed?'finished':'all done');
     const skipped=(j.meta.skipped_dead||[]).length;
-    const skipNote = skipped ? `<div class="row"><span class="av" style="background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)">⏭</span><span class="body"><span class="t">${skipped} dead account${skipped>1?'s':''} skipped</span><span class="d">${esc((j.meta.skipped_dead||[]).join(', ').slice(0,80))}</span></span></div>` : '';
-    if(j.results.length) $('job-feed').innerHTML = skipNote + j.results.slice().reverse().map(r=>`<div class="row st-${r.status}"><span class="av">${r.status==='success'?'✓':r.status==='partial'?'~':'✕'}</span><span class="body"><span class="t">${esc(r.account)}</span><span class="d">${esc(r.msg)}</span></span></div>`).join('');
+    const skipNote = skipped ? `<div class="row"><span class="av" style="background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)"><svg class="i" aria-hidden="true"><use href="#i-skip"/></svg></span><span class="body"><span class="t">${skipped} dead account${skipped>1?'s':''} skipped</span><span class="d">${esc((j.meta.skipped_dead||[]).join(', ').slice(0,80))}</span></span></div>` : '';
+    if(j.results.length) $('job-feed').innerHTML = skipNote + j.results.slice().reverse().map(r=>`<div class="row st-${r.status}"><span class="av">${r.status==='success'?'<svg class="i" aria-hidden="true"><use href="#i-check"/></svg>':r.status==='partial'?'~':'<svg class="i" aria-hidden="true"><use href="#i-x"/></svg>'}</span><span class="body"><span class="t">${esc(r.account)}</span><span class="d">${esc(r.msg)}</span></span></div>`).join('');
     else if(skipNote) $('job-feed').innerHTML = skipNote;
     if(j.status!=='running'){
       clearInterval(POLL); $('job-cancel').classList.add('hidden');
@@ -1451,7 +1469,7 @@ async function pollJob(){
 async function exportBackup(){
   toast('Preparing backup…');
   try{ const d=await post('/api/accounts/export',{});
-    toast('✅ Sent to your Telegram chat with the bot · '+d.count+' account(s)',3500); haptic('ok');
+    toast('<svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg> Sent to your Telegram chat with the bot · '+d.count+' account(s)',3500); haptic('ok');
   }catch(e){ toast(e.message,4000); haptic('bad'); }
 }
 function importBackup(ev){
@@ -1476,16 +1494,16 @@ async function loadDash(){
     const max=Math.max(1,...s.daily.map(d=>d.success+d.failed));
     $('d-bars').innerHTML=s.daily.map(d=>{ const h=v=>Math.round(v/max*90); const day=new Date(d.date+'T00:00:00Z').getDate();
       return `<div class="bar"><div class="stack" style="height:${Math.max(4,h(d.success+d.failed))}px">${d.failed?`<div class="seg bad" style="height:${h(d.failed)}px"></div>`:''}${d.success?`<div class="seg ok" style="height:${h(d.success)}px"></div>`:''}</div><span class="lbl">${day}</span></div>`; }).join('');
-    const kindLbl={refer:'🚀 Referral',channels:'📢 Join/Leave',message:'💬 Message',health:'🩺 Health check',random_leave:'🍃 Auto-leave'};
-    $('d-kind').innerHTML = s.by_kind.length ? s.by_kind.map(k=>`<div class="row"><span class="av" style="font-family:Manrope">${(kindLbl[k.kind]||k.kind)[0]}</span><span class="body"><span class="t">${kindLbl[k.kind]||k.kind}</span><span class="d">${k.jobs} job${k.jobs>1?'s':''}</span></span><span class="r">${k.success}✓ ${k.failed?('/ '+k.failed+'✗'):''}</span></div>`).join('') : emptyState('📊','No activity yet','Run something and your stats will appear here.','<button class="btn" onclick="show(\'run\')">Go to Run</button>');
-    $('d-top').innerHTML = s.top_accounts.length ? s.top_accounts.map(a=>`<div class="row"><span class="av">${esc(a.account.slice(-2))}</span><span class="body"><span class="t">${esc(a.account)}</span></span><span class="r">${a.success}✓ ${a.failed?a.failed+'✗':''}</span></div>`).join('') : emptyState('👥','No account activity','Top-performing accounts will show up after a few runs.','');
-    const kindIcon={refer:'🚀',channels:'📢',message:'💬',health:'🩺',auto_leave:'🍃',random_leave:'🍃',mute:'🔕'};
+    const kindLbl={refer:'Referral',channels:'Join/Leave',message:'Message',health:'Health check',random_leave:'Auto-leave'};
+    const kindIcon={refer:'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg>',channels:'<svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg>',message:'<svg class="i" aria-hidden="true"><use href="#i-message"/></svg>',health:'<svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg>',auto_leave:'<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg>',random_leave:'<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg>',mute:'<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg>'};
+    $('d-kind').innerHTML = s.by_kind.length ? s.by_kind.map(k=>`<div class="row"><span class="av" style="font-family:Manrope">${kindIcon[k.kind]||'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg>'}</span><span class="body"><span class="t">${kindLbl[k.kind]||k.kind}</span><span class="d">${k.jobs} job${k.jobs>1?'s':''}</span></span><span class="r">${k.success}<svg class="i" aria-hidden="true"><use href="#i-check"/></svg> ${k.failed?('/ '+k.failed+'<svg class="i" aria-hidden="true"><use href="#i-x"/></svg>'):''}</span></div>`).join('') : emptyState('<svg class="i" aria-hidden="true"><use href="#i-bar-chart"/></svg>','No activity yet','Run something and your stats will appear here.','<button class="btn" onclick="show(\'run\')">Go to Run</button>');
+    $('d-top').innerHTML = s.top_accounts.length ? s.top_accounts.map(a=>`<div class="row"><span class="av">${esc(a.account.slice(-2))}</span><span class="body"><span class="t">${esc(a.account)}</span></span><span class="r">${a.success}<svg class="i" aria-hidden="true"><use href="#i-check"/></svg> ${a.failed?a.failed+'<svg class="i" aria-hidden="true"><use href="#i-x"/></svg>':''}</span></div>`).join('') : emptyState('<svg class="i" aria-hidden="true"><use href="#i-users"/></svg>','No account activity','Top-performing accounts will show up after a few runs.','');
     $('d-jobslist').innerHTML = (s.recent_jobs||[]).length ? s.recent_jobs.map(j=>`<button class="row" onclick="openJobDetail('${j.id}')">
-      <span class="av" style="font-family:Manrope">${kindIcon[j.kind]||'⚡'}</span>
+      <span class="av" style="font-family:Manrope">${kindIcon[j.kind]||'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg>'}</span>
       <span class="body"><span class="t">${kindLbl[j.kind]||j.kind} ${j.status==='running'?'<span style=\"color:var(--turbo)\">· running</span>':''}</span>
       <span class="d">${ago(j.ended)} · ${j.total} account${j.total>1?'s':''}</span></span>
-      <span class="r">${j.success}✓${j.failed?' '+j.failed+'✗':''}</span></button>`).join('')
-      : emptyState('📋','No jobs yet','Your run history will show up here.','');
+      <span class="r">${j.success}<svg class="i" aria-hidden="true"><use href="#i-check"/></svg>${j.failed?' '+j.failed+'<svg class="i" aria-hidden="true"><use href="#i-x"/></svg>':''}</span></button>`).join('')
+      : emptyState('<svg class="i" aria-hidden="true"><use href="#i-clipboard"/></svg>','No jobs yet','Your run history will show up here.','');
     if(s.time_saved_sec>10){
       $('time-saved-card').classList.remove('hidden');
       const mins=Math.round(s.time_saved_sec/60);
@@ -1496,7 +1514,7 @@ async function loadDash(){
       const smax=Math.max(1,...sh.map(x=>x.rate));
       $('speed-bars').innerHTML=sh.map(x=>{ const h=Math.max(4,Math.round(x.rate/smax*90));
         return `<div class="bar"><div class="stack" style="height:${h}px"><div class="seg ok" style="height:${h}px"></div></div><span class="lbl">${x.rate}</span></div>`; }).join('');
-    } else $('speed-bars').innerHTML=emptyState('📈','No timed runs yet','Speed data appears after a completed run.','');
+    } else $('speed-bars').innerHTML=emptyState('<svg class="i" aria-hidden="true"><use href="#i-trending"/></svg>','No timed runs yet','Speed data appears after a completed run.','');
   }catch(e){ toast(e.message); }
   checkWeeklyRecap();
 }
@@ -1511,11 +1529,11 @@ function openWeeklyRecap(){
   const r=window._recapData; if(!r||!r.has_data) return;
   haptic();
   const rows=[];
-  rows.push(`<div class="recap-stat"><span class="ic">✅</span><span><span class="t">${r.success.toLocaleString()}</span><span class="d">successful actions this week</span></span></div>`);
-  rows.push(`<div class="recap-stat"><span class="ic">⚡</span><span><span class="t">${r.jobs}</span><span class="d">jobs run across ${r.accounts_used} account${r.accounts_used>1?'s':''}</span></span></div>`);
-  if(r.best_account) rows.push(`<div class="recap-stat"><span class="ic">🏆</span><span><span class="t">${esc(r.best_account.account)}</span><span class="d">your MVP account — ${r.best_account.success} successful runs</span></span></div>`);
-  if(r.fastest_run) rows.push(`<div class="recap-stat"><span class="ic">🚀</span><span><span class="t">${r.fastest_run.rate} accounts/sec</span><span class="d">your fastest run this week</span></span></div>`);
-  if(r.busiest_task) rows.push(`<div class="recap-stat"><span class="ic">📌</span><span><span class="t">${esc(r.busiest_task)}</span><span class="d">your most-used task type</span></span></div>`);
+  rows.push(`<div class="recap-stat"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg></span><span><span class="t">${r.success.toLocaleString()}</span><span class="d">successful actions this week</span></span></div>`);
+  rows.push(`<div class="recap-stat"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-zap"/></svg></span><span><span class="t">${r.jobs}</span><span class="d">jobs run across ${r.accounts_used} account${r.accounts_used>1?'s':''}</span></span></div>`);
+  if(r.best_account) rows.push(`<div class="recap-stat"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-trophy"/></svg></span><span><span class="t">${esc(r.best_account.account)}</span><span class="d">your MVP account — ${r.best_account.success} successful runs</span></span></div>`);
+  if(r.fastest_run) rows.push(`<div class="recap-stat"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg></span><span><span class="t">${r.fastest_run.rate} accounts/sec</span><span class="d">your fastest run this week</span></span></div>`);
+  if(r.busiest_task) rows.push(`<div class="recap-stat"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg></span><span><span class="t">${esc(r.busiest_task)}</span><span class="d">your most-used task type</span></span></div>`);
   $('recap-body').innerHTML=rows.join('');
   $('sheet-bg6').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg6').classList.add('on');$('sheet6').classList.add('on');});
   fireConfetti(35);
@@ -1558,11 +1576,11 @@ async function openJobDetail(jid){
   $('sheet-bg5').classList.remove('hidden'); requestAnimationFrame(()=>{$('sheet-bg5').classList.add('on');$('sheet5').classList.add('on');});
   try{
     const j=await api('/api/jobs/'+jid);
-    const kindLbl={refer:'🚀 Referral',channels:'📢 Join/Leave',message:'💬 Message',health:'🩺 Health check',random_leave:'🍃 Auto-leave',auto_leave:'🍃 Auto-leave',mute:'🔕 Mute channels'};
-    $('jd-title').textContent=kindLbl[j.kind]||j.kind;
+    const kindLbl={refer:'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> Referral',channels:'<svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg> Join/Leave',message:'<svg class="i" aria-hidden="true"><use href="#i-message"/></svg> Message',health:'<svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg> Health check',random_leave:'<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg> Auto-leave',auto_leave:'<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg> Auto-leave',mute:'<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> Mute channels'};
+    $('jd-title').innerHTML=kindLbl[j.kind]||esc(j.kind);
     $('jd-sub').textContent=(j.meta?.link||j.meta?.target||(j.meta?.channels||[]).join(', ')||'')+' · '+ago(j.ended||j.started);
     $('jd-ok').textContent=j.success; $('jd-bad').textContent=j.failed; $('jd-total').textContent=j.total+' total';
-    $('jd-results').innerHTML=(j.results||[]).length ? j.results.map(r=>`<div class="row st-${r.status}"><span class="av">${r.status==='success'?'✓':r.status==='partial'?'~':'✕'}</span><span class="body"><span class="t">${esc(r.account)}</span><span class="d">${esc(r.msg||'')}</span></span></div>`).join('') : '<div class="empty">No results recorded.</div>';
+    $('jd-results').innerHTML=(j.results||[]).length ? j.results.map(r=>`<div class="row st-${r.status}"><span class="av">${r.status==='success'?'<svg class="i" aria-hidden="true"><use href="#i-check"/></svg>':r.status==='partial'?'~':'<svg class="i" aria-hidden="true"><use href="#i-x"/></svg>'}</span><span class="body"><span class="t">${esc(r.account)}</span><span class="d">${esc(r.msg||'')}</span></span></div>`).join('') : '<div class="empty">No results recorded.</div>';
   }catch(e){ $('jd-title').textContent='Error'; $('jd-results').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
 }
 function closeSheet5(){ $('sheet-bg5').classList.remove('on'); $('sheet5').classList.remove('on'); setTimeout(()=>$('sheet-bg5').classList.add('hidden'),220); }
@@ -1592,7 +1610,7 @@ async function loadAdminSettings(){
 function paintLockdown(){
   const t=$('lockdown-toggle');
   t.classList.toggle('bad', LOCKDOWN_ON);
-  $('lock-ic').textContent = LOCKDOWN_ON ? '🔒' : '🔓';
+  $('lock-ic').innerHTML = LOCKDOWN_ON ? '<svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>' : '<svg class="i" aria-hidden="true"><use href="#i-unlock"/></svg>';
   $('lock-t').textContent = LOCKDOWN_ON ? 'App is locked down' : 'App is open';
   $('lock-d').textContent = LOCKDOWN_ON ? 'Tap to unlock — everyone can use it again' : 'Tap to lock the app for everyone except owners';
 }
@@ -1601,7 +1619,7 @@ async function toggleLockdown(){
   if(next && !await confirmDlg('Lock the app for everyone except owners?')) return;
   try{ await post('/api/admin/settings',{lockdown:next, lockdown_msg:$('lock-msg').value.trim()});
     LOCKDOWN_ON=next; paintLockdown(); $('lock-banner').classList.toggle('hidden', !LOCKDOWN_ON);
-    toast(next?'🔒 App locked down':'🔓 App unlocked'); haptic(next?'medium':'ok');
+    toast(next?'<svg class="i" aria-hidden="true"><use href="#i-lock"/></svg> App locked down':'<svg class="i" aria-hidden="true"><use href="#i-unlock"/></svg> App unlocked'); haptic(next?'medium':'ok');
   }catch(e){ toast(e.message); }
 }
 async function saveLogChannel(){
@@ -1618,25 +1636,25 @@ async function loadSystemStats(){
 async function loadServerHealth(){
   try{
     const h=await api('/api/admin/server-health');
-    $('sh-mongo').textContent = h.mongo_ok ? '🟢' : '🔴'; $('sh-bot').textContent = h.bot_ok ? '🟢' : '🔴';
+    $('sh-mongo').innerHTML = h.mongo_ok ? '<svg class="i i-fill i-ok" aria-hidden="true"><use href="#i-dot"/></svg>' : '<svg class="i i-fill i-bad" aria-hidden="true"><use href="#i-dot"/></svg>'; $('sh-bot').innerHTML = h.bot_ok ? '<svg class="i i-fill i-ok" aria-hidden="true"><use href="#i-dot"/></svg>' : '<svg class="i i-fill i-bad" aria-hidden="true"><use href="#i-dot"/></svg>';
     $('sh-jobs').textContent = h.active_jobs;
     if(h.storage_pct!=null){
       $('sh-bar').style.width=h.storage_pct+'%';
       $('sh-bar').style.background = h.storage_pct>85?'var(--bad)':h.storage_pct>60?'var(--warn)':'var(--ok)';
-      $('sh-storage-text').textContent = (h.storage_pct>=80?'⚠️ Almost full — ':'')+h.storage_mb+' MB of 512 MB used ('+h.storage_pct+'%)';
-    } else { $('sh-storage-text').textContent='Storage info unavailable'; }
+      $('sh-storage-text').innerHTML = (h.storage_pct>=80?'<svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> Almost full — ':'')+h.storage_mb+' MB of 512 MB used ('+h.storage_pct+'%)';
+    } else { $('sh-storage-text').innerHTML='Storage info unavailable'; }
   }catch(e){}
 }
 async function loadActivity(){
   try{
     const d=await api('/api/admin/activity');
     const lbl={refer:'Referral',channels:'Join / Leave',message:'Message',health:'Health check',auto_leave:'Auto-leave',random_leave:'Auto-leave',mute:'Mute channels'};
-    const ic={refer:'🚀',channels:'📢',message:'💬',health:'🩺',auto_leave:'🍃',random_leave:'🍃',mute:'🔕'};
+    const ic={refer:'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg>',channels:'<svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg>',message:'<svg class="i" aria-hidden="true"><use href="#i-message"/></svg>',health:'<svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg>',auto_leave:'<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg>',random_leave:'<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg>',mute:'<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg>'};
     $('act-list').innerHTML = d.items.length ? d.items.map(i=>{
-      if(i.type==='job') return `<button class="row" onclick="openJobDetail('${esc(i.job_id)}')"><span class="av" style="font-family:Manrope">${ic[i.kind]||'⚡'}</span><span class="body"><span class="t">${esc(i.user)} · ${lbl[i.kind]||esc(i.kind)}${i.status==='running'?' <span style="color:var(--turbo)">● running</span>':''}</span><span class="d">${i.success}✓ ${i.failed}✗ of ${i.total} · ${ago(i.ts)}</span></span></button>`;
-      if(i.type==='request') return `<div class="row"><span class="av">🔔</span><span class="body"><span class="t">${esc(i.user)} requested access</span><span class="d">ID ${esc(i.user_id)} · ${ago(i.ts)}</span></span></div>`;
-      return `<div class="row"><span class="av">👋</span><span class="body"><span class="t">${esc(i.user)} opened the app first time</span><span class="d">ID ${esc(i.user_id)} · ${ago(i.ts)}</span></span></div>`;
-    }).join('') : emptyState('📡','No activity yet','Runs and new users will show up here live.','');
+      if(i.type==='job') return `<button class="row" onclick="openJobDetail('${esc(i.job_id)}')"><span class="av" style="font-family:Manrope">${ic[i.kind]||'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg>'}</span><span class="body"><span class="t">${esc(i.user)} · ${lbl[i.kind]||esc(i.kind)}${i.status==='running'?' <span style="color:var(--turbo)">● running</span>':''}</span><span class="d">${i.success}<svg class="i" aria-hidden="true"><use href="#i-check"/></svg> ${i.failed}<svg class="i" aria-hidden="true"><use href="#i-x"/></svg> of ${i.total} · ${ago(i.ts)}</span></span></button>`;
+      if(i.type==='request') return `<div class="row"><span class="av"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg></span><span class="body"><span class="t">${esc(i.user)} requested access</span><span class="d">ID ${esc(i.user_id)} · ${ago(i.ts)}</span></span></div>`;
+      return `<div class="row"><span class="av"><svg class="i" aria-hidden="true"><use href="#i-user-plus"/></svg></span><span class="body"><span class="t">${esc(i.user)} opened the app first time</span><span class="d">ID ${esc(i.user_id)} · ${ago(i.ts)}</span></span></div>`;
+    }).join('') : emptyState('<svg class="i" aria-hidden="true"><use href="#i-radio"/></svg>','No activity yet','Runs and new users will show up here live.','');
   }catch(e){}
 }
 async function loadRateLimit(){
@@ -1654,7 +1672,7 @@ function renderUsers(){
     <span class="av">${esc((x.name||'?').trim()[0]||'?').toUpperCase()}</span>
     <span class="body"><span class="t">${esc(x.name||x.user_id)} ${x.username?'<span style="color:var(--hint);font-weight:500">@'+esc(x.username)+'</span>':''}</span>
     <span class="d"><code style="font-family:Manrope">${x.user_id}</code> · ${x.accounts} acc · ${ago(x.last_seen)}</span></span>
-    <span class="pill ${x.status}">${x.status}</span></button>`).join('') : emptyState('🫥','Nobody here','No user matches this filter yet.','');
+    <span class="pill ${x.status}">${x.status}</span></button>`).join('') : emptyState('<svg class="i" aria-hidden="true"><use href="#i-users"/></svg>','Nobody here','No user matches this filter yet.','');
 }
 let UADMIN_TARGET=null;
 function userMenu(uid){
