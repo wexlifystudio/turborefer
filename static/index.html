@@ -435,7 +435,7 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <div class="help">The bot gets <b>/start 123456</b> from each account.</div></div>
       <div class="field"><label>Captcha type</label>
         <div class="chips" id="r-method">
-          <button class="chip on" data-v="no_captcha">None</button><button class="chip" data-v="text_code"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Text code</button><button class="chip" data-v="image"><svg class="i" aria-hidden="true"><use href="#i-image"/></svg> Image</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="button">Button</button>
+          <button class="chip on" data-v="no_captcha">None</button><button class="chip" data-v="auto"><svg class="i" aria-hidden="true"><use href="#i-bot"/></svg> Auto Detect</button><button class="chip" data-v="text_code"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Text code</button><button class="chip" data-v="image"><svg class="i" aria-hidden="true"><use href="#i-image"/></svg> Image</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="button">Button</button>
         </div>
         <div class="help" id="captcha-help"></div></div>
     </div>
@@ -1209,6 +1209,7 @@ const chip = id => document.querySelector('#'+id+' .chip.on')?.dataset.v;
 const SPEED_HELP={fast:'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> 8 accounts at once with a short pause. Tuned to be as quick as possible while staying safe on the free server — this is the recommended default.',single:'One account at a time with a 1s pause. Slowest, gentlest on your accounts.',parallel:'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> All selected accounts run almost at once. Very fast, but higher flood-ban risk on large batches.',custom:'Choose exactly how many accounts run together and the pause between actions.'};
 const CAPTCHA_HELP={
   no_captcha:'Just sends /start — use when the bot has no captcha.',
+  auto:'<svg class="i" aria-hidden="true"><use href="#i-bot"/></svg> Detects the captcha type on its own (Image / Text code / Math / Emoji / Button), solves it, then continues the referral. Retries up to 3× if the bot says wrong.',
   text_code:'<svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Bot shows a code like <code>7LsT4oFd</code> and asks you to send it back. Each account reads its own code and replies with it.',
   image:'<svg class="i" aria-hidden="true"><use href="#i-image"/></svg> Bot sends a picture with numbers/letters (e.g. <b>15473</b>). Each account reads the image and replies with the answer. Retries up to 3× if the bot says wrong.',
   emoji:'Bot asks you to tap the button matching an emoji.',
@@ -1262,7 +1263,7 @@ async function launchJob(path,body){
 
 /* ── run confirmation ── */
 let PENDING_RUN=null, CF_POOL_NAME='all', CF_POOL_LIST=[];
-const CAPTCHA_NAME={no_captcha:'None',text_code:'Text code',image:'Image',emoji:'Emoji',math:'Math',button:'Button'};
+const CAPTCHA_NAME={no_captcha:'None',auto:'Auto Detect',text_code:'Text code',image:'Image',emoji:'Emoji',math:'Math',button:'Button'};
 const SPEED_NAME={fast:'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> Fast',single:'<svg class="i" aria-hidden="true"><use href="#i-timer"/></svg> Single',parallel:'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> Ultra',custom:'<svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg> Custom'};
 function openConfirm(path,body){
   PENDING_RUN={path,body};
@@ -1587,7 +1588,7 @@ const BN_EXACT={
 'Healthy':'সুস্থ','Limited':'সীমিত','Banned':'নিষিদ্ধ','Session dead':'সেশন মৃত','Error':'ত্রুটি','dead':'মৃত',
 // run
 'Pick a task, choose accounts, start':'একটি কাজ বাছুন, অ্যাকাউন্ট নির্বাচন করুন, শুরু করুন','Message':'মেসেজ','Bot referral link':'বটের রেফারেল লিংক',
-'The bot gets':'বট পাবে','from each account.':'প্রতিটি অ্যাকাউন্ট থেকে।','Captcha type':'ক্যাপচার ধরন','None':'কিছু নয়','Text code':'টেক্সট কোড','Image':'ছবি','Emoji':'ইমোজি','Math':'অঙ্ক','Button':'বাটন',
+'The bot gets':'বট পাবে','from each account.':'প্রতিটি অ্যাকাউন্ট থেকে।','Captcha type':'ক্যাপচার ধরন','Auto Detect':'অটো ডিটেক্ট','Detects the captcha type on its own (Image / Text code / Math / Emoji / Button), solves it, then continues the referral. Retries up to 3× if the bot says wrong.':'ক্যাপচার ধরন নিজে থেকে চিনে সমাধান করবে (ছবি / টেক্সট কোড / অঙ্ক / ইমোজি / বাটন), তারপর রেফারেল চালিয়ে যাবে। বট ভুল বললে ৩ বার পর্যন্ত আবার চেষ্টা করবে।','None':'কিছু নয়','Text code':'টেক্সট কোড','Image':'ছবি','Emoji':'ইমোজি','Math':'অঙ্ক','Button':'বাটন',
 'Action':'অ্যাকশন','Join':'জয়েন','Leave':'লিভ','Auto-leave':'অটো-লিভ','Mute all':'সব মিউট','Mute or unmute?':'মিউট নাকি আনমিউট?','Mute':'মিউট','Unmute':'আনমিউট',
 'What to mute':'কী মিউট করবেন','Channels only':'শুধু চ্যানেল','Channels +':'চ্যানেল +','Groups':'গ্রুপ',
 'Every channel each account has joined will be muted at once. Already-muted ones are skipped. You can bring them back later with':'প্রতিটি অ্যাকাউন্ট যত চ্যানেলে জয়েন আছে, সবগুলোর নোটিফিকেশন একবারে মিউট হয়ে যাবে। আগে থেকে মিউট থাকলে বাদ যাবে। পরে চাইলে',
@@ -1725,7 +1726,7 @@ const BN_PAT=[
 [/^\(auto-retried after (\d+)s flood-wait\) (.*)$/,(m)=>'(ফ্লাড-ওয়েটের '+m[1]+' সে পর অটো-রিট্রাই করা হয়েছে) '+trText(m[2])],
 [/^No captcha response in (\d+)s$/,'$1 সেকেন্ডে ক্যাপচার কোনো সাড়া নেই'],[/^Bot rejected answer \((\d+)x\)$/,'বট উত্তর গ্রহণ করেনি ($1 বার)'],
 [/^Emoji (.+)$/,'ইমোজি $1'],[/^Answered (.+)$/,'উত্তর দেওয়া হয়েছে $1'],[/^Clicked '(.*)'$/,"'$1' চাপা হয়েছে"],[/^Sent code (.+)$/,'কোড পাঠানো হয়েছে $1'],[/^Image captcha → (\S+)$/,'ছবির ক্যাপচা → $1'],
-[/^(Image|Math|Text|Emoji): (.*)$/,(m)=>trWord(m[1])+': '+trText(m[2])],
+[/^(Image|Math|Text|Emoji|Button): (.*)$/,(m)=>trWord(m[1])+': '+trText(m[2])],
 [/^Connection hiccup \((.*)\)$/,'সংযোগে সমস্যা ($1)'],
 [/^Left (\d+)\/(\d+)$/,'$2 এর মধ্যে $1টি লিভ হয়েছে'],[/^(\d+)\/(\d+)$/,'$1/$2'],
 [/^(Muted|Unmuted) (\d+) (channels(?: \+ groups)?)(.*)$/,(m)=>(m[1]==='Muted'?'মিউট হয়েছে ':'আনমিউট হয়েছে ')+m[2]+'টি '+(m[3]==='channels'?'চ্যানেল':'চ্যানেল + গ্রুপ')+trText(m[4])],
@@ -1758,7 +1759,7 @@ const BN_PAT=[
 [/^(.+) requested access$/,'$1 অ্যাক্সেস চেয়েছে'],[/^(.+) opened the app first time$/,'$1 প্রথমবার অ্যাপ খুলেছে'],
 [/^(\d+) of (\d+)$/,'$1 / $2'],[/^(\d+) total$/,'মোট $1'],[/^(\d+) accounts? · (.+)$/,'$1টি অ্যাকাউন্ট · $2'],
 ];
-const BN_WORD={ok:'সফল',dead:'মৃত',banned:'নিষিদ্ধ',limited:'সীমিত',error:'ত্রুটি',unknown:'অজানা',fast:'দ্রুত',ultra:'আলট্রা',Image:'ছবি',Math:'অঙ্ক',Text:'টেক্সট',Emoji:'ইমোজি',light:'হালকা',normal:'স্বাভাবিক',strong:'জোরালো',off:'বন্ধ'};
+const BN_WORD={ok:'সফল',dead:'মৃত',banned:'নিষিদ্ধ',limited:'সীমিত',error:'ত্রুটি',unknown:'অজানা',fast:'দ্রুত',ultra:'আলট্রা',Image:'ছবি',Math:'অঙ্ক',Text:'টেক্সট',Emoji:'ইমোজি',Button:'বাটন',light:'হালকা',normal:'স্বাভাবিক',strong:'জোরালো',off:'বন্ধ'};
 function trWord(w){ return BN_WORD[w]||w; }
 function trText(s){ return trTo(s,'bn'); }
 const _lead=s=>s.match(/^\s*/)[0], _trail=s=>s.match(/\s*$/)[0];

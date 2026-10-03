@@ -424,13 +424,34 @@ async def _captcha_flow(acc, bot_link, solver):
 async def solve_none(event, client, bot_user):
     return {"status": "success", "msg": "Started"}
 
+# "Select this emoji: ₿" — the target may be a plain symbol that emoji_lib does not know,
+# so read it from the instruction line first and match it against the buttons.
+_EMOJI_LINE = re.compile(r"(?:emoji|symbol|icon|sticker|sign)\s*[:：=\-–—]\s*(.+)$", re.I | re.M)
+
+def _norm_sym(s):
+    return re.sub(r"[\ufe0f\u200d\u200b\s]", "", s or "")
+
+def _emoji_targets(text):
+    m = _EMOJI_LINE.search(text or "")
+    if not m: return []
+    seg = m.group(1)
+    out = [it["emoji"] for it in emoji_lib.emoji_list(seg)]
+    for ch in _norm_sym(seg):
+        if not ch.isascii() and not ch.isalnum() and not any(ch in o for o in out):
+            out.append(ch)
+    return out
+
 async def solve_emoji(event, client, bot_user):
     if not event.buttons: return None
-    emojis = [it["emoji"] for it in emoji_lib.emoji_list(event.raw_text or "")]
-    for row in event.buttons:
-        for btn in row:
-            for e in emojis:
-                if e in (btn.text or ""):
+    text = event.raw_text or ""
+    targets = _emoji_targets(text) or [it["emoji"] for it in emoji_lib.emoji_list(text)]
+    btns = [b for row in event.buttons for b in row if not getattr(b, "url", None)]
+    for exact in (True, False):
+        for e in targets:
+            ne = _norm_sym(e)
+            for btn in btns:
+                bt = _norm_sym(btn.text)
+                if ne and ((bt == ne) if exact else (ne in bt)):
                     await btn.click(); return {"status": "success", "msg": f"Emoji {e}"}
     return None
 
@@ -616,6 +637,11 @@ async def solve_auto(event, client, bot_user):
     if m.buttons and not _has_url_buttons(m) and _TAP_HINT.search(text):
         r = await solve_emoji(event, client, bot_user)
         if r: return {**r, "msg": "Emoji: " + r["msg"]}
+    # a lone "I am human" style button
+    plain = [b for row in (m.buttons or []) for b in row if not getattr(b, "url", None)]
+    if len(plain) == 1 and _TAP_HINT.search(text):
+        await plain[0].click()
+        return {"status": "success", "msg": f"Button: Clicked '{plain[0].text}'"}
     return None
 solve_auto.verify = True
 solve_auto.timeout = 40
