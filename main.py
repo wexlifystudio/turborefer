@@ -470,6 +470,9 @@ async def solve_math(event, client, bot_user):
 
 async def solve_button(event, client, bot_user):
     if not event.buttons: return None
+    if len(_num_buttons(event)) >= 2:
+        r = await solve_number(event, client, bot_user)
+        if r: return r
     await event.buttons[0][0].click()
     return {"status": "success", "msg": f"Clicked '{event.buttons[0][0].text}'"}
 
@@ -508,7 +511,42 @@ def _extract_text_code(msg):
             return s
     return None
 
+# ── Number-button captcha ────────────────────────────────────────
+# "Select the number 1 to verify" / "Your verification code: 450269 — pick the
+# correct one of the 6 codes below": the answer is one of the numeric buttons.
+_NUM_KEY = re.compile(r"(?:number|code|digit|answer|select|click(?:\s+on)?|press|tap|choose|pick)\D{0,24}?(\d+)", re.I)
+
+def _num_buttons(event):
+    out = []
+    for row in (event.buttons or []):
+        for b in row:
+            if getattr(b, "url", None): continue
+            tx = _norm_sym(getattr(b, "text", ""))
+            if re.fullmatch(r"\d{1,12}", tx): out.append((tx, b))
+    return out
+
+def _number_target(text, nums):
+    have = {tx for tx, _ in nums}
+    for m in _NUM_KEY.finditer(text or ""):          # number named next to a keyword wins
+        if m.group(1) in have: return m.group(1)
+    cands = list(dict.fromkeys(n for n in re.findall(r"\d+", text or "") if n in have))
+    return cands[0] if len(cands) == 1 else None      # otherwise only if unambiguous
+
+async def solve_number(event, client, bot_user):
+    nums = _num_buttons(event)
+    if len(nums) < 2: return None
+    target = _number_target(event.raw_text or "", nums)
+    if target is None: return None
+    for tx, b in nums:
+        if tx == target:
+            await b.click(); return {"status": "success", "msg": f"Number {target}"}
+    return None
+solve_number.verify = True
+
 async def solve_text_code(event, client, bot_user):
+    if len(_num_buttons(event)) >= 2:
+        r = await solve_number(event, client, bot_user)
+        if r: return r
     code = _extract_text_code(event.message)
     if not code:
         return None
@@ -632,6 +670,9 @@ async def solve_auto(event, client, bot_user):
     if _MATH_HINT.search(text) and re.search(r"\d+\s*[+\-*/×÷x]\s*\d+", text):
         r = await solve_math(event, client, bot_user)
         if r: return {**r, "msg": "Math: " + r["msg"]}
+    if len(_num_buttons(event)) >= 2 and (_TAP_HINT.search(text) or _CODE_HINT.search(text)):
+        r = await solve_number(event, client, bot_user)
+        if r: return {**r, "msg": "Number: " + r["msg"]}
     r = await solve_text_code(event, client, bot_user)
     if r: return {**r, "msg": "Text: " + r["msg"]}
     if m.buttons and not _has_url_buttons(m) and _TAP_HINT.search(text):
@@ -646,7 +687,7 @@ async def solve_auto(event, client, bot_user):
 solve_auto.verify = True
 solve_auto.timeout = 40
 
-SOLVERS = {"no_captcha": None, "auto": solve_auto, "emoji": solve_emoji, "math": solve_math, "button": solve_button,
+SOLVERS = {"no_captcha": None, "auto": solve_auto, "emoji": solve_emoji, "math": solve_math, "button": solve_button, "number": solve_number,
            "text_code": solve_text_code, "image": solve_image}
 
 async def refer_plain(acc, bot_link):
