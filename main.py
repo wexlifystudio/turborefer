@@ -501,13 +501,15 @@ def _extract_text_code(msg):
     except Exception:
         pass
     # 2) plain text: the token right after "code:" / "captcha:" (same or next line)
-    m = re.search(r"(?:code|captcha)[^\n:：]{0,20}[:：]?\s*\n?\s*([A-Za-z0-9]{4,16})\b", text, re.I)
+    m = re.search(r"(?:code|captcha)[^\n:：]{0,20}[:：]\s*\n?\s*([A-Za-z0-9]{3,16})\b", text, re.I) \
+        or re.search(r"(?:code|captcha)[^\n:：]{0,20}\n\s*([A-Za-z0-9]{3,16})\b", text, re.I) \
+        or re.search(r"(?:code|captcha)[^\n:：]{0,20}?\s([A-Za-z0-9]{4,16})\b", text, re.I)
     if m and _looks_like_code(m.group(1)):
         return m.group(1)
     # 3) a line that is nothing but a code-looking token (mixed letters+digits)
     for line in text.splitlines():
         s = line.strip()
-        if re.fullmatch(r"(?=.*\d)(?=.*[A-Za-z])[A-Za-z0-9]{5,16}", s):
+        if re.fullmatch(r"(?=.*\d)(?=.*[A-Za-z])[A-Za-z0-9]{3,16}", s):
             return s
     return None
 
@@ -588,43 +590,103 @@ def _ocr_space(img):
         raise RuntimeError("OCR: " + str(j.get("ErrorMessage"))[:70])
     return "\n".join(p.get("ParsedText", "") for p in (j.get("ParsedResults") or []))
 
+_CONFUSABLE = set("OoQDIl|iSsBZzGgq")
+
+def _fix_token(tok):
+    """Digit-fix OCR confusions (O→0, S→5 …) ONLY when the token is clearly a number
+    (at least half real digits). 'O2D' / 'I5R' are letter+digit captchas — left as read."""
+    d = sum(c.isdigit() for c in tok)
+    if d * 2 >= len(tok) and all(c.isdigit() or c in _CONFUSABLE for c in tok):
+        return tok.translate(_DIGIT_FIX)
+    return tok
+
 def _pick_captcha_answer(raw):
     """OCR text may include banner words (e.g. 'SN BOT CREATOR 15473') — pick the captcha."""
     lines = [l.strip() for l in (raw or "").splitlines() if l.strip()]
-    # 1) longest pure digit run (spaces inside a line removed: '1 5 4 7 3' → 15473)
+    toks = [re.sub(r"[^A-Za-z0-9]", "", l) for l in lines]
+    # 1) a line that is only digits (spaces inside removed: '1 5 4 7 3' → 15473)
     best = ""
+    for t in toks:
+        if t.isdigit() and len(t) >= 3 and len(t) > len(best): best = t
+    if best: return best
+    # 2) a short line mixing letters+digits is a letter/number captcha — keep it as read
+    for t in toks:
+        if 3 <= len(t) <= 10 and any(c.isdigit() for c in t):
+            return _fix_token(t)
+    # 3) long banner line containing a long digit run ('SN BOT CREATOR 15473')
     for l in lines:
-        for run in re.findall(r"\d{3,}", l.replace(" ", "")):
-            if len(run) > len(best): best = run
-    if best:
-        return best
-    # 2) mostly-digit tokens with typical OCR confusions fixed (O→0, S→5, …)
-    for l in lines:
-        tok = l.replace(" ", "")
-        if 3 <= len(tok) <= 10 and any(c.isdigit() for c in tok):
-            fixed = tok.translate(_DIGIT_FIX)
-            if fixed.isdigit(): return fixed
-    # 3) alphanumeric captcha: prefer tokens containing a digit, then the longest
-    toks = [t for t in re.findall(r"[A-Za-z0-9]{4,12}", " ".join(lines))]
-    if not toks: return None
-    with_digit = [t for t in toks if any(c.isdigit() for c in t)]
-    return max(with_digit or toks, key=len)
+        runs = re.findall(r"\d{3,}", l.replace(" ", ""))
+        if runs: return max(runs, key=len)
+    # 4) letters-only captcha: the longest plain token (prefer 4–8 chars)
+    words = re.findall(r"[A-Za-z0-9]{3,12}", " ".join(lines))
+    if not words: return None
+    return max(words, key=lambda w: (3 <= len(w) <= 8, len(w)))
+
+def _prep_image(img):
+    """Clean a noisy captcha for OCR: grayscale → blur → Otsu threshold → dark text on
+    white → upscale + padding. Needs Pillow; returns None if it isn't installed."""
+    try:
+        from PIL import Image, ImageOps, ImageFilter
+        import io
+        g = Image.open(io.BytesIO(img)).convert("L")
+        g = ImageOps.autocontrast(g, cutoff=2).filter(ImageFilter.GaussianBlur(1.0))
+        h = g.histogram(); tot = sum(h); sm = sum(i * c for i, c in enumerate(h))
+        wb = sb = 0; best = 0.0; thr = 128
+        for i in range(256):
+            wb += h[i]
+            if wb == 0: continue
+            wf = tot - wb
+            if wf == 0: break
+            sb += i * h[i]
+            v = wb * wf * (sb / wb - (sm - sb) / wf) ** 2
+            if v > best: best, thr = v, i
+        bw = g.point(lambda p: 255 if p > thr else 0)
+        if bw.histogram()[255] < tot / 2:        # text is the minority colour → make it black
+            bw = ImageOps.invert(bw)
+        bw = bw.resize((bw.width * 3, bw.height * 3), Image.LANCZOS)
+        bw = ImageOps.expand(bw, border=30, fill=255)
+        out = io.BytesIO(); bw.save(out, "PNG")
+        return out.getvalue()
+    except Exception:
+        return None
+
+def _ocr_tesseract(img):
+    import shutil, subprocess, tempfile
+    exe = shutil.which("tesseract")
+    if not exe: return None
+    with tempfile.NamedTemporaryFile(suffix=".png") as f:
+        f.write(img); f.flush()
+        r = subprocess.run([exe, f.name, "-", "--psm", "8", "-c",
+                            "tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"],
+                           capture_output=True, text=True, timeout=15)
+    return r.stdout
 
 async def _ocr_image(img):
+    """Read the captcha with several engines / image variants and take the majority answer."""
     key = hashlib.sha1(img).hexdigest()
     if key in _OCR_CACHE:
         return _OCR_CACHE[key]
-    ans = None
-    try:
-        raw = await asyncio.to_thread(_ocr_local, img)
-        if raw: ans = _pick_captcha_answer(raw)
-    except Exception:
-        ans = None
-    if not ans:
-        ans = _pick_captcha_answer(await asyncio.to_thread(_ocr_space, img))
-    if ans:
-        if len(_OCR_CACHE) > 500: _OCR_CACHE.clear()
-        _OCR_CACHE[key] = ans
+    clean = await asyncio.to_thread(_prep_image, img)
+    jobs = [asyncio.to_thread(_ocr_local, img)]                       # priority order = tie-break
+    if clean:
+        jobs += [asyncio.to_thread(_ocr_tesseract, clean), asyncio.to_thread(_ocr_space, clean)]
+    jobs += [asyncio.to_thread(_ocr_space, img)]
+    res = await asyncio.gather(*jobs, return_exceptions=True)
+    cands, err = [], None
+    for r in res:
+        if isinstance(r, Exception): err = err or r; continue
+        a = _pick_captcha_answer(r) if r else None
+        if a: cands.append(a)
+    if not cands:
+        if err: raise err
+        return None
+    # majority vote (case-insensitive), earliest engine wins ties
+    votes = {}
+    for i, a in enumerate(cands):
+        k = a.upper(); n, first, _ = votes.get(k, (0, i, a)); votes[k] = (n + 1, first, a if n == 0 else votes[k][2])
+    ans = max(votes.values(), key=lambda v: (v[0], -v[1]))[2]
+    if len(_OCR_CACHE) > 500: _OCR_CACHE.clear()
+    _OCR_CACHE[key] = ans
     return ans
 
 _IMG_HINT = re.compile(r"captcha|code|enter|verif|solve|type|number|digit", re.I)
