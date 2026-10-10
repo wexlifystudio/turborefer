@@ -331,10 +331,47 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
 .pill .i{width:12px;height:12px;margin-right:3px;vertical-align:-.12em}
 #lf-acc-list .row .body .t,#lf-acc-list .row .body .d{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #lf-acc-list .row .d{margin-top:1px}
+
+.row .body>.t,.row .body>.d{display:block}
+.row .body>.d{margin-top:1px}
+#job-feed .row .d,#jd-results .row .d,#prof-list .row .d{white-space:normal;overflow:visible;word-break:break-word}
+/* ── v33: score badge, flow builder, switches ── */
+.score{display:inline-flex;align-items:center;justify-content:center;min-width:28px;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:800;margin-left:6px;vertical-align:1px;letter-spacing:.2px}
+.score.good{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.score.fair{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.score.weak,.score.dead{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.fstep{background:var(--bg2);border-radius:14px;padding:12px;margin-bottom:10px}
+.fs-h{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.fs-n{width:24px;height:24px;border-radius:50%;background:var(--turbo);color:#fff;font-size:12px;font-weight:800;display:grid;place-items:center;flex:none}
+.fs-t{flex:1;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px}
+.fs-act{display:flex;gap:4px}
+.fs-act button{width:30px;height:30px;border-radius:9px;background:var(--bg);display:grid;place-items:center}
+.fs-act button:disabled{opacity:.3}
+.fs-act button.bad{color:var(--bad)}
+.fstep .field{margin-bottom:8px}
+.fstep .field label{font-size:12px;margin-bottom:4px}
+.fstep input,.fstep select,.fstep textarea{padding:9px 11px;font-size:14px;background:var(--bg)}
+.fstep textarea{min-height:64px}
+.fs-row{display:flex;gap:8px}.fs-row>.field{flex:1;min-width:0}
+.fs-opt{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--hint);margin-top:2px}
+.fs-opt input{width:auto}
+.addchips{display:flex;flex-wrap:wrap;gap:8px}
+.addchips button{padding:9px 12px;border-radius:12px;background:var(--bg2);font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px}
+.addchips button:active{transform:scale(.95)}
+.swrow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.swrow .body{flex:1;min-width:0}.swrow .t{display:block;font-weight:600;font-size:14px}.swrow .d{display:block;color:var(--hint);font-size:12px;margin-top:1px}
+.sw{width:44px;height:26px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+.swrow.on .sw{background:var(--turbo)}.swrow.on .sw::after{transform:translateX(18px)}
+.bar-mini{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.bar-mini>i{display:block;height:100%;background:var(--ok)}
+.bothint{margin-top:8px;padding:10px 12px;border-radius:12px;background:color-mix(in srgb,var(--turbo) 8%,var(--bg2));font-size:12.5px;color:var(--hint);line-height:1.5}
+.bothint b{color:var(--text)}
+.bothint button{margin-top:6px}
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol><symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol><symbol id="i-bar-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol><symbol id="i-bell-off" viewBox="0 0 24 24"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-check-square" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol><symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol><symbol id="i-crown" viewBox="0 0 24 24"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 20h14"/></symbol><symbol id="i-divide" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"/><line x1="5" x2="19" y1="12" y2="12"/><circle cx="12" cy="18" r="1"/></symbol><symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol><symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></symbol><symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol><symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol><symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol><symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol><symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol><symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol><symbol id="i-octagon-x" viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol><symbol id="i-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></symbol><symbol id="i-party" viewBox="0 0 24 24"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></symbol><symbol id="i-radio" viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol><symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol><symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-siren" viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></symbol><symbol id="i-skip" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></symbol><symbol id="i-skull" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol><symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></symbol><symbol id="i-sort" viewBox="0 0 24 24"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol><symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/></symbol><symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></symbol><symbol id="i-trending" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol><symbol id="i-type" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></symbol><symbol id="i-unlock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol><symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="19" y1="11" y2="11"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol><symbol id="i-vibrate" viewBox="0 0 24 24"><path d="m2 8 2 2-2 2 2 2-2 2"/><path d="m22 8-2 2 2 2-2 2 2 2"/><rect width="8" height="14" x="8" y="5" rx="1"/></symbol><symbol id="i-volume" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol><symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol><symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol></defs></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol><symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol><symbol id="i-bar-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol><symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></symbol><symbol id="i-bell-off" viewBox="0 0 24 24"><path d="M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5"/><path d="M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol><symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol><symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-check-square" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></symbol><symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></symbol><symbol id="i-crown" viewBox="0 0 24 24"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 20h14"/></symbol><symbol id="i-divide" viewBox="0 0 24 24"><circle cx="12" cy="6" r="1"/><line x1="5" x2="19" y1="12" y2="12"/><circle cx="12" cy="18" r="1"/></symbol><symbol id="i-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol><symbol id="i-gift" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></symbol><symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol><symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol><symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></symbol><symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol><symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol><symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></symbol><symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol><symbol id="i-octagon-x" viewBox="0 0 24 24"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol><symbol id="i-palette" viewBox="0 0 24 24"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></symbol><symbol id="i-party" viewBox="0 0 24 24"><path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/></symbol><symbol id="i-pencil" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></symbol><symbol id="i-radio" viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></symbol><symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol><symbol id="i-repeat" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></symbol><symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol><symbol id="i-server" viewBox="0 0 24 24"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></symbol><symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol><symbol id="i-siren" viewBox="0 0 24 24"><path d="M7 18v-6a5 5 0 1 1 10 0v6"/><path d="M5 21a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2z"/><path d="M21 12h1"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="M12 2v1"/><path d="m4.929 4.929.707.707"/><path d="M12 12v6"/></symbol><symbol id="i-skip" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></symbol><symbol id="i-skull" viewBox="0 0 24 24"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.56-3.25 8 8 0 1 0-11.12 0A2 2 0 0 0 8 20"/></symbol><symbol id="i-sliders" viewBox="0 0 24 24"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></symbol><symbol id="i-smile" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></symbol><symbol id="i-sort" viewBox="0 0 24 24"><path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/></symbol><symbol id="i-sparkles" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></symbol><symbol id="i-stethoscope" viewBox="0 0 24 24"><path d="M11 2v2"/><path d="M5 2v2"/><path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1"/><path d="M8 15a6 6 0 0 0 12 0v-3"/><circle cx="20" cy="10" r="2"/></symbol><symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></symbol><symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></symbol><symbol id="i-trending" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></symbol><symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol><symbol id="i-type" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></symbol><symbol id="i-unlock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></symbol><symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol><symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="19" y1="11" y2="11"/></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol><symbol id="i-vibrate" viewBox="0 0 24 24"><path d="m2 8 2 2-2 2 2 2-2 2"/><path d="m22 8-2 2 2 2-2 2 2 2"/><rect width="8" height="14" x="8" y="5" rx="1"/></symbol><symbol id="i-volume" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></symbol><symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol><symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol><symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol><symbol id="i-workflow" viewBox="0 0 24 24"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></symbol><symbol id="i-brain" viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M12 5v13"/></symbol><symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol><symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></symbol><symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></symbol><symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></symbol></defs></svg>
 <div class="ptr" id="ptr"><span class="spin"></span><span id="ptr-text">Pull to refresh</span></div>
 <div id="app">
 
@@ -392,6 +429,13 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
         <button onclick="show('accounts');openAdd()"><span class="icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>Add account</button>
       </div>
     </div>
+    <div class="section"><h2>Tools</h2>
+      <div class="list">
+        <button class="row" onclick="show('flows')"><span class="av"><svg class="i" aria-hidden="true"><use href="#i-workflow"/></svg></span><span class="body"><span class="t">Flow Builder</span><span class="d">Build a custom bot flow with no code</span></span><span class="r" style="color:var(--hint)">›</span></button>
+        <button class="row" onclick="show('profiles')"><span class="av"><svg class="i" aria-hidden="true"><use href="#i-brain"/></svg></span><span class="body"><span class="t">Bot Profiles</span><span class="d">What the app has learned about each bot</span></span><span class="r" style="color:var(--hint)">›</span></button>
+        <button class="row" onclick="openAlerts()"><span class="av"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg></span><span class="body"><span class="t">Smart Alerts</span><span class="d">Telegram messages for important events</span></span><span class="r" style="color:var(--hint)">›</span></button>
+      </div>
+    </div>
     <div class="section"><h2>Recent jobs <small id="j-count"></small></h2><div class="list" id="h-jobs"><div class="empty">Nothing has run yet.</div></div></div>
   </div>
 
@@ -431,13 +475,15 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     <div id="run-refer">
       <div class="field"><label>Bot referral link</label><input id="r-link" placeholder="https://t.me/SomeBot?start=123456" inputmode="url" oninput="previewLink()">
         <div class="linkprev hidden" id="link-prev"></div>
+        <div class="bothint hidden" id="bot-hint"></div>
         <div class="recent" id="recent-links"></div>
         <div class="help">The bot gets <b>/start 123456</b> from each account.</div></div>
       <div class="field"><label>Captcha type</label>
         <div class="chips" id="r-method">
-          <button class="chip on" data-v="no_captcha">None</button><button class="chip" data-v="auto"><svg class="i" aria-hidden="true"><use href="#i-bot"/></svg> Auto Detect</button><button class="chip" data-v="text_code"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Text code</button><button class="chip" data-v="image"><svg class="i" aria-hidden="true"><use href="#i-image"/></svg> Image</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="button">Button</button><button class="chip" data-v="number">Number</button>
+          <button class="chip on" data-v="no_captcha">None</button><button class="chip" data-v="auto"><svg class="i" aria-hidden="true"><use href="#i-bot"/></svg> Auto Detect</button><button class="chip" data-v="text_code"><svg class="i" aria-hidden="true"><use href="#i-type"/></svg> Text code</button><button class="chip" data-v="image"><svg class="i" aria-hidden="true"><use href="#i-image"/></svg> Image</button><button class="chip" data-v="emoji">Emoji</button><button class="chip" data-v="math">Math</button><button class="chip" data-v="button">Button</button><button class="chip" data-v="number">Number</button><button class="chip" data-v="smart"><svg class="i" aria-hidden="true"><use href="#i-brain"/></svg> Smart (Learned)</button><button class="chip" data-v="flow"><svg class="i" aria-hidden="true"><use href="#i-workflow"/></svg> Flow</button>
         </div>
-        <div class="help" id="captcha-help"></div></div>
+        <div class="help" id="captcha-help"></div>
+        <div id="r-flow-wrap" class="hidden" style="margin-top:12px"><select id="r-flow"></select><div class="help" id="r-flow-help"></div><button class="btn ghost sm" style="margin-top:8px" onclick="show('flows')"><svg class="i" aria-hidden="true"><use href="#i-workflow"/></svg> Manage flows</button></div></div>
     </div>
     <div id="run-channels" class="hidden">
       <div class="field"><label>Action</label><div class="chips" id="c-action"><button class="chip on" data-v="join">Join</button><button class="chip" data-v="leave">Leave</button><button class="chip" data-v="random"><svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg> Auto-leave</button><button class="chip" data-v="mute"><svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg> Mute all</button></div></div>
@@ -460,6 +506,14 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
       <div class="field"><label>Message</label><textarea id="m-text" placeholder="Hello!"></textarea></div>
     </div>
 
+    <div class="section"><h2>Reliability</h2>
+      <div class="field"><label>Retry failed accounts</label>
+        <div class="chips" id="r-retries"><button class="chip" data-v="0">Off</button><button class="chip" data-v="1">1×</button><button class="chip on" data-v="2">2×</button><button class="chip" data-v="3">3×</button></div>
+        <div class="help" id="retry-help"></div></div>
+      <div class="field"><label>Skip weak accounts</label>
+        <div class="chips" id="r-minscore"><button class="chip on" data-v="0">Off</button><button class="chip" data-v="40">Score under 40</button><button class="chip" data-v="60">Score under 60</button></div>
+        <div class="help">Accounts with a low health score (many recent failures, flood-waits, limits) are left out of this run.</div></div>
+    </div>
     <div class="section"><h2>Speed</h2>
       <div class="chips" id="speed" style="margin-bottom:10px">
         <button class="chip on" data-v="fast"><svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> Fast</button><button class="chip" data-v="single"><svg class="i" aria-hidden="true"><use href="#i-timer"/></svg> Single</button><button class="chip" data-v="parallel"><svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> Ultra</button><button class="chip" data-v="custom"><svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg> Custom</button>
@@ -662,10 +716,42 @@ input[type=range]{padding:0;height:34px;background:transparent;border:0;accent-c
     </div>
   </div>
 
+
+  <!-- ══ Flow Builder ══ -->
+  <div class="screen" id="s-flows">
+    <div class="top"><div style="display:flex;align-items:center;gap:12px"><button class="icon" onclick="show('home')"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><path d="M15 18l-6-6 6-6"/></svg></button><div><h1><svg class="i" aria-hidden="true"><use href="#i-workflow"/></svg> Flow Builder</h1><div class="sub">Teach the app a custom bot flow — no code</div></div></div></div>
+    <button class="btn turbo" onclick="newFlow()"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg> New flow</button>
+    <div class="callout"><span class="ci"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></span><div><b>How it works</b><p>A flow is a list of steps each account follows after sending /start — click a button, send text, solve a captcha, join channels, check the bot's answer. Pick “Flow” as the captcha type on the Run screen to use it.</p></div></div>
+    <div class="section"><h2>Your flows <small id="flow-count"></small></h2><div class="list" id="flow-list"></div></div>
+  </div>
+
+  <div class="screen" id="s-flowedit">
+    <div class="top"><div style="display:flex;align-items:center;gap:12px"><button class="icon" onclick="show('flows')"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><path d="M15 18l-6-6 6-6"/></svg></button><div><h1 id="fe-title">New flow</h1><div class="sub">Steps run top to bottom for every account</div></div></div></div>
+    <div class="field"><label>Flow name</label><input id="fe-name" maxlength="40" placeholder="e.g. Join + verify" oninput="FE.name=this.value"></div>
+    <div class="section"><h2>Steps <small id="fe-count"></small></h2><div id="fe-steps"></div></div>
+    <div class="section"><h2>Add a step</h2><div class="addchips" id="fe-add"></div>
+      <div class="help" style="margin-top:8px;font-size:12px;color:var(--hint)">Placeholders for “Send text”: {param} = referral code, {link} = bot link, {code} = code shown by the bot.</div></div>
+    <div class="section"><h2>Start from a template</h2><div class="list" id="fe-tpl"></div></div>
+    <div style="height:14px"></div>
+    <button class="btn turbo" id="fe-save" onclick="saveFlow()"><svg class="i" aria-hidden="true"><use href="#i-save"/></svg> Save flow</button>
+    <button class="btn danger hidden" id="fe-del" style="margin-top:8px" onclick="deleteFlow(FE.id)"><svg class="i" aria-hidden="true"><use href="#i-trash"/></svg> Delete flow</button>
+  </div>
+
+  <!-- ══ Bot Profiles ══ -->
+  <div class="screen" id="s-profiles">
+    <div class="top"><div style="display:flex;align-items:center;gap:12px"><button class="icon" onclick="show('home')"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><path d="M15 18l-6-6 6-6"/></svg></button><div><h1><svg class="i" aria-hidden="true"><use href="#i-brain"/></svg> Bot Profiles</h1><div class="sub">The app learns which captcha method works for each bot</div></div></div></div>
+    <div class="callout"><span class="ci"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg></span><div><b>Self-learning</b><p>Every referral run teaches the app what works. Choose “Smart (Learned)” as the captcha type and it tries the best-known method first.</p></div></div>
+    <div class="section"><h2>Learned bots <small id="prof-count"></small></h2><div class="list" id="prof-list"></div></div>
+  </div>
   <!-- ══ Settings ══ -->
   <div class="screen" id="s-settings">
     <div class="top"><div style="display:flex;align-items:center;gap:12px"><button class="icon" onclick="show('home')"><svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2"><path d="M15 18l-6-6 6-6"/></svg></button><div><h1>Settings</h1><div class="sub">Language, look, and feel</div></div></div></div>
 
+    <div class="section" id="alerts-sec"><h2><span><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg> Smart Alerts</span></h2>
+      <div class="help" style="margin:-4px 0 6px;font-size:12px;color:var(--hint)">The bot sends you a Telegram message when something important happens. Repeats are rate-limited so you are never spammed.</div>
+      <div id="alert-list"></div>
+      <button class="btn ghost sm" style="margin-top:10px" id="alert-test" onclick="testAlert()"><svg class="i" aria-hidden="true"><use href="#i-bell"/></svg> Send a test alert</button>
+    </div>
     <div class="section"><h2><span><svg class="i" aria-hidden="true"><use href="#i-globe"/></svg> Language</span></h2>
       <div class="seg" id="lang-seg">
         <button data-v="en" onclick="setLang('en')">English</button>
@@ -881,11 +967,11 @@ function show(name){
   if(!ME && name!=='gate') return;
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id==='s-'+name));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.s===name));
-  $('tabs').classList.toggle('hidden', name==='gate' || name==='settings' || !ME);
+  $('tabs').classList.toggle('hidden', ['gate','settings','flows','flowedit','profiles'].includes(name) || !ME);
   window.scrollTo(0,0);
-  if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run'){ renderSel(); loadRecentLinks(); } if(name==='dash') loadDash(); if(name==='admin') loadAdmin(); if(name==='settings') loadSettings(); if(name==='links') loadLinkFinder();
+  if(name==='home') loadHome(); if(name==='accounts') loadAccounts(); if(name==='run'){ renderSel(); loadRecentLinks(); } if(name==='dash') loadDash(); if(name==='admin') loadAdmin(); if(name==='settings') loadSettings(); if(name==='links') loadLinkFinder(); if(name==='flows') loadFlows(); if(name==='profiles') loadProfiles();
   clearInterval(window._ACT_T); if(name==='admin') window._ACT_T=setInterval(()=>{ loadActivity(); loadServerHealth(); loadRateLimit(); },10000);
-  if(tg?.BackButton){ if(name==='job'||name==='admin'||name==='settings'){tg.BackButton.show(); tg.BackButton.onClick(()=>show(name==='job'?'run':'home'));} else tg.BackButton.hide(); }
+  if(tg?.BackButton){ if(['job','admin','settings','flows','flowedit','profiles'].includes(name)){tg.BackButton.show(); tg.BackButton.onClick(()=>show(name==='job'?'run':name==='flowedit'?'flows':'home'));} else tg.BackButton.hide(); }
 }
 async function requestAccess(){ busy($('req-btn'),true,'Sending…'); try{ const d=await post('/api/request-access',{}); toast(d.already?'Request already sent':'Request sent to the owner',3000); haptic('ok'); }catch(e){ toast(e.message); haptic('bad'); } finally{ busy($('req-btn'),false); } }
 function copyId(){ navigator.clipboard?.writeText($('gate-id').textContent); toast('ID copied'); haptic('ok'); }
@@ -925,7 +1011,7 @@ async function loadHome(){
       <span class="av" style="font-family:Manrope;font-size:16px">${j.kind==='refer'?'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg>':j.kind==='channels'?'<svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg>':j.kind==='mute'?'<svg class="i" aria-hidden="true"><use href="#i-bell-off"/></svg>':(j.kind==='auto_leave'||j.kind==='random_leave')?'<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg>':'<svg class="i" aria-hidden="true"><use href="#i-message"/></svg>'}</span>
       <span class="body"><span class="t">${j.kind==='refer'?'Referral':j.kind==='channels'?(j.meta.action==='join'?'Join channels':'Leave channels'):j.kind==='mute'?(j.meta.mute===false?'Unmute channels':'Mute channels'):(j.kind==='auto_leave'||j.kind==='random_leave')?'Auto-leave':'Message'}</span>
       <span class="d">${esc(j.meta.link||j.meta.target||(j.meta.channels||[]).join(', '))}</span></span>
-      <span class="r">${j.status==='running'?'<span style="color:var(--turbo)">running</span>':j.success+'/'+j.total+' ok'}</span></button>`).join('')
+      <span class="r">${j.status==='running'?'<span style="color:var(--turbo)">running</span>':j.status==='interrupted'?'<span style="color:var(--bad)">interrupted</span>':j.success+'/'+j.total+' ok'}</span></button>`).join('')
       : emptyState('<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg>','Nothing has run yet','Start your first referral, channel join, or message.','<button class="btn" onclick="goRun(\'refer\')">Start a run</button>');
   }catch(e){}
 }
@@ -986,6 +1072,9 @@ async function loadHealthCard(){
       $('hh-d').textContent='They will work again after the flood-wait ends'; }
     else if(h.counts.unknown===h.total){ $('hh-ic').innerHTML='<svg class="i" aria-hidden="true"><use href="#i-stethoscope"/></svg>';
       $('hh-t').textContent='Health not checked yet'; $('hh-d').textContent='Tap to run a health check on all accounts'; }
+    else if(h.weak){ card.classList.add('warn'); $('hh-ic').innerHTML='<svg class="i" aria-hidden="true"><use href="#i-gauge"/></svg>';
+      $('hh-t').textContent=h.weak+' account'+(h.weak>1?'s':'')+' with a low score';
+      $('hh-d').textContent='Sort by Score on the Accounts screen to see them'; }
     else { $('hh-ic').innerHTML='<svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg>'; $('hh-t').textContent='All accounts healthy';
       $('hh-d').textContent=h.counts.ok+' of '+h.total+' verified working'; }
   }catch(e){ $('h-health').classList.add('hidden'); }
@@ -995,7 +1084,7 @@ async function loadHealthCard(){
 function initials(a){ const n=(a.name||a.session_name||'?').trim(); return n.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
 function agoLong(t){ if(!t) return 'never used'; const d=(Date.now()/1000-t); if(d<60) return 'used just now'; if(d<3600) return 'used '+Math.round(d/60)+'m ago'; if(d<86400) return 'used '+Math.round(d/3600)+'h ago'; return 'used '+Math.round(d/86400)+'d ago'; }
 let SORT_MODE='recent', BATCH=false, BATCH_SEL=new Set();
-const SORT_LABEL={recent:'<svg class="i" aria-hidden="true"><use href="#i-sort"/></svg> Recent',name:'<svg class="i" aria-hidden="true"><use href="#i-sort"/></svg> Name',health:'<svg class="i" aria-hidden="true"><use href="#i-sort"/></svg> Health'};
+const SORT_LABEL={recent:'<svg class="i" aria-hidden="true"><use href="#i-sort"/></svg> Recent',name:'<svg class="i" aria-hidden="true"><use href="#i-sort"/></svg> Name',health:'<svg class="i" aria-hidden="true"><use href="#i-sort"/></svg> Health',score:'<svg class="i" aria-hidden="true"><use href="#i-gauge"/></svg> Score'};
 async function loadAccounts(quiet){
   if(!quiet) $('acc-list').innerHTML=SK_ROWS(3);
   try{
@@ -1006,7 +1095,7 @@ async function loadAccounts(quiet){
     renderAccounts();
   }catch(e){ if(!quiet) $('acc-list').innerHTML=emptyState('<svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>',"Couldn't load accounts",esc(e.message),'<button class="btn ghost" onclick="loadAccounts()">Try again</button>'); }
 }
-function cycleSort(){ SORT_MODE = SORT_MODE==='recent'?'name':SORT_MODE==='name'?'health':'recent';
+function cycleSort(){ SORT_MODE = SORT_MODE==='recent'?'name':SORT_MODE==='name'?'health':SORT_MODE==='health'?'score':'recent';
   $('sort-btn').innerHTML=SORT_LABEL[SORT_MODE]; haptic(); renderAccounts(); }
 const HEALTH_RANK={dead:0,banned:1,error:2,limited:3,unknown:4,ok:5};
 function renderAccounts(){
@@ -1014,6 +1103,7 @@ function renderAccounts(){
   let list=ACCOUNTS.filter(a=>!q || (a.session_name+' '+(a.name||'')+' '+(a.username||'')+' '+(a.phone||'')).toLowerCase().includes(q));
   if(SORT_MODE==='name') list=[...list].sort((x,y)=>x.session_name.localeCompare(y.session_name));
   else if(SORT_MODE==='health') list=[...list].sort((x,y)=>(HEALTH_RANK[x.health||'unknown']??9)-(HEALTH_RANK[y.health||'unknown']??9));
+  else if(SORT_MODE==='score') list=[...list].sort((x,y)=>(x.score??101)-(y.score??101));
   else list=[...list].sort((x,y)=>(y.last_used||0)-(x.last_used||0));
   $('batch-bar').classList.toggle('hidden',!BATCH);
   $('batch-n').textContent=BATCH_SEL.size+' selected';
@@ -1027,9 +1117,9 @@ function renderAccounts(){
     const click = BATCH ? `toggleBatch('${esc(a.session_name)}')` : `accMenu('${esc(a.session_name)}')`;
     return `<button class="row" onclick="${click}" oncontextmenu="enterBatch('${esc(a.session_name)}');return false">
       ${BATCH?`<span class="acc-check ${sel?'on':''}"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg></span>`:`<span class="av">${esc(initials(a))}</span>`}
-      <span class="body"><span class="t"><span class="hdot ${a.health||'unknown'}"></span>${esc(a.session_name)}</span>
+      <span class="body"><span class="t"><span class="hdot ${a.health||'unknown'}"></span>${esc(a.session_name)}${a.score!=null?`<span class="score ${esc(a.grade||'fair')}" title="Health score">${a.score}</span>`:''}</span>
       <span class="d">${esc(a.name||'')} ${a.username?'· @'+esc(a.username):''} · ${esc(a.phone||'')}</span>
-      <span class="d">${a.excluded?'<svg class="i" aria-hidden="true"><use href="#i-ban"/></svg> excluded · ':''}${agoLong(a.last_used)}${a.note?' · <svg class="i" aria-hidden="true"><use href="#i-pencil"/></svg> '+esc(a.note.slice(0,40)):''}</span></span>
+      <span class="d">${a.excluded?'<svg class="i" aria-hidden="true"><use href="#i-ban"/></svg> excluded · ':''}${agoLong(a.last_used)}${a.note?' · <svg class="i" aria-hidden="true"><use href="#i-pencil"/></svg> '+esc(a.note.slice(0,40)):''}</span>${(a.score_notes||[]).length&&a.grade!=='good'?`<span class="d" style="color:var(--${a.grade==='fair'?'warn':'bad'})">${esc(a.score_notes.slice(0,2).join(' · '))}</span>`:''}</span>
       <span class="r">${BATCH?'':'›'}</span></button>`;
   }).join('');
 }
@@ -1053,7 +1143,7 @@ function accMenu(name){
   const a=ACCOUNTS.find(x=>x.session_name===name)||{};
   ACC_TARGET=name;
   $('am-title').textContent=name;
-  $('am-sub').textContent=(a.name?a.name+' · ':'')+(a.username?'@'+a.username+' · ':'')+agoLong(a.last_used);
+  $('am-sub').textContent=(a.name?a.name+' · ':'')+(a.username?'@'+a.username+' · ':'')+agoLong(a.last_used)+(a.score!=null?' · score '+a.score+'/100':'');
   $('am-note').innerHTML = a.note ? '<svg class="i" aria-hidden="true"><use href="#i-pencil"/></svg> '+esc(a.note) : '';
   $('am-note').classList.toggle('hidden', !a.note);
   $('am-ex-ic').innerHTML = a.excluded ? '<svg class="i" aria-hidden="true"><use href="#i-check-circle"/></svg>' : '<svg class="i" aria-hidden="true"><use href="#i-ban"/></svg>';
@@ -1195,7 +1285,7 @@ function done(msg){ closeSheet(); toast('Account added · '+(msg||''),3000); hap
 function goRun(k){ show('run'); setRun(k); }
 function setRun(k){ RUNKIND=k; document.querySelectorAll('#run-seg button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
   ['refer','channels','message'].forEach(x=>$('run-'+x).classList.toggle('hidden',x!==k));
-  $('run-btn').innerHTML = k==='refer'?'Start referral':k==='channels'?'Start':'Send'; }
+  $('run-btn').innerHTML = k==='refer'?'Start referral':k==='channels'?'Start':'Send'; setRetryDefault(k); }
 document.querySelectorAll('.chips').forEach(g=>g.addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b)return; g.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); b.classList.add('on'); haptic();
   if(g.id==='c-action'||g.id==='c-mute-mode') paintChannelAction(); }));
 function paintChannelAction(){
@@ -1215,11 +1305,18 @@ const CAPTCHA_HELP={
   emoji:'Bot asks you to tap the button matching an emoji.',
   math:'Bot asks a sum like 5 + 3 — the answer is sent or tapped.',
   button:'Taps the first button the bot shows.',
-  number:'Bot shows a number and asks you to tap the matching button (e.g. “Select the number 1” or “Your code: 450269”). Taps exactly that number.'};
-function paintCaptcha(){ $('captcha-help').innerHTML=CAPTCHA_HELP[chip('r-method')||'no_captcha']||''; }
+  number:'Bot shows a number and asks you to tap the matching button (e.g. “Select the number 1” or “Your code: 450269”). Taps exactly that number.',
+  smart:'<svg class="i" aria-hidden="true"><use href="#i-brain"/></svg> Uses what the app has learned about this bot: the method that worked before goes first, then Auto Detect as a fallback. Gets better with every run.',
+  flow:'<svg class="i" aria-hidden="true"><use href="#i-workflow"/></svg> Runs your own step-by-step flow (click, send, join, check…) for every account. Build one in Flow Builder.'};
+function paintCaptcha(){ const m=chip('r-method')||'no_captcha'; $('captcha-help').innerHTML=CAPTCHA_HELP[m]||''; $('r-flow-wrap').classList.toggle('hidden',m!=='flow'); if(m==='flow') fillFlowPicker(); }
 document.getElementById('r-method').addEventListener('click',()=>setTimeout(paintCaptcha,0)); paintCaptcha();
 function paintSpeed(){ const v=chip('speed')||'fast'; $('speed-help').innerHTML=SPEED_HELP[v]; $('speed-custom').classList.toggle('hidden',v!=='custom'); }
 document.getElementById('speed').addEventListener('click',()=>setTimeout(paintSpeed,0)); paintSpeed();
+const RETRY_HELP={0:'No retries — a failed account stays failed.',1:'A failed account gets one more try when the error looks temporary (timeouts, network, flood-wait).',2:'Failed accounts get up to 2 more tries after a short pause — only for temporary errors.',3:'Failed accounts get up to 3 more tries after a pause — only for temporary errors. Slower on bad networks.'};
+function paintRetry(){ $('retry-help').textContent=RETRY_HELP[chip('r-retries')??2]||''; }
+document.getElementById('r-retries').addEventListener('click',()=>setTimeout(paintRetry,0)); paintRetry();
+function setRetryDefault(k){ const v=k==='refer'?'2':'1'; document.querySelectorAll('#r-retries .chip').forEach(c=>c.classList.toggle('on',c.dataset.v===v)); paintRetry(); }
+function relBody(){ return {retries:+(chip('r-retries')??2), min_score:+(chip('r-minscore')??0)}; }
 function speedBody(){ const v=chip('speed')||'fast'; return v==='custom'?{speed:v,concurrency:+$('conc').value,delay:+chip('r-delay')}:{speed:v}; }
 let SEL_INIT=false;
 function renderSel(){
@@ -1243,14 +1340,15 @@ function toggleAll(){ const pool=ACCOUNTS.filter(a=>!a.excluded && !a.link_finde
 async function startJob(){
   const accounts=[...SEL]; let path, body;
   if(RUNKIND==='refer'){ const link=$('r-link').value.trim(); if(!/^https?:\/\/t\.me\/[A-Za-z0-9_]+/.test(link)) return toast('Enter a valid t.me bot link');
-    path='/api/refer'; body={bot_link:link,method:chip('r-method'),accounts,...speedBody()}; }
+    path='/api/refer'; body={bot_link:link,method:chip('r-method'),accounts,...relBody(),...speedBody()};
+    if(body.method==='flow'){ const fid=$('r-flow').value; if(!fid) return toast('Create or pick a flow first'); body.flow_id=fid; } }
   else if(RUNKIND==='channels'){ const action=chip('c-action');
-    if(action==='random'){ path='/api/channels/auto-leave'; body={count:parseInt($('c-count').value)||1,accounts,...speedBody()}; }
-    else if(action==='mute'){ path='/api/channels/mute'; body={mute:chip('c-mute-mode')!=='unmute',include_groups:chip('c-mute-scope')==='all',accounts,...speedBody()}; }
+    if(action==='random'){ path='/api/channels/auto-leave'; body={count:parseInt($('c-count').value)||1,accounts,...relBody(),...speedBody()}; }
+    else if(action==='mute'){ path='/api/channels/mute'; body={mute:chip('c-mute-mode')!=='unmute',include_groups:chip('c-mute-scope')==='all',accounts,...relBody(),...speedBody()}; }
     else{ const channels=$('c-list').value.split(/[\n,]/).map(s=>s.trim()).filter(Boolean); if(!channels.length) return toast('Add at least one channel');
-      path='/api/channels'; body={action,channels,accounts,...speedBody()}; } }
+      path='/api/channels'; body={action,channels,accounts,...relBody(),...speedBody()}; } }
   else { const target=$('m-target').value.trim(), text=$('m-text').value; if(!target||!text.trim()) return toast('Target and message are required');
-    path='/api/message'; body={target,text,accounts,...speedBody()}; }
+    path='/api/message'; body={target,text,accounts,...relBody(),...speedBody()}; }
   // Referral + Join/Leave: always ask which accounts to use before starting
   if(RUNKIND==='refer'||RUNKIND==='channels'){ openConfirm(path,body); return; }
   await launchJob(path,body);
@@ -1264,7 +1362,7 @@ async function launchJob(path,body){
 
 /* ── run confirmation ── */
 let PENDING_RUN=null, CF_POOL_NAME='all', CF_POOL_LIST=[];
-const CAPTCHA_NAME={no_captcha:'None',auto:'Auto Detect',text_code:'Text code',image:'Image',emoji:'Emoji',math:'Math',button:'Button',number:'Number'};
+const CAPTCHA_NAME={no_captcha:'None',auto:'Auto Detect',text_code:'Text code',image:'Image',emoji:'Emoji',math:'Math',button:'Button',number:'Number',smart:'Smart (Learned)',flow:'Flow'};
 const SPEED_NAME={fast:'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> Fast',single:'<svg class="i" aria-hidden="true"><use href="#i-timer"/></svg> Single',parallel:'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> Ultra',custom:'<svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg> Custom'};
 function openConfirm(path,body){
   PENDING_RUN={path,body};
@@ -1277,6 +1375,7 @@ function openConfirm(path,body){
   const rows=[];
   if(RUNKIND==='refer'){
     rows.push(['Task','Referral'],['Bot',body.bot_link.replace(/^https?:\/\/t\.me\//,'@')],['Captcha',CAPTCHA_NAME[body.method]||body.method]);
+    if(body.method==='flow') rows.push(['Flow',(FLOWS.find(f=>f.id===body.flow_id)||{}).name||'']);
   } else if(path.endsWith('auto-leave')){
     rows.push(['Task','<svg class="i" aria-hidden="true"><use href="#i-leaf"/></svg> Auto-leave'],['Per account',body.count+' channels/groups']);
   } else if(path.endsWith('/mute')){
@@ -1286,6 +1385,8 @@ function openConfirm(path,body){
     rows.push(['Task',body.action==='join'?'Join channels':'Leave channels'],['Channels',body.channels.length+(priv?` (${priv} private)`:'')]);
   }
   const sp=body.speed||'fast';
+  rows.push(['Retries',body.retries?body.retries+'×':'Off']);
+  if(body.min_score) rows.push(['Skip weak','Score under '+body.min_score]);
   rows.push(['Speed',sp==='custom'?`${SPEED_NAME.custom} · ${body.concurrency} at once · ${body.delay}s`:(SPEED_NAME[sp]||sp)]);
   $('cf-summary').innerHTML=rows.map(([k,v])=>`<div><span>${esc(k)}</span><b>${escI(String(v))}</b></div>`).join('');
   const lfCount=ACCOUNTS.length-runnable.length;
@@ -1333,14 +1434,30 @@ let LINK_T=null;
 function previewLink(){
   clearTimeout(LINK_T); LINK_T=setTimeout(()=>{
     const v=$('r-link').value.trim(); const box=$('link-prev');
-    if(!v){ box.classList.add('hidden'); return; }
+    if(!v){ box.classList.add('hidden'); $('bot-hint').classList.add('hidden'); return; }
     box.classList.remove('hidden');
     const m=v.match(/^https?:\/\/t\.me\/([A-Za-z0-9_]{4,})(?:\?start=(.*))?$/);
-    if(!m){ box.innerHTML='<span class="bad"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></span> <span>Not a valid t.me bot link</span>'; return; }
+    if(!m){ box.innerHTML='<span class="bad"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></span> <span>Not a valid t.me bot link</span>'; $('bot-hint').classList.add('hidden'); return; }
+    loadBotHint(v);
     const bot=m[1], param=m[2]||'';
     box.innerHTML=`<span class="ok"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg></span> <span>Bot <b>@${esc(bot)}</b>${param?` · sends <code>/start ${esc(param.slice(0,24))}</code>`:' · sends <code>/start</code>'}</span>`;
   },250);
 }
+let HINT_N=0;
+async function loadBotHint(link){
+  const n=++HINT_N, box=$('bot-hint');
+  try{
+    const p=await api('/api/bot-profile?link='+encodeURIComponent(link));
+    if(n!==HINT_N) return;
+    if(!p.known || !(p.ok+p.fail)){ box.classList.add('hidden'); return; }
+    const best=p.best?` · best method: <b>${esc(CAPTCHA_NAME[p.best]||p.best)}</b>`:'';
+    box.innerHTML=`${I_BRAIN} Learned from <b>${p.runs}</b> run${p.runs>1?'s':''} · success rate <b>${Math.round(p.rate*100)}%</b>${best}`+
+      (p.recommended==='smart'&&chip('r-method')!=='smart'?`<br><button class="btn sm ghost" onclick="useSmart()">${I_BRAIN} Use Smart (Learned)</button>`:'');
+    box.classList.remove('hidden');
+  }catch(e){ if(n===HINT_N) box.classList.add('hidden'); }
+}
+const I_BRAIN='<svg class="i" aria-hidden="true"><use href="#i-brain"/></svg>';
+function useSmart(){ document.querySelectorAll('#r-method .chip').forEach(c=>c.classList.toggle('on',c.dataset.v==='smart')); paintCaptcha(); haptic('ok'); previewLink(); }
 async function loadRecentLinks(){
   try{ const d=await api('/api/recent-links'); const box=$('recent-links');
     box.innerHTML=(d.links||[]).map(l=>`<button onclick="useLink('${esc(l).replace(/'/g,"\\'")}')">${esc(l.replace('https://t.me/','@').slice(0,32))}</button>`).join('');
@@ -1448,7 +1565,7 @@ async function pollJob(){
   try{
     const j=await api('/api/jobs/'+CURJOB);
     const kindMap={refer:'Referral',channels:j.meta.action==='join'?'Joining channels':'Leaving channels',message:'Sending message',health:'Checking account health',random_leave:'Auto-leave',auto_leave:'Auto-leave',mute:j.meta&&j.meta.mute===false?'Unmuting channels':'Muting channels'}; const kind = kindMap[j.kind]||j.kind;
-    $('job-title').textContent = j.status==='running'?kind:kind+' · done'; $('job-sub').innerHTML = esc(j.meta.link||j.meta.target||(j.meta.channels||[]).join(', ')||'') + (j.meta.speed?'  ·  '+(j.meta.speed==='fast'?'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> fast · '+j.meta.concurrency+' at once':j.meta.speed==='single'?'<svg class="i" aria-hidden="true"><use href="#i-timer"/></svg> single':j.meta.speed==='parallel'?'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> ultra · '+j.meta.concurrency+' at once':'<svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg> '+j.meta.concurrency+' at once'):'');
+    $('job-title').textContent = j.status==='running'?kind:kind+' · done'; $('job-sub').innerHTML = esc(j.meta.link||j.meta.target||(j.meta.channels||[]).join(', ')||'') + (j.meta.flow?'  ·  flow: '+esc(j.meta.flow):'') + (j.meta.speed?'  ·  '+(j.meta.speed==='fast'?'<svg class="i" aria-hidden="true"><use href="#i-zap"/></svg> fast · '+j.meta.concurrency+' at once':j.meta.speed==='single'?'<svg class="i" aria-hidden="true"><use href="#i-timer"/></svg> single':j.meta.speed==='parallel'?'<svg class="i" aria-hidden="true"><use href="#i-rocket"/></svg> ultra · '+j.meta.concurrency+' at once':'<svg class="i" aria-hidden="true"><use href="#i-sliders"/></svg> '+j.meta.concurrency+' at once'):'');
     $('job-done').textContent=j.done; $('job-total').textContent=j.total; $('job-ok').textContent=j.success; $('job-bad').textContent=j.failed;
     if(j.done>JOB_LAST_DONE){
       spawnSparks(j.done-JOB_LAST_DONE);
@@ -1462,11 +1579,16 @@ async function pollJob(){
     $('rate-row').classList.toggle('hidden', j.status!=='running' && j.done>=j.total);
     setRing(j.success,j.failed,j.total);
     $('ring').classList.toggle('running',j.status==='running');
-    $('job-lbl').textContent = j.status==='running'?'working…':j.status==='cancelled'?'stopped':(j.failed?'finished':'all done');
+    $('job-lbl').textContent = j.status==='running'?'working…':j.status==='cancelled'?'stopped':j.status==='interrupted'?'interrupted':(j.failed?'finished':'all done');
     const skipped=(j.meta.skipped_dead||[]).length;
     const skipNote = skipped ? `<div class="row"><span class="av" style="background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)"><svg class="i" aria-hidden="true"><use href="#i-skip"/></svg></span><span class="body"><span class="t">${skipped} dead account${skipped>1?'s':''} skipped</span><span class="d">${esc((j.meta.skipped_dead||[]).join(', ').slice(0,80))}</span></span></div>` : '';
-    if(j.results.length) $('job-feed').innerHTML = skipNote + j.results.slice().reverse().map(r=>`<div class="row st-${r.status}"><span class="av">${r.status==='success'?'<svg class="i" aria-hidden="true"><use href="#i-check"/></svg>':r.status==='partial'?'~':'<svg class="i" aria-hidden="true"><use href="#i-x"/></svg>'}</span><span class="body"><span class="t">${esc(r.account)}</span><span class="d">${esc(r.msg)}</span></span></div>`).join('');
-    else if(skipNote) $('job-feed').innerHTML = skipNote;
+    const wk=j.meta.skipped_weak; const wn=Array.isArray(wk)?wk.length:(+wk||0);
+    const weakNote = wn ? `<div class="row"><span class="av" style="background:color-mix(in srgb,var(--warn) 15%,transparent);color:var(--warn)"><svg class="i" aria-hidden="true"><use href="#i-gauge"/></svg></span><span class="body"><span class="t">${wn} weak account${wn>1?'s':''} skipped</span><span class="d">${Array.isArray(wk)?esc(wk.join(', ').slice(0,80)):''}</span></span></div>` : '';
+    const resNote = j.meta.resumed ? `<div class="row"><span class="av" style="background:color-mix(in srgb,var(--turbo) 15%,transparent);color:var(--turbo)"><svg class="i" aria-hidden="true"><use href="#i-history"/></svg></span><span class="body"><span class="t">Resumed after a server restart${j.meta.resumed>1?' ('+j.meta.resumed+'×)':''}</span><span class="d">Only the unfinished accounts were run again</span></span></div>` : '';
+    const intNote = j.status==='interrupted' ? `<div class="row"><span class="av" style="background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg></span><span class="body"><span class="t">This run was interrupted</span><span class="d">The server restarted and it could not be resumed</span></span></div>` : '';
+    const notes = resNote + intNote + skipNote + weakNote;
+    if(j.results.length) $('job-feed').innerHTML = notes + j.results.slice().reverse().map(r=>`<div class="row st-${r.status}"><span class="av">${r.status==='success'?'<svg class="i" aria-hidden="true"><use href="#i-check"/></svg>':r.status==='partial'?'~':'<svg class="i" aria-hidden="true"><use href="#i-x"/></svg>'}</span><span class="body"><span class="t">${esc(r.account)}</span><span class="d">${esc(r.msg)}${r.attempts>1?' · tried '+r.attempts+'×':''}</span></span></div>`).join('');
+    else if(notes) $('job-feed').innerHTML = notes;
     if(j.status!=='running'){
       clearInterval(POLL); $('job-cancel').classList.add('hidden');
       if(!JOB_DONE_FIRED){
@@ -1705,6 +1827,151 @@ const BN_EXACT={
 "Couldn't read the captcha image":'ক্যাপচার ছবি পড়া যায়নি','Warning':'সতর্কতা','Image':'ছবি','Text':'টেক্সট','Math':'অঙ্ক','Emoji':'ইমোজি',
 'unknown':'অজানা','error':'ত্রুটি','limited':'সীমিত','Skipped':'বাদ',
 };
+Object.assign(BN_EXACT,{
+'Tools':'টুলস',
+'Flow Builder':'ফ্লো বিল্ডার',
+'Build a custom bot flow with no code':'কোড ছাড়াই নিজের বট-ফ্লো বানান',
+'Bot Profiles':'বট প্রোফাইল',
+'What the app has learned about each bot':'প্রতিটি বট সম্পর্কে অ্যাপ কী শিখেছে',
+'Smart Alerts':'স্মার্ট অ্যালার্ট',
+'Telegram messages for important events':'গুরুত্বপূর্ণ ঘটনায় টেলিগ্রাম মেসেজ',
+'Smart (Learned)':'স্মার্ট (শেখা)',
+'Flow':'ফ্লো',
+'Manage flows':'ফ্লো পরিচালনা',
+'Reliability':'নির্ভরযোগ্যতা',
+'Retry failed accounts':'ব্যর্থ অ্যাকাউন্ট আবার চেষ্টা',
+'Off':'বন্ধ',
+'Skip weak accounts':'দুর্বল অ্যাকাউন্ট বাদ দিন',
+'Score under 40':'স্কোর ৪০ এর নিচে',
+'Score under 60':'স্কোর ৬০ এর নিচে',
+'Accounts with a low health score (many recent failures, flood-waits, limits) are left out of this run.':'কম হেলথ স্কোরের অ্যাকাউন্ট (সাম্প্রতিক অনেক ব্যর্থতা, ফ্লাড-ওয়েট, লিমিট) এই রান থেকে বাদ যাবে।',
+'No retries — a failed account stays failed.':'কোনো রিট্রাই নেই — ব্যর্থ অ্যাকাউন্ট ব্যর্থই থাকবে।',
+'A failed account gets one more try when the error looks temporary (timeouts, network, flood-wait).':'ত্রুটি সাময়িক মনে হলে (টাইমআউট, নেটওয়ার্ক, ফ্লাড-ওয়েট) ব্যর্থ অ্যাকাউন্ট আরও একবার চেষ্টা করবে।',
+'Failed accounts get up to 2 more tries after a short pause — only for temporary errors.':'ব্যর্থ অ্যাকাউন্ট ছোট বিরতির পর আরও ২ বার চেষ্টা করবে — শুধু সাময়িক ত্রুটিতে।',
+'Failed accounts get up to 3 more tries after a pause — only for temporary errors. Slower on bad networks.':'ব্যর্থ অ্যাকাউন্ট বিরতির পর আরও ৩ বার চেষ্টা করবে — শুধু সাময়িক ত্রুটিতে। খারাপ নেটওয়ার্কে ধীর হবে।',
+'Uses what the app has learned about this bot: the method that worked before goes first, then Auto Detect as a fallback. Gets better with every run.':'এই বট সম্পর্কে অ্যাপ যা শিখেছে তা ব্যবহার করে: আগে যে পদ্ধতি কাজ করেছে সেটা প্রথমে, না হলে অটো ডিটেক্ট। প্রতি রানে আরও ভালো হয়।',
+'Runs your own step-by-step flow (click, send, join, check…) for every account. Build one in Flow Builder.':'প্রতিটি অ্যাকাউন্টের জন্য আপনার নিজের ধাপে-ধাপে ফ্লো চালায় (ক্লিক, সেন্ড, জয়েন, চেক…)। ফ্লো বিল্ডারে বানান।',
+'Create or pick a flow first':'আগে একটি ফ্লো বানান বা বেছে নিন',
+'Retries':'রিট্রাই',
+'Skip weak':'দুর্বল বাদ',
+'Every account follows these steps after /start.':'/start এর পর প্রতিটি অ্যাকাউন্ট এই ধাপগুলো অনুসরণ করবে।',
+'You have no flows yet — create one in Flow Builder first.':'আপনার কোনো ফ্লো নেই — আগে ফ্লো বিল্ডারে একটি বানান।',
+'No flows yet':'এখনও কোনো ফ্লো নেই',
+'Use Smart (Learned)':'স্মার্ট (শেখা) ব্যবহার করুন',
+'Score':'স্কোর',
+'Health score':'হেলথ স্কোর',
+'Sort by Score on the Accounts screen to see them':'দেখতে অ্যাকাউন্ট স্ক্রিনে স্কোর অনুযায়ী সাজান',
+'Resumed after a server restart':'সার্ভার রিস্টার্টের পর আবার চালু হয়েছে',
+'Only the unfinished accounts were run again':'শুধু অসম্পূর্ণ অ্যাকাউন্টগুলো আবার চালানো হয়েছে',
+'This run was interrupted':'এই রান থেমে গেছে',
+'The server restarted and it could not be resumed':'সার্ভার রিস্টার্ট হয়েছে এবং আবার চালু করা যায়নি',
+'interrupted':'থেমে গেছে',
+'Teach the app a custom bot flow — no code':'অ্যাপকে কাস্টম বট-ফ্লো শেখান — কোড ছাড়াই',
+'New flow':'নতুন ফ্লো',
+'Edit flow':'ফ্লো সম্পাদনা',
+'How it works':'কীভাবে কাজ করে',
+'A flow is a list of steps each account follows after sending /start — click a button, send text, solve a captcha, join channels, check the bot\'s answer. Pick “Flow” as the captcha type on the Run screen to use it.':'ফ্লো হলো ধাপের তালিকা যা প্রতিটি অ্যাকাউন্ট /start পাঠানোর পর অনুসরণ করে — বাটন ক্লিক, টেক্সট পাঠানো, ক্যাপচা সমাধান, চ্যানেল জয়েন, বটের উত্তর যাচাই। ব্যবহারের জন্য রান স্ক্রিনে ক্যাপচা টাইপ হিসেবে “ফ্লো” বেছে নিন।',
+'Your flows':'আপনার ফ্লো',
+'Build your first flow, or start from a template.':'আপনার প্রথম ফ্লো বানান, অথবা টেমপ্লেট থেকে শুরু করুন।',
+'Couldn\'t load flows':'ফ্লো লোড করা যায়নি',
+'Steps run top to bottom for every account':'প্রতিটি অ্যাকাউন্টের জন্য ধাপগুলো উপর থেকে নিচে চলে',
+'Flow name':'ফ্লোর নাম',
+'e.g. Join + verify':'যেমন: জয়েন + ভেরিফাই',
+'Steps':'ধাপ',
+'Add a step':'ধাপ যোগ করুন',
+'Start from a template':'টেমপ্লেট থেকে শুরু করুন',
+'No steps yet — add one below.':'এখনও কোনো ধাপ নেই — নিচ থেকে যোগ করুন।',
+'Save flow':'ফ্লো সেভ করুন',
+'Delete flow':'ফ্লো মুছুন',
+'Flow saved':'ফ্লো সেভ হয়েছে',
+'Flow deleted':'ফ্লো মুছে ফেলা হয়েছে',
+'Delete this flow?':'এই ফ্লো মুছবেন?',
+'Give the flow a name.':'ফ্লোর একটি নাম দিন।',
+'Add at least one step.':'অন্তত একটি ধাপ যোগ করুন।',
+'A flow can have at most 30 steps.':'একটি ফ্লোতে সর্বোচ্চ ৩০টি ধাপ থাকতে পারে।',
+'Saving…':'সেভ হচ্ছে…',
+'Template added — adjust the steps to match your bot':'টেমপ্লেট যোগ হয়েছে — আপনার বট অনুযায়ী ধাপ বদলে নিন',
+'Placeholders for “Send text”: {param} = referral code, {link} = bot link, {code} = code shown by the bot.':'“টেক্সট পাঠান” এর প্লেসহোল্ডার: {param} = রেফারেল কোড, {link} = বট লিংক, {code} = বটের দেখানো কোড।',
+'Wait for reply':'উত্তরের অপেক্ষা',
+'Click a button':'বাটন ক্লিক',
+'Send text':'টেক্সট পাঠান',
+'Solve captcha':'ক্যাপচা সমাধান',
+'Join channels':'চ্যানেল জয়েন',
+'Expect text':'টেক্সট প্রত্যাশা',
+'Pause':'বিরতি',
+'Wait until the bot sends a message':'বট মেসেজ পাঠানো পর্যন্ত অপেক্ষা',
+'Wait up to (seconds)':'সর্বোচ্চ অপেক্ষা (সেকেন্ড)',
+'Find button by':'বাটন খুঁজুন',
+'Contains text':'টেক্সট ধারণ করে',
+'Exact text':'হুবহু টেক্সট',
+'Pattern (regex)':'প্যাটার্ন (regex)',
+'Button number':'বাটন নম্বর',
+'Button number (1 = first)':'বাটন নম্বর (১ = প্রথম)',
+'Button text':'বাটনের টেক্সট',
+'Wait for the button up to (seconds)':'বাটনের জন্য সর্বোচ্চ অপেক্ষা (সেকেন্ড)',
+'Message':'মেসেজ',
+'Method':'পদ্ধতি',
+'Retries if wrong':'ভুল হলে রিট্রাই',
+'None':'নেই',
+'Wait for the captcha up to (seconds)':'ক্যাপচার জন্য সর্বোচ্চ অপেক্ষা (সেকেন্ড)',
+'Channels to join':'যেসব চ্যানেল জয়েন হবে',
+'Links the bot shows':'বট যে লিংক দেখায়',
+'My own list':'আমার নিজের তালিকা',
+'Channels (one per line)':'চ্যানেল (প্রতি লাইনে একটি)',
+'Wait for the links up to (seconds)':'লিংকের জন্য সর্বোচ্চ অপেক্ষা (সেকেন্ড)',
+'Success text (word or pattern)':'সফলতার টেক্সট (শব্দ বা প্যাটার্ন)',
+'Failure text (optional)':'ব্যর্থতার টেক্সট (ঐচ্ছিক)',
+'Pause for (seconds)':'বিরতি (সেকেন্ড)',
+'Optional — keep going if this step fails':'ঐচ্ছিক — এই ধাপ ব্যর্থ হলেও চালিয়ে যান',
+'Move up':'উপরে সরান',
+'Move down':'নিচে সরান',
+'Remove step':'ধাপ সরান',
+'Tap an inline button by its text or number':'টেক্সট বা নম্বর দিয়ে ইনলাইন বাটন ট্যাপ করুন',
+'Send a message to the bot':'বটকে মেসেজ পাঠান',
+'Read and answer the captcha the bot shows':'বটের দেখানো ক্যাপচা পড়ে উত্তর দিন',
+'Join the channels the bot lists (or your own list)':'বটের তালিকার (বা নিজের তালিকার) চ্যানেল জয়েন করুন',
+'Check that the bot says something (success / failure)':'বট কিছু বলেছে কিনা যাচাই করুন (সফল / ব্যর্থ)',
+'Wait a few seconds':'কয়েক সেকেন্ড অপেক্ষা',
+'Join channels, then verify':'চ্যানেল জয়েন, তারপর ভেরিফাই',
+'Wait → join → click “Joined/Check” → expect success':'অপেক্ষা → জয়েন → “Joined/Check” ক্লিক → সফলতা যাচাই',
+'Captcha, then confirm':'ক্যাপচা, তারপর নিশ্চিত',
+'Solve the captcha → expect a success message':'ক্যাপচা সমাধান → সফলতার মেসেজ যাচাই',
+'Tap a button, then send the code':'বাটন ট্যাপ, তারপর কোড পাঠান',
+'Click “Start/Continue” → send the code shown by the bot':'“Start/Continue” ক্লিক → বটের দেখানো কোড পাঠান',
+'The app learns which captcha method works for each bot':'প্রতিটি বটের জন্য কোন ক্যাপচা পদ্ধতি কাজ করে অ্যাপ তা শেখে',
+'Self-learning':'স্ব-শিক্ষণ',
+'Every referral run teaches the app what works. Choose “Smart (Learned)” as the captcha type and it tries the best-known method first.':'প্রতিটি রেফারেল রান অ্যাপকে শেখায় কী কাজ করে। ক্যাপচা টাইপে “স্মার্ট (শেখা)” বাছলে সবচেয়ে ভালো পদ্ধতি আগে চেষ্টা হবে।',
+'Learned bots':'শেখা বট',
+'Nothing learned yet':'এখনও কিছু শেখা হয়নি',
+'Run a few referrals — the app remembers what worked for each bot.':'কয়েকটি রেফারেল চালান — অ্যাপ প্রতিটি বটের জন্য কী কাজ করেছে মনে রাখবে।',
+'Start a referral':'রেফারেল শুরু করুন',
+'Couldn\'t load profiles':'প্রোফাইল লোড করা যায়নি',
+'Forget':'ভুলে যান',
+'Profile removed':'প্রোফাইল মুছে ফেলা হয়েছে',
+'The bot sends you a Telegram message when something important happens. Repeats are rate-limited so you are never spammed.':'গুরুত্বপূর্ণ কিছু ঘটলে বট আপনাকে টেলিগ্রামে মেসেজ পাঠায়। বারবার একই মেসেজ আসে না — সীমা দেওয়া আছে।',
+'Send a test alert':'টেস্ট অ্যালার্ট পাঠান',
+'Test alert sent — check your Telegram chat with the bot':'টেস্ট অ্যালার্ট পাঠানো হয়েছে — বটের সাথে আপনার টেলিগ্রাম চ্যাট দেখুন',
+'Could not send. Open the bot in Telegram and press Start first.':'পাঠানো যায়নি। আগে টেলিগ্রামে বট খুলে Start চাপুন।',
+'Run finished':'রান শেষ',
+'When a run completes, with the result summary':'রান শেষ হলে ফলাফলের সারাংশসহ',
+'Account died':'অ্যাকাউন্ট মারা গেছে',
+'When an account is found dead or banned':'অ্যাকাউন্ট ডেড বা ব্যান ধরা পড়লে',
+'Low health score':'কম হেলথ স্কোর',
+'When accounts drop to a weak score':'অ্যাকাউন্টের স্কোর দুর্বল হয়ে গেলে',
+'Captcha keeps failing':'ক্যাপচা বারবার ব্যর্থ',
+'When many accounts fail the captcha in a row':'একের পর এক অনেক অ্যাকাউন্ট ক্যাপচায় ব্যর্থ হলে',
+'Flood-wait / rate limit':'ফ্লাড-ওয়েট / রেট লিমিট',
+'When Telegram starts slowing your accounts down':'টেলিগ্রাম আপনার অ্যাকাউন্ট ধীর করতে শুরু করলে',
+'Run resumed':'রান আবার চালু',
+'When a run continues after a server restart':'সার্ভার রিস্টার্টের পর রান চালু হলে',
+'Session dead':'সেশন মৃত',
+'Banned by Telegram':'টেলিগ্রাম ব্যান করেছে',
+'Telegram limits this account':'টেলিগ্রাম এই অ্যাকাউন্ট সীমিত করেছে',
+'Last health check errored':'শেষ হেলথ চেকে ত্রুটি',
+'flood-wait in the last hour':'গত ১ ঘণ্টায় ফ্লাড-ওয়েট',
+'flood-wait today':'আজ ফ্লাড-ওয়েট',
+'health not checked for 7+ days':'৭+ দিন হেলথ চেক হয়নি'
+});
 const BN_PAT=[
 [/^(\d+) selected$/,'$1টি নির্বাচিত'],[/^No account matches "(.*)"\.$/,'"$1" এর সাথে কোনো অ্যাকাউন্ট মেলেনি।'],
 [/^(\d+(?:\.\d+)?)s$/,'$1 সে'],
@@ -1763,6 +2030,23 @@ const BN_PAT=[
 [/^(\d+) of (\d+)$/,'$1 / $2'],[/^(\d+) total$/,'মোট $1'],[/^(\d+) accounts? · (.+)$/,'$1টি অ্যাকাউন্ট · $2'],
 ];
 const BN_WORD={ok:'সফল',dead:'মৃত',banned:'নিষিদ্ধ',limited:'সীমিত',error:'ত্রুটি',unknown:'অজানা',fast:'দ্রুত',ultra:'আলট্রা',Image:'ছবি',Math:'অঙ্ক',Text:'টেক্সট',Emoji:'ইমোজি',Button:'বাটন',Number:'নম্বর',light:'হালকা',normal:'স্বাভাবিক',strong:'জোরালো',off:'বন্ধ'};
+
+BN_PAT.push(
+ [/^(\d+) of (\d+) selected$/,'$2টির মধ্যে $1টি নির্বাচিত'],
+ [/^(\d+) ok \/ (\d+) failed$/,'$1টি সফল / $2টি ব্যর্থ'],[/^(\d+) failed in a row$/,'টানা $1টি ব্যর্থ'],
+ [/^score (\d+)\/100$/,'স্কোর $1/১০০'],[/^(\d+) account(?:s)? with a low score$/,'$1টি অ্যাকাউন্টের স্কোর কম'],
+ [/^(\d+) weak accounts? skipped$/,'$1টি দুর্বল অ্যাকাউন্ট বাদ'],[/^Resumed after a server restart \((\d+)×\)$/,'সার্ভার রিস্টার্টের পর আবার চালু ($1×)'],
+ [/^tried (\d+)×$/,'$1 বার চেষ্টা'],[/^flow: (.*)$/,'ফ্লো: $1'],[/^Score under (\d+)$/,'স্কোর $1 এর নিচে'],
+ [/^(\d+) saved$/,'$1টি সেভ করা'],[/^(\d+) steps?$/,'$1টি ধাপ'],[/^(\d+) bots?$/,'$1টি বট'],
+ [/^(\d+) runs?$/,'$1টি রান'],[/^Forget what was learned about @(.*)\?$/,'@$1 সম্পর্কে যা শেখা হয়েছে তা ভুলে যাবেন?'],
+ [/^Step (\d+): (.*)$/,m=>'ধাপ '+m[1]+': '+(_trCore(m[2])||m[2])],
+ [/^Step (\d+)\/(\d+) \((.*?)\): (.*)$/,m=>'ধাপ '+m[1]+'/'+m[2]+' ('+m[3]+'): '+(_trCore(m[4])||m[4])],
+ [/^Flow OK · (\d+) steps?(.*)$/,'ফ্লো সফল · $1টি ধাপ$2'],
+ [/^Learned from (\d+) runs?$/,'$1টি রান থেকে শেখা'],
+ [/^You can keep up to (\d+) flows\. Delete one first\.$/,'আপনি সর্বোচ্চ $1টি ফ্লো রাখতে পারেন। আগে একটি মুছুন।'],
+ [/^No accounts left — the selected ones are dead or scored below your minimum health score\.$/,'কোনো অ্যাকাউন্ট বাকি নেই — নির্বাচিতগুলো ডেড বা সর্বনিম্ন হেলথ স্কোরের নিচে।'],
+ [/^(.*) \((\d+) steps\)$/,'$1 ($2টি ধাপ)']
+);
 function trWord(w){ return BN_WORD[w]||w; }
 function trText(s){ return trTo(s,'bn'); }
 const _lead=s=>s.match(/^\s*/)[0], _trail=s=>s.match(/\s*$/)[0];
@@ -1772,6 +2056,7 @@ function _trCore(k){
   for(const [re,rep] of BN_PAT){ const m=k.match(re); if(m){ return typeof rep==='function'?rep(m):k.replace(re,rep); } }
   { const m=k.match(/^([^A-Za-z0-9]+)(.+)$/); if(m && /[A-Za-z]/.test(m[2])){ const r=_trCore(m[2]); if(r!==null) return m[1]+r; } }
   { const m=k.match(/^(.+?)([^A-Za-z0-9)\]]+)$/); if(m && /[A-Za-z]/.test(m[1]) && m[2]!=='.'  && m[2]!=='…' && m[2]!=='?' && m[2]!=='!'){ const r=_trCore(m[1]); if(r!==null) return r+m[2]; } }
+  if(k.includes(' → ')){ const parts=k.split(' → '); const out=parts.map(p=>{const r=_trCore(p); return r===null?p:r;}); if(out.some((p,i)=>p!==parts[i])) return out.join(' → '); }
   if(k.includes(' · ')){ const parts=k.split(' · '); const out=parts.map(p=>{const r=_trCore(p); return r===null?p:r;}); if(out.some((p,i)=>p!==parts[i])) return out.join(' · '); }
   return null;
 }
@@ -1836,7 +2121,148 @@ function applyAccent(v){ const c=ACCENTS[v]||ACCENTS.orange; const r=document.do
   r.setProperty('--turbo',c); r.setProperty('--btn',c); r.setProperty('--btn-text','#ffffff');
   try{ tg?.setHeaderColor?.('bg_color'); }catch(e){} }
 function applyLang(v){ document.documentElement.lang=(v==='bn'?'bn':'en'); if(document.body) trWalk(document.body); }
-function loadSettings(){
+
+/* ══ Flow Builder ══ */
+let FLOWS=[], FE={id:'',name:'',steps:[]};
+const FT={
+  reply:{ic:'message',t:'Wait for reply',d:'Wait until the bot sends a message'},
+  click:{ic:'check-square',t:'Click a button',d:'Tap an inline button by its text or number'},
+  send:{ic:'upload',t:'Send text',d:'Send a message to the bot'},
+  captcha:{ic:'bot',t:'Solve captcha',d:'Read and answer the captcha the bot shows'},
+  join:{ic:'megaphone',t:'Join channels',d:'Join the channels the bot lists (or your own list)'},
+  expect:{ic:'search',t:'Expect text',d:'Check that the bot says something (success / failure)'},
+  wait:{ic:'timer',t:'Pause',d:'Wait a few seconds'}};
+const FDEF={reply:{type:'reply',timeout:20},click:{type:'click',mode:'contains',value:'',timeout:15},send:{type:'send',text:''},
+  captcha:{type:'captcha',method:'auto',retries:2,timeout:25},join:{type:'join',source:'buttons',timeout:15},
+  expect:{type:'expect',pattern:'',fail_pattern:'',timeout:20},wait:{type:'wait',seconds:2}};
+const FTPL=[
+  {n:'Join channels, then verify',d:'Wait → join → click “Joined/Check” → expect success',steps:[{type:'reply',timeout:20},{type:'join',source:'buttons',timeout:15},{type:'click',mode:'regex',value:'joined|check|verify|done',timeout:15,optional:true},{type:'expect',pattern:'success|verified|welcome|thank|congrat',fail_pattern:'not (joined|subscribed)|failed|wrong',timeout:20}]},
+  {n:'Captcha, then confirm',d:'Solve the captcha → expect a success message',steps:[{type:'captcha',method:'auto',retries:2,timeout:25},{type:'expect',pattern:'success|verified|welcome|thank|correct',fail_pattern:'wrong|incorrect|failed',timeout:20}]},
+  {n:'Tap a button, then send the code',d:'Click “Start/Continue” → send the code shown by the bot',steps:[{type:'reply',timeout:20},{type:'click',mode:'regex',value:'start|continue|verify|next',timeout:15,optional:true},{type:'send',text:'{code}'},{type:'expect',pattern:'success|verified|welcome|thank',timeout:20}]}];
+const CLICK_MODES={contains:'Contains text',exact:'Exact text',regex:'Pattern (regex)',index:'Button number'};
+const FCAP={auto:'Auto Detect',text_code:'Text code',image:'Image',math:'Math',emoji:'Emoji',button:'Button',number:'Number',smart:'Smart (Learned)'};
+
+async function loadFlows(quiet){
+  if(!quiet) $('flow-list').innerHTML=SK_ROWS(2);
+  try{ const d=await api('/api/flows'); FLOWS=d.flows||[]; }catch(e){ if(!quiet) $('flow-list').innerHTML=emptyState(I_ALERT,"Couldn't load flows",esc(e.message),'<button class="btn ghost" onclick="loadFlows()">Try again</button>'); return; }
+  if(quiet) return;
+  $('flow-count').textContent=FLOWS.length?FLOWS.length+' saved':'';
+  $('flow-list').innerHTML=FLOWS.length?FLOWS.map(f=>`<button class="row" onclick="editFlow('${esc(f.id)}')"><span class="av">${I_WF}</span><span class="body"><span class="t">${esc(f.name)}</span><span class="d">${f.steps.length} step${f.steps.length>1?'s':''} · ${esc(f.steps.map(s=>(FT[s.type]||{}).t||s.type).slice(0,4).join(' → '))}${f.steps.length>4?' …':''}</span></span><span class="r" style="color:var(--hint)">›</span></button>`).join('')
+    : emptyState(I_WF,'No flows yet','Build your first flow, or start from a template.','<button class="btn" onclick="newFlow()">New flow</button>');
+}
+const I_WF='<svg class="i" aria-hidden="true"><use href="#i-workflow"/></svg>', I_ALERT='<svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>';
+const fi = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+function newFlow(){ FE={id:'',name:'',steps:[]}; show('flowedit'); renderFlowEditor(); }
+function editFlow(id){ const f=FLOWS.find(x=>x.id===id); if(!f) return; FE={id:f.id,name:f.name,steps:JSON.parse(JSON.stringify(f.steps))}; show('flowedit'); renderFlowEditor(); }
+function renderFlowEditor(){
+  $('fe-title').textContent=FE.id?'Edit flow':'New flow';
+  $('fe-name').value=FE.name; $('fe-del').classList.toggle('hidden',!FE.id);
+  $('fe-count').textContent=FE.steps.length?FE.steps.length+' / 30':'';
+  $('fe-add').innerHTML=Object.keys(FT).map(k=>`<button onclick="addStep('${k}')">${fi(FT[k].ic)} ${FT[k].t}</button>`).join('');
+  $('fe-tpl').innerHTML=FTPL.map((t,i)=>`<button class="row" onclick="useTpl(${i})"><span class="av">${fi('sparkles')}</span><span class="body"><span class="t">${t.n}</span><span class="d">${t.d}</span></span></button>`).join('');
+  $('fe-steps').innerHTML=FE.steps.length?FE.steps.map(stepCard).join(''):'<div class="empty">No steps yet — add one below.</div>';
+}
+function selOpts(map,cur){ return Object.keys(map).map(k=>`<option value="${esc(k)}"${String(cur)===k?' selected':''}>${esc(map[k])}</option>`).join(''); }
+function numField(i,key,label,min,max,step){ const v=FE.steps[i][key]; return `<div class="field"><label>${label}</label><input type="number" inputmode="decimal" min="${min}" max="${max}" step="${step||1}" value="${v??''}" oninput="fnum(${i},'${key}',this.value)"></div>`; }
+function stepCard(st,i){
+  const t=FT[st.type]||{ic:'zap',t:st.type}; let b='';
+  if(st.type==='reply') b=numField(i,'timeout','Wait up to (seconds)',3,90);
+  else if(st.type==='click') b=`<div class="fs-row"><div class="field"><label>Find button by</label><select onchange="fset(${i},'mode',this.value,1)">${selOpts(CLICK_MODES,st.mode)}</select></div></div>
+    <div class="field"><label>${st.mode==='index'?'Button number (1 = first)':'Button text'}</label><input value="${esc(st.value||'')}" placeholder="${st.mode==='index'?'1':st.mode==='regex'?'joined|check':'Joined'}" oninput="fset(${i},'value',this.value)"></div>`+numField(i,'timeout','Wait for the button up to (seconds)',3,60);
+  else if(st.type==='send') b=`<div class="field"><label>Message</label><input value="${esc(st.text||'')}" placeholder="{code}" oninput="fset(${i},'text',this.value)"></div>`;
+  else if(st.type==='captcha') b=`<div class="fs-row"><div class="field"><label>Method</label><select onchange="fset(${i},'method',this.value)">${selOpts(FCAP,st.method)}</select></div>
+    <div class="field"><label>Retries if wrong</label><select onchange="fnum(${i},'retries',this.value)">${selOpts({0:'None',1:'1×',2:'2×',3:'3×'},st.retries??2)}</select></div></div>`+numField(i,'timeout','Wait for the captcha up to (seconds)',5,90);
+  else if(st.type==='join') b=`<div class="field"><label>Channels to join</label><select onchange="fset(${i},'source',this.value,1)">${selOpts({buttons:'Links the bot shows',list:'My own list'},st.source)}</select></div>`+
+    (st.source==='list'?`<div class="field"><label>Channels (one per line)</label><textarea placeholder="@channel1&#10;https://t.me/channel2" oninput="fchan(${i},this.value)">${esc((st.channels||[]).join('\n'))}</textarea></div>`:numField(i,'timeout','Wait for the links up to (seconds)',3,60));
+  else if(st.type==='expect') b=`<div class="field"><label>Success text (word or pattern)</label><input value="${esc(st.pattern||'')}" placeholder="success|welcome" oninput="fset(${i},'pattern',this.value)"></div>
+    <div class="field"><label>Failure text (optional)</label><input value="${esc(st.fail_pattern||'')}" placeholder="wrong|failed" oninput="fset(${i},'fail_pattern',this.value)"></div>`+numField(i,'timeout','Wait up to (seconds)',3,120);
+  else if(st.type==='wait') b=numField(i,'seconds','Pause for (seconds)',0.5,60,0.5);
+  const canOpt=['reply','click','join','expect'].includes(st.type);
+  const opt=canOpt?`<label class="fs-opt"><input type="checkbox" ${st.optional?'checked':''} onchange="fset(${i},'optional',this.checked)"> Optional — keep going if this step fails</label>`:'';
+  return `<div class="fstep"><div class="fs-h"><span class="fs-n">${i+1}</span><span class="fs-t">${fi(t.ic)} ${t.t}</span>
+    <span class="fs-act"><button aria-label="Move up" ${i===0?'disabled':''} onclick="fmove(${i},-1)">${fi('arrow-up')}</button><button aria-label="Move down" ${i===FE.steps.length-1?'disabled':''} onclick="fmove(${i},1)">${fi('arrow-down')}</button><button class="bad" aria-label="Remove step" onclick="fdel(${i})">${fi('trash')}</button></span></div>${b}${opt}</div>`;
+}
+function fset(i,k,v,re){ FE.steps[i][k]=v; if(k==='optional'&&!v) delete FE.steps[i].optional; if(re) renderFlowEditor(); }
+function fnum(i,k,v){ const n=parseFloat(v); FE.steps[i][k]=isNaN(n)?undefined:n; }
+function fchan(i,v){ FE.steps[i].channels=v.split(/[\n,]/).map(x=>x.trim()).filter(Boolean); }
+function fmove(i,d){ const j=i+d; if(j<0||j>=FE.steps.length) return; [FE.steps[i],FE.steps[j]]=[FE.steps[j],FE.steps[i]]; haptic(); renderFlowEditor(); }
+function fdel(i){ FE.steps.splice(i,1); haptic(); renderFlowEditor(); }
+function addStep(k){ if(FE.steps.length>=30) return toast('A flow can have at most 30 steps.'); FE.steps.push(JSON.parse(JSON.stringify(FDEF[k]))); haptic(); renderFlowEditor(); setTimeout(()=>window.scrollTo({top:document.body.scrollHeight*0.5,behavior:'smooth'}),30); }
+function useTpl(i){ const t=FTPL[i]; FE.steps=JSON.parse(JSON.stringify(t.steps)); if(!FE.name.trim()) FE.name=t.n; haptic('ok'); renderFlowEditor(); toast('Template added — adjust the steps to match your bot'); }
+async function saveFlow(){
+  FE.name=$('fe-name').value.trim();
+  if(!FE.name) return toast('Give the flow a name.');
+  if(!FE.steps.length) return toast('Add at least one step.');
+  busy($('fe-save'),true,'Saving…');
+  try{ const d=await post('/api/flows',{id:FE.id,name:FE.name,steps:FE.steps}); haptic('ok'); toast('Flow saved'); FE.id=d.id; show('flows'); }
+  catch(e){ toast(e.message,3500); haptic('bad'); }
+  finally{ busy($('fe-save'),false); }
+}
+async function deleteFlow(id){
+  if(!id||!await confirmDlg('Delete this flow?')) return;
+  try{ await del('/api/flows/'+encodeURIComponent(id)); haptic('ok'); toast('Flow deleted'); show('flows'); }catch(e){ toast(e.message); haptic('bad'); }
+}
+async function fillFlowPicker(){
+  const sel=$('r-flow'); const prev=sel.value;
+  if(!FLOWS.length) await loadFlows(true);
+  sel.innerHTML=FLOWS.length?FLOWS.map(f=>`<option value="${esc(f.id)}">${esc(f.name)} (${f.steps.length} steps)</option>`).join(''):'<option value="">No flows yet</option>';
+  if(prev && FLOWS.some(f=>f.id===prev)) sel.value=prev;
+  $('r-flow-help').textContent=FLOWS.length?'Every account follows these steps after /start.':'You have no flows yet — create one in Flow Builder first.';
+}
+
+/* ══ Bot Profiles ══ */
+async function loadProfiles(){
+  $('prof-list').innerHTML=SK_ROWS(2);
+  try{
+    const d=await api('/api/bot-profiles'); const ps=(d.profiles||[]).filter(p=>p.known);
+    $('prof-count').textContent=ps.length?ps.length+' bot'+(ps.length>1?'s':''):'';
+    $('prof-list').innerHTML=ps.length?ps.map(p=>{ const tot=p.ok+p.fail, pct=Math.round(p.rate*100);
+      return `<div class="row" style="align-items:flex-start"><span class="av">${I_BRAIN}</span><span class="body"><span class="t">@${esc(p.bot)}<span class="score ${pct>=80?'good':pct>=55?'fair':'weak'}">${pct}%</span></span>
+        <span class="d">${p.runs} run${p.runs>1?'s':''} · ${p.ok} ok / ${p.fail} failed${p.best?' · best: '+esc(CAPTCHA_NAME[p.best]||p.best):''}</span>
+        <span class="bar-mini"><i style="width:${pct}%"></i></span>
+        ${(p.solvers||[]).slice(0,4).map(x=>`<span class="d">${esc(CAPTCHA_NAME[x.name]||x.name)}: ${x.ok} ok / ${x.fail} failed</span>`).join('')}
+        ${(p.last_errors||[]).length?`<span class="d" style="color:var(--bad)">${esc(String(p.last_errors[p.last_errors.length-1]).slice(0,80))}</span>`:''}</span>
+        <button class="btn sm ghost" style="width:auto" onclick="forgetBot('${esc(p.bot)}')">${fi('trash')} Forget</button></div>`; }).join('')
+      : emptyState(I_BRAIN,'Nothing learned yet','Run a few referrals — the app remembers what worked for each bot.','<button class="btn" onclick="goRun(\'refer\')">Start a referral</button>');
+  }catch(e){ $('prof-list').innerHTML=emptyState(I_ALERT,"Couldn't load profiles",esc(e.message),'<button class="btn ghost" onclick="loadProfiles()">Try again</button>'); }
+}
+async function forgetBot(bot){
+  if(!await confirmDlg('Forget what was learned about @'+bot+'?')) return;
+  try{ await post('/api/bot-profiles/delete',{bot}); haptic('ok'); toast('Profile removed'); loadProfiles(); }catch(e){ toast(e.message); haptic('bad'); }
+}
+
+/* ══ Smart Alerts ══ */
+const ALERT_META={
+  job_done:{ic:'check-circle',t:'Run finished',d:'When a run completes, with the result summary'},
+  dead_account:{ic:'skull',t:'Account died',d:'When an account is found dead or banned'},
+  low_health:{ic:'gauge',t:'Low health score',d:'When accounts drop to a weak score'},
+  captcha_fail:{ic:'bot',t:'Captcha keeps failing',d:'When many accounts fail the captcha in a row'},
+  flood:{ic:'alert',t:'Flood-wait / rate limit',d:'When Telegram starts slowing your accounts down'},
+  resumed:{ic:'history',t:'Run resumed',d:'When a run continues after a server restart'}};
+let ALERTS={};
+async function loadAlerts(){
+  $('alert-list').innerHTML=SK_ROWS(3);
+  try{ const d=await api('/api/alerts'); ALERTS=d.prefs||{}; renderAlerts(d.kinds); }
+  catch(e){ $('alert-list').innerHTML='<div class="empty">'+esc(e.message)+'</div>'; }
+}
+function renderAlerts(kinds){
+  $('alert-list').innerHTML=(kinds||Object.keys(ALERT_META)).map(k=>{ const m=ALERT_META[k]||{ic:'bell',t:k,d:''};
+    return `<button class="swrow ${ALERTS[k]?'on':''}" data-k="${esc(k)}" onclick="toggleAlert('${esc(k)}')"><span class="av">${fi(m.ic)}</span><span class="body"><span class="t">${m.t}</span><span class="d">${m.d}</span></span><span class="sw"></span></button>`; }).join('');
+}
+async function toggleAlert(k){
+  const nv=!ALERTS[k]; ALERTS[k]=nv; renderAlerts(); haptic();
+  try{ const d=await post('/api/alerts',{[k]:nv}); ALERTS=d.prefs||ALERTS; renderAlerts(); }
+  catch(e){ ALERTS[k]=!nv; renderAlerts(); toast(e.message); haptic('bad'); }
+}
+async function testAlert(){
+  busy($('alert-test'),true,'Sending…');
+  try{ const d=await post('/api/alerts/test',{}); toast(d.sent?'Test alert sent — check your Telegram chat with the bot':'Could not send. Open the bot in Telegram and press Start first.',3800); haptic(d.sent?'ok':'bad'); }
+  catch(e){ toast(e.message); haptic('bad'); }
+  finally{ busy($('alert-test'),false); }
+}
+function openAlerts(){ show('settings'); setTimeout(()=>$('alerts-sec').scrollIntoView({behavior:'smooth'}),60); }
+
+function loadSettings(){ loadAlerts();
   document.querySelectorAll('#lang-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===PREFS.lang));
   document.querySelectorAll('#theme-swatches .swatch').forEach(b=>b.classList.toggle('on',b.dataset.v===PREFS.accent));
   document.querySelectorAll('#haptic-seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===PREFS.haptic));
