@@ -18,7 +18,7 @@ from telethon.tl.functions.messages import ImportChatInviteRequest, CheckChatInv
 from telethon.tl.functions.account import UpdateNotifySettingsRequest
 from telethon.tl.types import (ChatInviteAlready, ChatInvitePeek, MessageEntityTextUrl, MessageEntityUrl,
                                InputNotifyPeer, InputPeerNotifySettings)
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 from pymongo.server_api import ServerApi
 
 app = FastAPI(title="Turbo Refer Mini App")
@@ -244,6 +244,45 @@ async def get_client(acc):
                            connection_retries=1, retry_delay=1, timeout=10,
                            auto_reconnect=False, request_retries=2)
 
+# ── Smart Alerts ─────────────────────────────────────────────────
+# Per-user Telegram notifications. Each kind can be switched off in Settings, and
+# every kind except job_done has a cooldown so a bad run can't spam the chat.
+ALERT_KINDS = ("job_done", "dead_account", "captcha_fail", "flood", "resumed", "low_health")
+_ALERT_LAST = {}
+_ALERT_PREF_CACHE = {}
+
+def alert_prefs(owner):
+    now = time.time(); hit = _ALERT_PREF_CACHE.get(str(owner))
+    if hit and now - hit[0] < 30: return hit[1]
+    prefs = {k: True for k in ALERT_KINDS}
+    try:
+        d = db()["alert_prefs"].find_one({"owner": str(owner)}) or {}
+        for k in ALERT_KINDS:
+            if k in d: prefs[k] = bool(d[k])
+    except Exception as e:
+        print("alert prefs:", e)
+    _ALERT_PREF_CACHE[str(owner)] = (now, prefs)
+    return prefs
+
+def alert_sync(owner, kind, text, cooldown=0):
+    """Send one alert if the user wants this kind and it isn't in cooldown."""
+    if not owner: return False
+    if not alert_prefs(owner).get(kind, True): return False
+    key = (str(owner), kind); now = time.time()
+    if cooldown and now - _ALERT_LAST.get(key, 0) < cooldown: return False
+    ok = tg_send(owner, text)
+    if ok: _ALERT_LAST[key] = now
+    return ok
+
+_BG_TASKS = set()
+def _bg(coro):
+    """Fire-and-forget background task (kept referenced so it isn't garbage-collected)."""
+    t = asyncio.ensure_future(coro); _BG_TASKS.add(t); t.add_done_callback(_BG_TASKS.discard); return t
+
+async def alert_async(owner, kind, text, cooldown=0):
+    try: return await asyncio.to_thread(alert_sync, owner, kind, text, cooldown)
+    except Exception as e: print("alert error:", e); return False
+
 def alert_dead_accounts(owner, dead_names):
     if not dead_names: return
     try:
@@ -251,10 +290,62 @@ def alert_dead_accounts(owner, dead_names):
                  f"{len(dead_names)} account(s) need to be re-added:"]
         for n in dead_names[:10]:
             lines.append(f"• <code>{n}</code>")
+        if len(dead_names) > 10: lines.append(f"…and {len(dead_names) - 10} more")
         lines.append("\nOpen the app → Accounts → delete and add them again.")
-        tg_send(owner, "\n".join(lines))
+        alert_sync(owner, "dead_account", "\n".join(lines), cooldown=300)
     except Exception as e:
         print("dead alert error:", e)
+
+# ── Account Health Score ─────────────────────────────────────────
+# 0–100 per account from: Telegram health check result, success rate and
+# consecutive failures over recent runs, recent flood-waits, and check age.
+def health_score(a, now=None):
+    """Returns (score, grade, reasons). grade: good ≥80 · fair ≥55 · weak <55 · dead."""
+    now = now or time.time()
+    h = a.get("health", "unknown")
+    if h in ("dead", "banned"):
+        return 0, "dead", ["Session dead" if h == "dead" else "Banned by Telegram"]
+    sc = 100; why = []
+    ok, fail = int(a.get("st_ok") or 0), int(a.get("st_fail") or 0)
+    n = ok + fail
+    if n >= 3:
+        pen = int((fail / n) * 40)
+        if pen: sc -= pen; why.append(f"{ok} ok / {fail} failed")
+    elif n and fail:
+        sc -= int(fail / n * 15); why.append(f"{ok} ok / {fail} failed")
+    consec = int(a.get("st_consec") or 0)
+    if consec:
+        sc -= min(consec, 5) * 6; why.append(f"{consec} failed in a row")
+    if h == "limited": sc -= 20; why.append("Telegram limits this account")
+    elif h == "error": sc -= 15; why.append("Last health check errored")
+    elif h == "unknown": sc -= 5
+    fl = a.get("st_flood_at")
+    if fl:
+        age = now - fl
+        if age < 3600: sc -= 20; why.append("flood-wait in the last hour")
+        elif age < 86400: sc -= 10; why.append("flood-wait today")
+    hc = a.get("health_checked")
+    if hc and now - hc > 7 * 86400: sc -= 5; why.append("health not checked for 7+ days")
+    sc = max(0, min(100, sc))
+    return sc, ("good" if sc >= 80 else "fair" if sc >= 55 else "weak"), why
+
+def filter_weak(accs, min_score):
+    """Drop accounts scoring below min_score. Returns (kept, weak_names)."""
+    try: ms = int(min_score or 0)
+    except Exception: ms = 0
+    if ms <= 0: return accs, []
+    kept, weak = [], []
+    for a in accs:
+        (kept if health_score(a)[0] >= ms else weak).append(a)
+    return kept, [a["session_name"] for a in weak]
+
+_DEAD_RE   = re.compile(r"Session expired|needs re-login|AuthKeyUnregistered|AuthKeyDuplicated|AuthKeyInvalid|SessionRevoked|SessionExpired|UserDeactivated|PhoneNumberBanned|is corrupted|Logged out from this device", re.I)
+_BANNED_RE = re.compile(r"UserDeactivated|PhoneNumberBanned|banned|deactivated", re.I)
+_FLOOD_RE  = re.compile(r"flood[- ]?wait|A wait of \d+|auto-retried after", re.I)
+
+def _dead_kind(msg):
+    if not _DEAD_RE.search(msg or ""): return None
+    return "banned" if _BANNED_RE.search(msg or "") else "dead"
 
 def friendly_error(e):
     msg = str(e)
@@ -302,6 +393,11 @@ def pick_accounts(owner, names, skip_dead=True, exclude=None, allow_reserved=Fal
 
 # ── Job system (background + live polling) ───────────────────────
 JOBS = {}
+JOB_SPECS = {}          # jid → how to re-create the run (account names + settings) so it can resume
+_JOB_DIRTY = set()      # jobs changed since the last save to MongoDB
+INSTANCE_ID = uuid.uuid4().hex[:8]   # identifies this server process
+RESUME_LEASE_S = 15     # a saved job whose heartbeat is older than this has lost its server
+JOB_PERSIST_EVERY = 3
 
 def _evict_old_jobs():
     """Finished jobs stay in RAM only for 1h (they're saved in MongoDB anyway)."""
@@ -309,18 +405,21 @@ def _evict_old_jobs():
     for k in [k for k, j in JOBS.items() if j.get("ended") and j["ended"] < cut]:
         JOBS.pop(k, None)
 
-def job_new(owner, kind, total, meta=None):
+def job_new(owner, kind, total, meta=None, spec=None):
     _evict_old_jobs()
     jid = uuid.uuid4().hex[:10]
     JOBS[jid] = {"id": jid, "owner": str(owner), "kind": kind, "status": "running", "total": total,
                  "done": 0, "success": 0, "failed": 0, "results": [],
                  "meta": meta or {}, "started": int(time.time())}
+    if spec: JOB_SPECS[jid] = spec
+    _JOB_DIRTY.add(jid)
     return jid
 
 def job_push(jid, r):
     j = JOBS[jid]; j["results"].append(r); j["done"] += 1
     if r.get("status") == "success": j["success"] += 1
     else: j["failed"] += 1
+    _JOB_DIRTY.add(jid)
 
 def job_cancel_requested(jid):
     j = JOBS.get(jid)
@@ -367,20 +466,23 @@ def update_progress(owner, success_count):
     milestone = next((m for m in MILESTONES if prev_total < m <= new_total), None)
     return milestone, streak
 
-def job_finish(jid):
+def job_finish(jid, status=None):
     j = JOBS[jid]
-    j["status"] = "cancelled" if j.get("cancel") else "done"
+    j["status"] = status or ("cancelled" if j.get("cancel") else "done")
     j["ended"] = int(time.time())
     milestone, streak = update_progress(j.get("owner"), j.get("success", 0))
     j["milestone"] = milestone
     j["streak"] = streak
     try: db()["jobs"].insert_one(dict(j))
     except Exception: pass
+    JOB_SPECS.pop(jid, None); _JOB_DIRTY.discard(jid)
+    try: db()["jobs_live"].delete_one({"id": jid})      # no longer needs resuming
+    except Exception: pass
     # Notify the owner of this job in Telegram
     try:
         if j["total"] >= 1 and j.get("owner"):
             label = KIND_LABEL.get(j["kind"], j["kind"])
-            icon = "[STOPPED]" if j["status"] == "cancelled" else ("[DONE]" if not j["failed"] else ("[PARTIAL]" if j["success"] else "[FAILED]"))
+            icon = "[STOPPED]" if j["status"] == "cancelled" else "[INTERRUPTED]" if j["status"] == "interrupted" else ("[DONE]" if not j["failed"] else ("[PARTIAL]" if j["success"] else "[FAILED]"))
             took = j["ended"] - j.get("started", j["ended"])
             lines = [f"{icon} <b>{label} {j['status']}</b>",
                      f"{j['success']} ok · {j['failed']} failed · {j['total']} total",
@@ -394,12 +496,93 @@ def job_finish(jid):
                 lines.append("\n<b>Failed:</b>")
                 for r in bad:
                     lines.append(f"• <code>{r['account']}</code> — {str(r.get('msg',''))[:70]}")
-            tg_send(j["owner"], "\n".join(lines))
+            alert_sync(j["owner"], "job_done", "\n".join(lines))
             log_chan = setting_get("log_channel", "")
             if log_chan:
                 tg_send(log_chan, "\n".join(lines))
     except Exception as e:
         print("job alert error:", e)
+
+# ── Persistent Job Queue ─────────────────────────────────────────
+# Running jobs are saved to MongoDB every few seconds ("jobs_live") with a heartbeat.
+# If the server restarts or crashes, the next start finds jobs whose heartbeat went
+# stale, claims them (atomically, so two servers never resume the same job) and
+# continues with only the accounts that had not finished yet.
+def _persist_jobs_sync():
+    now = int(time.time()); col = db()["jobs_live"]
+    for jid, j in list(JOBS.items()):
+        if j.get("status") != "running": continue
+        if jid in _JOB_DIRTY:
+            _JOB_DIRTY.discard(jid)
+            doc = {k: j[k] for k in ("id", "owner", "kind", "status", "total", "done", "success", "failed", "meta", "started") if k in j}
+            doc.update({"results": list(j.get("results", [])), "spec": JOB_SPECS.get(jid), "cancel": bool(j.get("cancel")),
+                        "heartbeat": now, "instance": INSTANCE_ID})
+            if j.get("status") != "running": continue
+            col.update_one({"id": jid}, {"$set": doc}, upsert=True)
+        else:
+            col.update_one({"id": jid, "instance": INSTANCE_ID}, {"$set": {"heartbeat": now, "cancel": bool(j.get("cancel"))}})
+
+async def job_persist_loop():
+    while True:
+        try: await asyncio.to_thread(_persist_jobs_sync)
+        except Exception as e: print("job persist:", e)
+        await asyncio.sleep(JOB_PERSIST_EVERY)
+
+def _claim_stale_jobs_sync():
+    now = int(time.time()); out = []; col = db()["jobs_live"]
+    for d in list(col.find({"status": "running", "heartbeat": {"$lt": now - RESUME_LEASE_S}}, {"_id": 0})):
+        if d["id"] in JOBS: continue
+        if db()["jobs"].find_one({"id": d["id"]}, {"_id": 1}):      # it did finish; just a leftover copy
+            col.delete_one({"id": d["id"]}); continue
+        got = col.find_one_and_update({"id": d["id"], "heartbeat": d["heartbeat"]},
+                                      {"$set": {"instance": INSTANCE_ID, "heartbeat": now}})
+        if got: out.append(d)
+    return out
+
+async def _resume_runner(jid, runner, accs, spec):
+    try:
+        if accs: await runner(jid, accs, spec)
+        else: await asyncio.to_thread(job_finish, jid)
+    except Exception as e:
+        print("resume runner error:", e)
+        try:
+            job_push(jid, {"account": "-", "status": "error", "msg": "Resume failed: " + str(e)[:80]})
+            await asyncio.to_thread(job_finish, jid)
+        except Exception: pass
+
+async def _resume_job(d):
+    jid, owner = d["id"], d["owner"]; spec = d.get("spec") or {}
+    j = {k: v for k, v in d.items() if k not in ("spec", "heartbeat", "instance")}
+    j["status"] = "running"; j.setdefault("results", []); j["meta"] = dict(j.get("meta") or {})
+    j["meta"]["resumed"] = int(j["meta"].get("resumed", 0)) + 1
+    JOBS[jid] = j
+    runner = JOB_RUNNERS.get(j["kind"])
+    if j.get("cancel"):
+        await asyncio.to_thread(job_finish, jid); return
+    if not runner or not spec.get("accounts"):
+        j["meta"]["interrupted"] = True
+        await asyncio.to_thread(job_finish, jid, "interrupted"); return
+    JOB_SPECS[jid] = spec
+    done = {r.get("account") for r in j["results"]}
+    by_name = {a["session_name"]: a for a in await asyncio.to_thread(load_accounts, owner)}
+    todo = [n for n in spec["accounts"] if n not in done]
+    for n in todo:
+        if n not in by_name: job_push(jid, {"account": n, "status": "error", "msg": "Account no longer exists"})
+    accs = [by_name[n] for n in todo if n in by_name]
+    _JOB_DIRTY.add(jid)
+    _bg(alert_async(owner, "resumed",
+        f"<b>Run resumed after a server restart</b>\n{len(done)} of {j['total']} accounts were already done; continuing with the remaining {len(accs)}.", cooldown=60))
+    _bg(_resume_runner(jid, runner, accs, spec))
+
+async def job_resume_loop():
+    await asyncio.sleep(4)
+    while True:
+        try:
+            for d in await asyncio.to_thread(_claim_stale_jobs_sync):
+                await _resume_job(d)
+        except Exception as e:
+            print("job resume:", e)
+        await asyncio.sleep(10)
 
 # ── Referral workers ─────────────────────────────────────────────
 # After an answer is sent, the bot's next reply tells us if it was accepted.
@@ -407,10 +590,23 @@ _CAPTCHA_BAD  = re.compile(r"wrong|incorrect|invalid|failed|not correct|try agai
 _CAPTCHA_GOOD = re.compile(r"success|verified|correct|passed|✅|welcome|thank", re.I)
 CAPTCHA_MAX_TRIES = 3
 
+_ASKS_SOMETHING = re.compile(r"select|choose|pick|click|tap|press|enter|type|solve|captcha|code", re.I)
+
+def _note_bot_msg(state, event):
+    """Remember the bot's latest message so a timeout can say what the bot actually sent."""
+    t = (getattr(event, "raw_text", "") or "").replace("\n", " ").strip()
+    m = getattr(event, "message", None)
+    if not t and m is not None and (getattr(m, "photo", None) or getattr(m, "document", None)): t = "[image]"
+    if t: state["last"] = t[:90]
+
+def _bot_hint(state):
+    return f" · bot said: “{state['last']}”" if state.get("last") else " · bot sent nothing"
+
 async def _captcha_flow(acc, bot_link, solver):
     client = await get_client(acc)
     wait_s = getattr(solver, "timeout", 20)
     result = {"account": acc["session_name"], "status": "timeout", "msg": f"No captcha response in {wait_s}s"}
+    state = {"answered": False, "wrong": 0, "last": "", "solving": 0, "early_good": False, "early_bad": 0, "answers": 0}
     try:
         await client.start()
         bot_user, param = parse_bot_link(bot_link)
@@ -418,13 +614,19 @@ async def _captcha_flow(acc, bot_link, solver):
             return {"account": acc["session_name"], "status": "error", "msg": "Invalid link"}
         answered = asyncio.Event()   # solver sent/clicked an answer
         done = asyncio.Event()       # bot confirmed (or we gave up after too many wrong answers)
-        state = {"answered": False, "wrong": 0}
 
         @client.on(events.NewMessage(from_users=bot_user))
         async def handler(event):
             try:
+                _note_bot_msg(state, event)
+                t = event.raw_text or ""
+                if state["solving"]:
+                    # our click/answer is still in flight and the bot has already replied (this happens
+                    # often): keep its verdict instead of losing it and then waiting for a message that never comes
+                    if _CAPTCHA_BAD.search(t): state["early_bad"] += 1
+                    elif _CAPTCHA_GOOD.search(t) and not _ASKS_SOMETHING.search(t):
+                        state["early_good"] = True; return
                 if state["answered"]:
-                    t = event.raw_text or ""
                     if _CAPTCHA_BAD.search(t):
                         state["wrong"] += 1; state["answered"] = False
                         result.update({"status": "error", "msg": f"Bot rejected answer ({state['wrong']}x)"})
@@ -436,9 +638,27 @@ async def _captcha_flow(acc, bot_link, solver):
                         done.set(); return
                     else:
                         return
-                r = await solver(event, client, bot_user)
+                state["solving"] += 1; n0 = state["answers"]
+                try: r = await solver(event, client, bot_user)
+                finally: state["solving"] -= 1
                 if r:
-                    result.update(r); state["answered"] = True; answered.set()
+                    state["answers"] += 1
+                    r.setdefault("solver", _solver_label(solver, r))
+                    result.update(r)
+                    if state["early_good"]:
+                        state["early_good"] = False; state["early_bad"] = 0; state["answered"] = True
+                        result["status"] = "success"; result["msg"] += " · verified"
+                        answered.set(); done.set(); return
+                    if state["early_bad"]:
+                        state["wrong"] += state["early_bad"]; state["early_bad"] = 0
+                        if state["answers"] == n0 + 1:     # no newer answer to a fresh captcha in the meantime
+                            state["answered"] = False
+                            result.update({"status": "error", "msg": f"Bot rejected answer ({state['wrong']}x)"})
+                            if state["wrong"] >= CAPTCHA_MAX_TRIES: done.set()
+                        answered.set(); return
+                    state["answered"] = True; answered.set()
+                elif not state["solving"]:
+                    state["early_good"] = False; state["early_bad"] = 0
             except Exception as ex:
                 result.update({"status": "error", "msg": str(ex)[:80]}); answered.set(); done.set()
 
@@ -462,6 +682,8 @@ async def _captcha_flow(acc, bot_link, solver):
     finally:
         try: await client.disconnect()
         except Exception: pass
+    if result.get("status") == "timeout" or str(result.get("msg", "")).startswith("Bot rejected"):
+        result["msg"] = str(result["msg"]) + _bot_hint(state)
     return result
 
 async def solve_none(event, client, bot_user):
@@ -804,6 +1026,399 @@ solve_auto.timeout = 40
 SOLVERS = {"no_captcha": None, "auto": solve_auto, "emoji": solve_emoji, "math": solve_math, "button": solve_button, "number": solve_number,
            "text_code": solve_text_code, "image": solve_image}
 
+# ── Self-Learning Bot Profiles ───────────────────────────────────
+# After every referral run the app remembers, per bot, which solver actually worked
+# (image / number / math / …). "Smart" mode then tries the proven solver first and only
+# falls back to Auto-Detect — so known bots get solved faster and more reliably.
+_SOLVER_LABELS = {"image": solve_image, "math": solve_math, "number": solve_number,
+                  "text_code": solve_text_code, "emoji": solve_emoji, "button": solve_button}
+_AUTO_PREFIX = {"Image": "image", "Math": "math", "Number": "number", "Text": "text_code", "Emoji": "emoji", "Button": "button"}
+
+def _solver_label(solver, r):
+    name = getattr(solver, "__name__", "") or ""
+    base = name[6:] if name.startswith("solve_") else name
+    if base in ("auto", "smart"):
+        if r.get("solver"): return r["solver"]
+        m = re.match(r"(?:Smart[^:]*:\s*)?(Image|Math|Number|Text|Emoji|Button)\b", str(r.get("msg", "")))
+        return _AUTO_PREFIX.get(m.group(1)) if m else "auto"
+    return base
+
+def _bot_key(link):
+    link = str(link or "").strip()
+    bot, _ = parse_bot_link(link) if link.startswith("http") else (link.lstrip("@").split("?")[0].split("/")[0], "")
+    return (bot or "").lower()
+
+def profile_get(owner, link):
+    k = _bot_key(link)
+    if not k or not owner: return None
+    return db()["bot_profiles"].find_one({"owner": str(owner), "bot": k}, {"_id": 0})
+
+def learn_profile_sync(owner, link, method, results):
+    k = _bot_key(link)
+    if not k or not owner or not results: return
+    col = db()["bot_profiles"]
+    doc = col.find_one({"owner": str(owner), "bot": k}, {"_id": 0}) or {"owner": str(owner), "bot": k, "runs": 0, "ok": 0, "fail": 0, "solvers": {}, "methods": {}}
+    n_ok = n_fail = 0
+    for r in results:
+        good = r.get("status") in ("success", "partial")
+        lab = r.get("solver") or (method if method in _SOLVER_LABELS else None)
+        if lab and lab not in ("auto", "flow", "smart"):
+            sv = doc["solvers"].setdefault(lab, {"ok": 0, "fail": 0}); sv["ok" if good else "fail"] += 1
+        if good: n_ok += 1
+        else: n_fail += 1
+    doc["runs"] = doc.get("runs", 0) + 1; doc["ok"] = doc.get("ok", 0) + n_ok; doc["fail"] = doc.get("fail", 0) + n_fail
+    m = doc.setdefault("methods", {}).setdefault(method or "none", {"ok": 0, "fail": 0}); m["ok"] += n_ok; m["fail"] += n_fail
+    doc["updated"] = int(time.time())
+    bad = [str(r.get("msg", ""))[:100] for r in results if r.get("status") not in ("success", "partial")]
+    if bad: doc["last_errors"] = bad[-3:]
+    col.update_one({"owner": str(owner), "bot": k}, {"$set": doc}, upsert=True)
+
+def _profile_order(profile):
+    """Solver names to try first, best first. Only ones proven on this bot (≥2 wins, ≥55% rate)."""
+    out = []
+    for name, v in ((profile or {}).get("solvers") or {}).items():
+        ok, fail = int(v.get("ok", 0)), int(v.get("fail", 0))
+        score = (ok + 1) / (ok + fail + 2)
+        if name in _SOLVER_LABELS and ok >= 2 and score >= 0.55: out.append((score, ok, name))
+    out.sort(reverse=True)
+    return [n for _, _, n in out]
+
+def profile_summary(profile):
+    if not profile: return {"known": False}
+    solvers = [{"name": n, "ok": int(v.get("ok", 0)), "fail": int(v.get("fail", 0))} for n, v in (profile.get("solvers") or {}).items()]
+    solvers.sort(key=lambda x: -x["ok"])
+    ok, fail = int(profile.get("ok", 0)), int(profile.get("fail", 0))
+    order = _profile_order(profile)
+    return {"known": True, "bot": profile.get("bot"), "runs": profile.get("runs", 0), "ok": ok, "fail": fail,
+            "rate": round(ok / (ok + fail), 3) if ok + fail else 0, "best": order[0] if order else None,
+            "solvers": solvers, "recommended": "smart" if order else "auto", "updated": profile.get("updated"),
+            "last_errors": profile.get("last_errors", [])}
+
+def make_smart_solver(profile):
+    order = _profile_order(profile)
+    async def solve_smart(event, client, bot_user):
+        for name in order:
+            r = await _SOLVER_LABELS[name](event, client, bot_user)
+            if r: return {**r, "msg": f"Learned·{name}: {r['msg']}", "solver": name}
+        r = await solve_auto(event, client, bot_user)
+        return r
+    solve_smart.verify = True
+    solve_smart.timeout = 40
+    return solve_smart
+
+# ── Flow Builder ─────────────────────────────────────────────────
+# A flow is a list of no-code steps run on every account against the bot:
+#   reply · click · send · captcha · join · expect · wait
+# The engine below is independent of Telethon (it only needs an inbox of bot messages
+# and a few callbacks), which is what makes it testable without a real Telegram connection.
+import collections
+
+FLOW_MAX_STEPS = 30
+FLOW_MAX_SECONDS = 300
+FLOW_TYPES = ("reply", "click", "send", "captcha", "join", "expect", "wait")
+
+class FlowError(Exception): pass
+
+class FlowInbox:
+    """Bot messages in arrival order; supports peeking (unget) and waiting with a timeout."""
+    def __init__(self):
+        self.q = collections.deque(); self._ev = asyncio.Event()
+    def put(self, ev):
+        if getattr(ev, "ts", None) is None: ev.ts = time.monotonic()
+        self.q.append(ev); self._ev.set()
+    def unget(self, ev):
+        self.q.appendleft(ev); self._ev.set()
+    def get_nowait(self):
+        if not self.q: raise IndexError
+        ev = self.q.popleft()
+        if not self.q: self._ev.clear()
+        return ev
+    def empty(self): return not self.q
+    async def get(self, timeout):
+        end = time.monotonic() + timeout
+        while not self.q:
+            left = end - time.monotonic()
+            if left <= 0: return None
+            self._ev.clear()
+            try: await asyncio.wait_for(self._ev.wait(), left)
+            except asyncio.TimeoutError: return None
+        return self.get_nowait()
+
+def _btn_text(b): return re.sub(r"\s+", " ", str(getattr(b, "text", "") or "")).strip()
+
+def _plain_buttons(ev):
+    return [b for row in (getattr(ev, "buttons", None) or []) for b in row if not getattr(b, "url", None)]
+
+def _find_button(ev, mode, value):
+    btns = _plain_buttons(ev)
+    if mode == "index":
+        try: i = int(value)
+        except Exception: return None
+        return btns[i - 1] if 1 <= i <= len(btns) else None
+    v = str(value)
+    for b in btns:
+        t = _btn_text(b)
+        if mode == "exact":
+            if t.lower() == v.lower(): return b
+        elif mode == "regex":
+            try:
+                if re.search(v, t, re.I): return b
+            except re.error: return None
+        elif v.lower() in t.lower(): return b
+    return None
+
+def _step_label(st):
+    t = st.get("type")
+    if t == "click": return f"click “{st.get('value', '')}”" if st.get("mode") != "index" else f"click button #{st.get('value')}"
+    if t == "send": return f"send “{str(st.get('text', ''))[:20]}”"
+    if t == "expect": return f"expect “{str(st.get('pattern', ''))[:20]}”"
+    if t == "captcha": return f"captcha ({st.get('method', 'auto')})"
+    if t == "join": return "join channels"
+    return t or "step"
+
+async def flow_engine(steps, inbox, send, client, bot_user, ctx, join=None):
+    """Run the steps. Returns ("success"|"error", message)."""
+    recent = collections.OrderedDict()
+    state = {"cur": None, "mark": time.monotonic()}
+    ctx.setdefault("notes", []); ctx.setdefault("param", ""); ctx.setdefault("link", "")
+
+    def remember(ev):
+        if getattr(ev, "ts", None) is None: ev.ts = time.monotonic()
+        mid = getattr(ev.message, "id", None) or id(ev.message)
+        recent.pop(mid, None); recent[mid] = ev
+        while len(recent) > 8: recent.popitem(last=False)
+        state["cur"] = ev
+    def drain():
+        while not inbox.empty(): remember(inbox.get_nowait())
+    async def take(timeout, edits=True):
+        end = time.monotonic() + timeout
+        while True:
+            left = end - time.monotonic()
+            if left <= 0: return None
+            ev = await inbox.get(left)
+            if ev is None: return None
+            remember(ev)
+            if getattr(ev, "edited", False) and not edits: continue
+            return ev
+    def newest_first():
+        return list(reversed(list(recent.values())))
+    def hint():
+        ev = state["cur"]
+        t = (getattr(ev, "raw_text", "") or "").replace("\n", " ").strip() if ev else ""
+        return f" · bot said: “{t[:80]}”" if t else (" · bot sent nothing" if not recent else "")
+
+    async def x_wait(st): await asyncio.sleep(float(st.get("seconds", 1)))
+    async def x_reply(st):
+        ev = await take(float(st.get("timeout", 20)), edits=False)
+        if ev is None: raise FlowError(f"no reply from the bot within {int(float(st.get('timeout', 20)))}s")
+    async def x_send(st):
+        drain()
+        code = ""
+        if "{code}" in str(st.get("text", "")):
+            for ev in newest_first():
+                code = _extract_text_code(ev.message) or ""
+                if code: break
+            if not code: raise FlowError("no code found in the bot's messages")
+        txt = str(st.get("text", "")).replace("{param}", ctx["param"]).replace("{link}", ctx["link"]).replace("{code}", code)
+        if not txt.strip(): raise FlowError("empty message")
+        await send(txt)
+    async def x_click(st):
+        mode = st.get("mode", "contains"); value = st.get("value", "")
+        end = time.monotonic() + float(st.get("timeout", 15))
+        while True:
+            drain()
+            btn = None
+            for ev in newest_first():
+                btn = _find_button(ev, mode, value)
+                if btn: break
+            if btn:
+                try: await btn.click()
+                except Exception as e:
+                    if type(e).__name__ != "BotResponseTimeoutError":     # unanswered callback is normal for many bots
+                        raise FlowError(f"click failed: {str(e)[:60]}")
+                await asyncio.sleep(0.8); return
+            left = end - time.monotonic()
+            if left <= 0:
+                avail = [_btn_text(b) for b in _plain_buttons(state["cur"])][:6] if state["cur"] else []
+                raise FlowError(f"button “{value}” not found" + (f" (buttons seen: {', '.join(avail)})" if avail else ""))
+            await take(min(left, 2.5))
+    async def x_captcha(st):
+        method = st.get("method", "auto")
+        fn = ctx.get("smart") if method == "smart" else SOLVERS.get(method)
+        if fn is None: fn = solve_auto
+        end = time.monotonic() + float(st.get("timeout", 25))
+        attempts = 1 + int(st.get("retries", 2)); tried = set()
+        while attempts > 0:
+            solved = None
+            while solved is None:
+                drain()
+                for ev in newest_first()[:4]:
+                    if id(ev) in tried: continue
+                    tried.add(id(ev))
+                    try: r = await fn(ev, client, bot_user)
+                    except Exception as e: raise FlowError(f"captcha error: {str(e)[:70]}")
+                    if r:
+                        solved = (ev, r); break
+                if solved: break
+                left = end - time.monotonic()
+                if left <= 0: raise FlowError("captcha not recognised")
+                await take(min(left, 2.5))
+            ev, r = solved
+            ctx["solver"] = _solver_label(fn, r); ctx["notes"].append(str(r.get("msg", ""))[:40])
+            attempts -= 1
+            if attempts <= 0: return
+            nxt = await take(8)      # peek: did the bot say "wrong" and send a new captcha?
+            if nxt is None: return
+            inbox.unget(nxt)
+            if not _CAPTCHA_BAD.search(nxt.raw_text or ""): return
+            end = time.monotonic() + float(st.get("timeout", 25))
+    async def x_join(st):
+        urls = []
+        if st.get("source") == "list": urls = [str(c) for c in st.get("channels", [])]
+        else:
+            end = time.monotonic() + float(st.get("timeout", 15))
+            me = f"t.me/{bot_user}".lower()
+            while True:
+                drain()
+                msgs = [ev.message for ev in newest_first()[:3]]
+                bu, tu = _extract_all_links(msgs)
+                urls = [u_ for u_ in bu + tu if "t.me/" in u_.lower() and me not in u_.lower()]
+                if urls: break
+                left = end - time.monotonic()
+                if left <= 0: break
+                await take(min(left, 2.5))
+        urls = list(dict.fromkeys(urls))[:15]
+        if not urls: raise FlowError("no channel links found")
+        if join is None: raise FlowError("joining is not available")
+        ok, errs = 0, []
+        for u_ in urls:
+            try: await join(u_); ok += 1
+            except Exception as e: errs.append(str(e)[:40])
+            await asyncio.sleep(1.2)
+        if not ok: raise FlowError("could not join: " + (errs[0] if errs else "unknown error"))
+        ctx["notes"].append(f"joined {ok}/{len(urls)}")
+    async def x_expect(st):
+        try: pat = re.compile(str(st.get("pattern", "")), re.I)
+        except re.error: raise FlowError("invalid pattern")
+        fpat = None
+        if st.get("fail_pattern"):
+            try: fpat = re.compile(str(st["fail_pattern"]), re.I)
+            except re.error: fpat = None
+        end = time.monotonic() + float(st.get("timeout", 20))
+        while True:
+            drain()
+            for ev in list(recent.values()):
+                if (getattr(ev, "ts", 0) or 0) < state["mark"]: continue      # only what arrived since the previous step began
+                t = ev.raw_text or ""
+                if fpat and fpat.search(t): raise FlowError(f"bot said: “{t.replace(chr(10), ' ')[:70]}”")
+                if pat.search(t): state["cur"] = ev; return
+            left = end - time.monotonic()
+            if left <= 0: raise FlowError("expected text not seen" + hint())
+            await take(min(left, 2.5))
+
+    X = {"wait": x_wait, "reply": x_reply, "send": x_send, "click": x_click, "captcha": x_captcha, "join": x_join, "expect": x_expect}
+    n = len(steps); prev_start = time.monotonic()
+    for i, st in enumerate(steps, 1):
+        state["mark"] = prev_start; t0 = time.monotonic()
+        try:
+            await X[st["type"]](st)
+        except FlowError as e:
+            if st.get("optional"):
+                ctx["notes"].append(f"skipped step {i}"); prev_start = t0; continue
+            return "error", f"Step {i}/{n} ({_step_label(st)}): {e}" + (hint() if "bot said" not in str(e) and "bot sent" not in str(e) else "")
+        prev_start = t0
+    extra = (" · " + " · ".join(ctx["notes"][-3:])) if ctx["notes"] else ""
+    return "success", f"Flow OK · {n} steps{extra}"
+
+def normalize_flow_steps(steps):
+    """Validate + clean a flow from the client. Raises ValueError with a readable message."""
+    if not isinstance(steps, list) or not steps: raise ValueError("Add at least one step.")
+    if len(steps) > FLOW_MAX_STEPS: raise ValueError(f"A flow can have at most {FLOW_MAX_STEPS} steps.")
+    def num(v, lo, hi, dflt):
+        try: x = float(v)
+        except Exception: x = dflt
+        return max(lo, min(hi, x))
+    out = []
+    for i, st in enumerate(steps, 1):
+        if not isinstance(st, dict) or st.get("type") not in FLOW_TYPES: raise ValueError(f"Step {i}: unknown step type.")
+        t = st["type"]; c = {"type": t}
+        if st.get("optional") and t in ("reply", "click", "join", "expect"): c["optional"] = True
+        if t == "wait": c["seconds"] = num(st.get("seconds"), 0.5, 60, 2)
+        elif t == "reply": c["timeout"] = num(st.get("timeout"), 3, 90, 20)
+        elif t == "send":
+            c["text"] = str(st.get("text", ""))[:500]
+            if not c["text"].strip(): raise ValueError(f"Step {i}: message text is empty.")
+        elif t == "click":
+            c["mode"] = st.get("mode") if st.get("mode") in ("contains", "exact", "regex", "index") else "contains"
+            c["value"] = str(st.get("value", "")).strip()[:80]
+            if not c["value"]: raise ValueError(f"Step {i}: enter the button text (or its number).")
+            if c["mode"] == "index" and not re.fullmatch(r"\d{1,2}", c["value"]): raise ValueError(f"Step {i}: button number must be 1–99.")
+            if c["mode"] == "regex":
+                try: re.compile(c["value"])
+                except re.error: raise ValueError(f"Step {i}: the button pattern is not valid.")
+            c["timeout"] = num(st.get("timeout"), 3, 60, 15)
+        elif t == "captcha":
+            m = st.get("method", "auto")
+            c["method"] = m if (m in SOLVERS and m != "no_captcha") or m == "smart" else "auto"
+            c["timeout"] = num(st.get("timeout"), 5, 90, 25)
+            c["retries"] = int(num(st.get("retries"), 0, 3, 2))
+        elif t == "join":
+            c["source"] = "list" if st.get("source") == "list" else "buttons"
+            c["timeout"] = num(st.get("timeout"), 3, 60, 15)
+            if c["source"] == "list":
+                ch = [str(x).strip()[:120] for x in (st.get("channels") or []) if str(x).strip()][:10]
+                if not ch: raise ValueError(f"Step {i}: add at least one channel to join.")
+                c["channels"] = ch
+        elif t == "expect":
+            c["pattern"] = str(st.get("pattern", "")).strip()[:120]
+            if not c["pattern"]: raise ValueError(f"Step {i}: enter the text to look for.")
+            try: re.compile(c["pattern"])
+            except re.error: raise ValueError(f"Step {i}: the text pattern is not valid.")
+            fp = str(st.get("fail_pattern", "")).strip()[:120]
+            if fp:
+                try: re.compile(fp); c["fail_pattern"] = fp
+                except re.error: raise ValueError(f"Step {i}: the failure pattern is not valid.")
+            c["timeout"] = num(st.get("timeout"), 3, 120, 20)
+        out.append(c)
+    return out
+
+class _FlowEvent(object):
+    """Telethon event → the small interface the flow engine and the solvers read."""
+    def __init__(self, event, edited):
+        m = event.message
+        self.message = m; self.raw_text = m.raw_text; self.buttons = m.buttons; self.edited = edited
+
+async def _flow_run(acc, bot_link, flow, smart=None):
+    client = await get_client(acc)
+    result = {"account": acc["session_name"], "status": "error", "msg": "Flow did not run", "solver": "flow"}
+    try:
+        await client.start()
+        bot_user, param = parse_bot_link(bot_link)
+        if not bot_user:
+            return {"account": acc["session_name"], "status": "error", "msg": "Invalid link", "solver": "flow"}
+        inbox = FlowInbox()
+        async def on_msg(event):
+            inbox.put(_FlowEvent(event, isinstance(event, events.MessageEdited.Event)))
+        client.add_event_handler(on_msg, events.NewMessage(from_users=bot_user))
+        client.add_event_handler(on_msg, events.MessageEdited(from_users=bot_user))
+        await client.send_message(bot_user, f"/start {param}".strip())
+        ctx = {"param": param, "link": bot_link, "notes": [], "solver": None, "smart": smart}
+        async def send(t): await client.send_message(bot_user, t)
+        async def join(u_): await _join_one(client, u_)
+        status, msg = await asyncio.wait_for(flow_engine(flow["steps"], inbox, send, client, bot_user, ctx, join), FLOW_MAX_SECONDS)
+        result.update(status=status, msg=msg, solver=ctx.get("solver") or "flow")
+        await asave_session(acc["owner"], acc["session_name"], client.session.save())
+    except asyncio.TimeoutError:
+        result.update(status="error", msg=f"Flow timed out after {FLOW_MAX_SECONDS}s")
+    except errors.FloodWaitError:
+        raise
+    except Exception as e:
+        result.update(status="error", msg=friendly_error(e))
+    finally:
+        try: await client.disconnect()
+        except Exception: pass
+    return result
+
 async def refer_plain(acc, bot_link):
     client = await get_client(acc)
     try:
@@ -822,10 +1437,9 @@ async def refer_plain(acc, bot_link):
 
 FLOOD_AUTO_WAIT_MAX = 60  # only auto-wait out floods this short; longer ones are reported instead
 
-async def run_with_flood_retry(worker, acc, jid):
+async def _run_once_with_flood(worker, acc, jid):
     """Run worker(acc) once. If Telegram replies with a short flood-wait, wait it
     out and retry automatically (once) instead of failing the account outright."""
-    log_api_call()
     try:
         return await worker(acc)
     except errors.FloodWaitError as e:
@@ -841,6 +1455,105 @@ async def run_with_flood_retry(worker, acc, jid):
     except Exception as e:
         return {"account": acc["session_name"], "status": "error", "msg": friendly_error(e)}
 
+# ── Smart Retry ──────────────────────────────────────────────────
+# Failures that are usually temporary (slow bot, dropped connection, wrong captcha that
+# gets a fresh one) are retried with a growing pause. Dead sessions, bans, bad links and
+# long flood-waits are NOT retried — repeating those would only waste time or risk the account.
+_TRANSIENT_RE = re.compile(r"No captcha response|timed? ?out|Timeout|Connection hiccup|EOF when reading|ConnectionError|"
+                           r"ConnectionReset|ConnectionAborted|Cannot connect|busy with another task|database is locked|"
+                           r"Server closed|ServerError|rejected answer|Couldn't read the captcha|OSError|BrokenPipe|IncompleteRead", re.I)
+_NO_RETRY_RE = re.compile(r"Invalid link|too long to auto-retry|No usable|no longer exists", re.I)
+RETRY_BACKOFF = (3, 8, 15)
+
+def is_transient(r):
+    if r.get("status") in ("success", "partial"): return False
+    msg = str(r.get("msg", ""))
+    if _dead_kind(msg) or _NO_RETRY_RE.search(msg): return False
+    return bool(_TRANSIENT_RE.search(msg))
+
+async def run_with_retry(worker, acc, jid, retries=0):
+    log_api_call()
+    attempts = 0
+    while True:
+        r = await _run_once_with_flood(worker, acc, jid)
+        attempts += 1
+        if attempts > retries or job_cancel_requested(jid) or not is_transient(r): break
+        await asyncio.sleep(RETRY_BACKOFF[min(attempts - 1, len(RETRY_BACKOFF) - 1)] + random.random())
+    if attempts > 1:
+        r["attempts"] = attempts
+        r["msg"] = f"{r.get('msg', '')} · tried {attempts}×"
+    return r
+
+# ── per-account stats (feed the Health Score) ────────────────────
+def _stat_record(stats, name, r):
+    s_ = stats.setdefault(name, {"ok": 0, "fail": 0, "last": None, "trail": 0, "flood": False, "err": "", "dead": None})
+    msg = str(r.get("msg", ""))
+    if r.get("status") in ("success", "partial"):
+        s_["ok"] += 1; s_["last"] = "ok"; s_["trail"] = 0
+    else:
+        s_["fail"] += 1; s_["last"] = "fail"; s_["trail"] += 1; s_["err"] = msg[:120]
+        d = _dead_kind(msg)
+        if d: s_["dead"] = d
+    if _FLOOD_RE.search(msg): s_["flood"] = True
+
+def _stat_ops(owner, names, stats, now=None):
+    now = now or int(time.time()); ops = []
+    for n in names:
+        s_ = stats.get(n); upd = {"$set": {"last_used": now}}
+        if s_:
+            inc = {}
+            if s_["ok"]: inc["st_ok"] = s_["ok"]
+            if s_["fail"]: inc["st_fail"] = s_["fail"]
+            upd["$set"]["st_last_at"] = now
+            if s_["last"] == "ok":
+                upd["$set"]["st_consec"] = 0; upd["$set"]["st_last_ok"] = now
+            elif s_["trail"]:
+                inc["st_consec"] = s_["trail"]; upd["$set"]["st_last_err"] = s_["err"]
+            if inc: upd["$inc"] = inc
+            if s_["flood"]: upd["$set"]["st_flood_at"] = now
+            if s_["dead"]:
+                upd["$set"].update({"health": s_["dead"], "health_detail": "Detected during last run: " + s_["err"][:90], "health_checked": now})
+        ops.append(UpdateOne({"owner": owner, "session_name": n}, upd))
+    return ops
+
+def _apply_stats(owner, names, stats):
+    ops = _stat_ops(owner, names, stats)
+    if ops: db()["accounts"].bulk_write(ops, ordered=False)
+
+# ── live monitoring → Smart Alerts ───────────────────────────────
+_CAPTCHA_FAIL_RE = re.compile(r"rejected answer|No captcha response|Couldn't read the captcha|captcha", re.I)
+
+def _monitor(jid, owner, r, mon):
+    kind = (JOBS.get(jid) or {}).get("kind")
+    msg = str(r.get("msg", ""))
+    if _FLOOD_RE.search(msg):
+        mon["flood_n"] += 1
+        if not mon["flood_alerted"] and (mon["flood_n"] >= 3 or "too long" in msg):
+            mon["flood_alerted"] = True
+            _bg(alert_async(owner, "flood", "<b>Flood-wait detected</b>\nTelegram is slowing these accounts down "
+                            f"({mon['flood_n']} so far in this run). Consider the <b>Single</b> speed or a longer delay.", cooldown=900))
+    if kind == "refer":
+        rec = mon["recent"]; rec.append(r); del rec[:-6]
+        if (not mon["captcha_alerted"] and len(rec) == 6 and all(x.get("status") not in ("success", "partial") for x in rec)
+                and sum(1 for x in rec if _CAPTCHA_FAIL_RE.search(str(x.get("msg", "")))) >= 4):
+            mon["captcha_alerted"] = True
+            meta = (JOBS.get(jid) or {}).get("meta") or {}
+            bot = re.sub(r"^https?://t\.me/", "@", str(meta.get("link", ""))).split("?")[0]
+            _bg(alert_async(owner, "captcha_fail", f"<b>Captcha keeps failing</b>\n6 accounts in a row failed on <code>{bot}</code>.\n"
+                            f"Last reason: {msg[:120]}\nTry another captcha type, <b>Smart</b> mode, or build a <b>Flow</b>.", cooldown=900))
+
+async def _low_health_alert(owner, names):
+    try:
+        accs = await asyncio.to_thread(load_accounts, owner)
+        weak = [a["session_name"] for a in accs if a["session_name"] in names and a.get("health") not in ("dead", "banned")
+                and health_score(a)[0] < 40]
+        if weak:
+            lines = ["<b>Weak accounts</b>", f"{len(weak)} account(s) now have a low health score (under 40):"] + [f"• <code>{n}</code>" for n in weak[:10]]
+            lines.append("\nOpen Accounts → sort by Score. Consider resting or removing them.")
+            await alert_async(owner, "low_health", "\n".join(lines), cooldown=6 * 3600)
+    except Exception as e:
+        print("low-health alert:", e)
+
 # One cap shared by EVERY user's job. Before, each user got their own pool (8–50 Telegram
 # clients each), so many users starting at once opened hundreds of connections on a small
 # free-tier server (RAM/CPU exhausted → everything froze). Now all jobs share these slots,
@@ -853,25 +1566,24 @@ def _global_slots():
         _GLOBAL_SLOTS = asyncio.Semaphore(max(1, MAX_ACTIVE_CLIENTS))
     return _GLOBAL_SLOTS
 
-async def _run_pool(jid, accs, worker, concurrency, delay):
+async def _run_pool(jid, accs, worker, concurrency, delay, retries=0):
     """Run worker(acc) over accs with N at a time; delay between starts.
-    'last_used' timestamps are buffered and flushed to MongoDB in one batched
-    update_many() every 2s instead of one update_one() per account — far fewer
-    DB round trips on a big run, and no worker blocks waiting on its own write."""
+    Per-account stats and 'last_used' are buffered and flushed to MongoDB in one batched
+    bulk write every 2s instead of one write per account — far fewer DB round trips,
+    and no worker blocks waiting on its own write."""
     concurrency = max(1, min(int(concurrency), 50))
+    retries = max(0, min(int(retries or 0), 3))
     sem = asyncio.Semaphore(concurrency)
-    touched = set()
+    touched, stats, dead_found = set(), {}, {}
+    mon = {"recent": [], "captcha_alerted": False, "flood_n": 0, "flood_alerted": False}
     owner = accs[0]["owner"] if accs else None
     async def flush_touched():
         if not touched: return
-        names = list(touched); touched.clear()
+        names = list(touched); touched.clear(); st = dict(stats); stats.clear()
         try:
-            await asyncio.to_thread(
-                lambda: db()["accounts"].update_many(
-                    {"owner": owner, "session_name": {"$in": names}},
-                    {"$set": {"last_used": int(time.time())}}))
+            await asyncio.to_thread(_apply_stats, owner, names, st)
         except Exception as e:
-            print("last_used batch flush error:", e)
+            print("stats batch flush error:", e)
     async def periodic_flush():
         try:
             while True:
@@ -889,9 +1601,14 @@ async def _run_pool(jid, accs, worker, concurrency, delay):
             async with _acc_lock(acc):   # never run this same account's session twice at once
                 async with _global_slots():   # server-wide cap shared by all users' jobs
                     if job_cancel_requested(jid): return
-                    r = await run_with_flood_retry(worker, acc, jid)
-            touched.add(acc["session_name"])
+                    r = await run_with_retry(worker, acc, jid, retries)
+            name = acc["session_name"]
+            touched.add(name); _stat_record(stats, name, r)
+            d = _dead_kind(str(r.get("msg", "")))
+            if d: dead_found[name] = d
             job_push(jid, r)
+            try: _monitor(jid, owner, r, mon)
+            except Exception as e: print("monitor error:", e)
             if concurrency == 1:
                 await asyncio.sleep(delay)
     flusher = asyncio.create_task(periodic_flush())
@@ -899,12 +1616,29 @@ async def _run_pool(jid, accs, worker, concurrency, delay):
     flusher.cancel()
     await flush_touched()   # final flush for anything since the last periodic tick
     await asyncio.to_thread(job_finish, jid)   # Mongo writes + Telegram notice: keep off the event loop
+    if dead_found:
+        await asyncio.to_thread(alert_dead_accounts, owner, list(dead_found))
+    if (JOBS.get(jid) or {}).get("kind") in ("refer", "channels", "message"):
+        await _low_health_alert(owner, {a["session_name"] for a in accs})
 
-async def run_refer_job(jid, accs, link, method, delay, concurrency=1):
-    solver = SOLVERS.get(method)
-    async def worker(acc):
-        return await (refer_plain(acc, link) if solver is None else _captcha_flow(acc, link, solver))
-    await _run_pool(jid, accs, worker, concurrency, delay)
+async def run_refer_job(jid, accs, link, method, delay, concurrency=1, retries=0, flow=None):
+    owner = accs[0]["owner"] if accs else None
+    if method == "flow" and flow:
+        smart = make_smart_solver(await asyncio.to_thread(profile_get, owner, link))
+        async def worker(acc):
+            return await _flow_run(acc, link, flow, smart)
+    else:
+        solver = SOLVERS.get(method)
+        if method == "smart":
+            solver = make_smart_solver(await asyncio.to_thread(profile_get, owner, link))
+        async def worker(acc):
+            return await (refer_plain(acc, link) if solver is None else _captcha_flow(acc, link, solver))
+    await _run_pool(jid, accs, worker, concurrency, delay, retries)
+    try:   # Self-Learning Bot Profiles: remember what worked on this bot
+        j = JOBS.get(jid)
+        if j and owner: await asyncio.to_thread(learn_profile_sync, owner, link, method, list(j["results"]))
+    except Exception as e:
+        print("profile learn error:", e)
 
 async def _join_one(client, ch):
     """Join a public channel/username or a private invite link (t.me/+hash,
@@ -943,7 +1677,7 @@ async def _leave_one(client, ch):
     else:
         await client(LeaveChannelRequest(await client.get_entity(ch)))
 
-async def run_channel_job(jid, accs, channels, action, delay=2, concurrency=1):
+async def run_channel_job(jid, accs, channels, action, delay=2, concurrency=1, retries=0):
     async def worker(acc):
         client = await get_client(acc); ok = 0; lines = []
         try:
@@ -964,9 +1698,9 @@ async def run_channel_job(jid, accs, channels, action, delay=2, concurrency=1):
         finally:
             try: await client.disconnect()
             except Exception: pass
-    await _run_pool(jid, accs, worker, concurrency, delay)
+    await _run_pool(jid, accs, worker, concurrency, delay, retries)
 
-async def run_message_job(jid, accs, target, text, delay=2, concurrency=1):
+async def run_message_job(jid, accs, target, text, delay=2, concurrency=1, retries=0):
     async def worker(acc):
         client = await get_client(acc)
         try:
@@ -977,7 +1711,71 @@ async def run_message_job(jid, accs, target, text, delay=2, concurrency=1):
         finally:
             try: await client.disconnect()
             except Exception: pass
-    await _run_pool(jid, accs, worker, concurrency, delay)
+    await _run_pool(jid, accs, worker, concurrency, delay, retries)
+
+# ── workers for auto-leave and mute (factories so a resumed job can rebuild them) ──
+def _auto_leave_worker(count, delay):
+    async def worker(acc):
+        client = await get_client(acc)
+        try:
+            await client.start()
+            dialogs = await client.get_dialogs(limit=None)
+            candidates = [dl for dl in dialogs if dl.is_channel or dl.is_group]
+            random.shuffle(candidates)
+            picked = candidates[:count]
+            ok = 0; lines = []
+            for dl in picked:
+                try:
+                    await client(LeaveChannelRequest(dl.entity))
+                    ok += 1; lines.append(f"OK {dl.name}")
+                except Exception as e:
+                    lines.append(f"FAIL {dl.name}: {str(e)[:50]}")
+                await asyncio.sleep(delay)
+            await asave_session(acc["owner"], acc["session_name"], client.session.save())
+            st = "success" if ok else ("error" if picked else "partial")
+            msg = f"Left {ok}/{len(picked)}" if picked else "No channels/groups to leave"
+            return {"account": acc["session_name"], "status": st, "msg": msg}
+        finally:
+            try: await client.disconnect()
+            except Exception: pass
+    return worker
+
+def _mute_worker(mute, include_groups):
+    word = "Muted" if mute else "Unmuted"
+    what = "channels + groups" if include_groups else "channels"
+    async def worker(acc):
+        client = await get_client(acc)
+        try:
+            await client.connect()
+            if not await client.is_user_authorized():
+                return {"account": acc["session_name"], "status": "error", "msg": "Session expired — needs re-login"}
+            done, already, failed, note = await mute_account_dialogs(client, mute, include_groups)
+            await asave_session(acc["owner"], acc["session_name"], client.session.save())
+            total = done + already + failed
+            msg = f"{word} {done} {what}" + (f" · {already} already {word.lower()}" if already else "") \
+                  + (f" · {failed} failed" if failed else "") + (f" · {note}" if note else "")
+            if not total:
+                return {"account": acc["session_name"], "status": "success", "msg": f"No {what} joined"}
+            st = "success" if not failed and not note else ("partial" if done or already else "error")
+            return {"account": acc["session_name"], "status": st, "msg": msg}
+        finally:
+            try: await client.disconnect()
+            except Exception: pass
+    return worker
+
+# How each kind of job is rebuilt from its saved spec when the queue resumes it.
+async def _rn_refer(jid, accs, sp):
+    await run_refer_job(jid, accs, sp["link"], sp["method"], sp["delay"], sp["conc"], sp.get("retries", 0), sp.get("flow"))
+async def _rn_channels(jid, accs, sp):
+    await run_channel_job(jid, accs, sp["channels"], sp["action"], sp["delay"], sp["conc"], sp.get("retries", 0))
+async def _rn_message(jid, accs, sp):
+    await run_message_job(jid, accs, sp["target"], sp["text"], sp["delay"], sp["conc"], sp.get("retries", 0))
+async def _rn_auto_leave(jid, accs, sp):
+    await _run_pool(jid, accs, _auto_leave_worker(sp["count"], sp["delay"]), sp["conc"], sp["delay"])
+async def _rn_mute(jid, accs, sp):
+    await _run_pool(jid, accs, _mute_worker(sp["mute"], sp["include_groups"]), sp["conc"], sp["delay"], sp.get("retries", 0))
+JOB_RUNNERS = {"refer": _rn_refer, "channels": _rn_channels, "message": _rn_message,
+               "auto_leave": _rn_auto_leave, "mute": _rn_mute}
 
 def speed_params(b, n_accounts):
     """speed: single | parallel | custom → (concurrency, delay).
@@ -1123,6 +1921,7 @@ async def accounts(request: Request):
     out = []
     for a in load_accounts(u["id"]):
         p = a.get("phone", "")
+        sc, gr, why = health_score(a)
         out.append({"session_name": a["session_name"], "api_id": a["api_id"],
                     "name": a.get("name", ""), "username": a.get("username", ""),
                     "phone": p[:4] + "•••" + p[-3:] if len(p) > 7 else p,
@@ -1130,7 +1929,9 @@ async def accounts(request: Request):
                     "health_checked": a.get("health_checked"),
                     "note": a.get("note", ""), "excluded": bool(a.get("excluded")),
                     "last_used": a.get("last_used"), "created": a.get("created"),
-                    "link_finder_default": bool(a.get("link_finder_default"))})
+                    "link_finder_default": bool(a.get("link_finder_default")),
+                    "score": sc, "grade": gr, "score_notes": why,
+                    "st_ok": int(a.get("st_ok") or 0), "st_fail": int(a.get("st_fail") or 0)})
     return {"count": len(out), "accounts": out}
 
 @app.post("/api/accounts/request-code")
@@ -1492,16 +2293,38 @@ async def _lf_collect(client, bot_username, after_id, solver, captcha_log):
     return [link_msgs[k] for k in sorted(link_msgs)], replies
 
 # ── Jobs ─────────────────────────────────────────────────────────
+def _retries_param(b, default):
+    try: r = int(b.get("retries", default))
+    except Exception: r = default
+    return max(0, min(r, 3))
+
+def _no_accounts_msg(weak):
+    return ("No accounts left — the selected ones are dead or scored below your minimum health score." if weak
+            else "No usable accounts — all selected accounts are dead. Re-add them first.")
+
 @app.post("/api/refer")
 async def refer(request: Request):
     u = current_user(request)
     b = await request.json()
     accs, skipped = pick_accounts(u["id"], b.get("accounts"), exclude=b.get("exclude"))
-    if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
+    accs, weak = filter_weak(accs, b.get("min_score"))
+    if not accs: raise HTTPException(400, _no_accounts_msg(weak))
     if not parse_bot_link(b.get("bot_link", ""))[0]: raise HTTPException(400, "Invalid bot link.")
-    conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "refer", len(accs), {"link": b["bot_link"], "method": b.get("method", "no_captcha"), "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped})
-    asyncio.create_task(run_refer_job(jid, accs, b["bot_link"], b.get("method", "no_captcha"), delay, conc))
+    method = b.get("method", "no_captcha")
+    if method not in SOLVERS and method not in ("smart", "flow"): raise HTTPException(400, "Unknown captcha type.")
+    flow = None
+    if method == "flow":
+        d = await asyncio.to_thread(lambda: db()["flows"].find_one({"owner": u["id"], "id": str(b.get("flow_id", ""))}, {"_id": 0}))
+        if not d: raise HTTPException(400, "Choose a flow first.")
+        flow = {"id": d["id"], "name": d.get("name", ""), "steps": d["steps"]}
+    conc, delay = speed_params(b, len(accs)); retries = _retries_param(b, 2)
+    meta = {"link": b["bot_link"], "method": method, "speed": b.get("speed", "fast"), "concurrency": conc, "retries": retries,
+            "skipped_dead": skipped, "skipped_weak": weak}
+    if flow: meta["flow"] = flow["name"]
+    spec = {"kind": "refer", "accounts": [a["session_name"] for a in accs], "link": b["bot_link"], "method": method,
+            "delay": delay, "conc": conc, "retries": retries, "flow": flow}
+    jid = job_new(u["id"], "refer", len(accs), meta, spec)
+    asyncio.create_task(run_refer_job(jid, accs, b["bot_link"], method, delay, conc, retries, flow))
     return {"job_id": jid}
 
 @app.post("/api/channels/auto-leave")
@@ -1510,35 +2333,14 @@ async def auto_leave(request: Request):
     u = current_user(request)
     b = await request.json()
     accs, skipped = pick_accounts(u["id"], b.get("accounts"), exclude=b.get("exclude"))
-    if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
+    accs, weak = filter_weak(accs, b.get("min_score"))
+    if not accs: raise HTTPException(400, _no_accounts_msg(weak))
     count = max(1, min(int(b.get("count", 5)), 3000))
     conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "auto_leave", len(accs), {"count": count, "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped})
-
-    async def worker(acc):
-        client = await get_client(acc)
-        try:
-            await client.start()
-            dialogs = await client.get_dialogs(limit=None)
-            candidates = [dl for dl in dialogs if dl.is_channel or dl.is_group]
-            random.shuffle(candidates)
-            picked = candidates[:count]
-            ok = 0; lines = []
-            for dl in picked:
-                try:
-                    await client(LeaveChannelRequest(dl.entity))
-                    ok += 1; lines.append(f"OK {dl.name}")
-                except Exception as e:
-                    lines.append(f"FAIL {dl.name}: {str(e)[:50]}")
-                await asyncio.sleep(delay)
-            await asave_session(u["id"], acc["session_name"], client.session.save())
-            st = "success" if ok else ("error" if picked else "partial")
-            msg = f"Left {ok}/{len(picked)}" if picked else "No channels/groups to leave"
-            return {"account": acc["session_name"], "status": st, "msg": msg}
-        finally:
-            try: await client.disconnect()
-            except Exception: pass
-    asyncio.create_task(_run_pool(jid, accs, worker, conc, delay))
+    spec = {"kind": "auto_leave", "accounts": [a["session_name"] for a in accs], "count": count, "delay": delay, "conc": conc}
+    jid = job_new(u["id"], "auto_leave", len(accs), {"count": count, "speed": b.get("speed", "fast"), "concurrency": conc,
+                                                      "skipped_dead": skipped, "skipped_weak": weak}, spec)
+    asyncio.create_task(_run_pool(jid, accs, _auto_leave_worker(count, delay), conc, delay))
     return {"job_id": jid}
 
 @app.post("/api/channels/random-leave")
@@ -1593,30 +2395,11 @@ async def mute_channels(request: Request):
     mute = b.get("mute", True) is not False
     include_groups = bool(b.get("include_groups"))
     conc, delay = speed_params(b, len(accs))
+    spec = {"kind": "mute", "accounts": [a["session_name"] for a in accs], "mute": mute, "include_groups": include_groups,
+            "delay": delay, "conc": conc}
     jid = job_new(u["id"], "mute", len(accs), {"mute": mute, "include_groups": include_groups,
-                  "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped})
-    word = "Muted" if mute else "Unmuted"
-    what = "channels + groups" if include_groups else "channels"
-
-    async def worker(acc):
-        client = await get_client(acc)
-        try:
-            await client.connect()
-            if not await client.is_user_authorized():
-                return {"account": acc["session_name"], "status": "error", "msg": "Session expired — needs re-login"}
-            done, already, failed, note = await mute_account_dialogs(client, mute, include_groups)
-            await asave_session(acc["owner"], acc["session_name"], client.session.save())
-            total = done + already + failed
-            msg = f"{word} {done} {what}" + (f" · {already} already {word.lower()}" if already else "") \
-                  + (f" · {failed} failed" if failed else "") + (f" · {note}" if note else "")
-            if not total:
-                return {"account": acc["session_name"], "status": "success", "msg": f"No {what} joined"}
-            st = "success" if not failed and not note else ("partial" if done or already else "error")
-            return {"account": acc["session_name"], "status": st, "msg": msg}
-        finally:
-            try: await client.disconnect()
-            except Exception: pass
-    asyncio.create_task(_run_pool(jid, accs, worker, conc, delay))
+                  "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped}, spec)
+    asyncio.create_task(_run_pool(jid, accs, _mute_worker(mute, include_groups), conc, delay))
     return {"job_id": jid}
 
 @app.post("/api/channels")
@@ -1624,12 +2407,17 @@ async def channels(request: Request):
     u = current_user(request)
     b = await request.json()
     accs, skipped = pick_accounts(u["id"], b.get("accounts"), exclude=b.get("exclude"))
+    accs, weak = filter_weak(accs, b.get("min_score"))
     chans = [c.strip() for c in b.get("channels", []) if c.strip()]
-    if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
+    if not accs: raise HTTPException(400, _no_accounts_msg(weak))
     if not chans: raise HTTPException(400, "No channels given.")
-    conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "channels", len(accs), {"action": b.get("action", "join"), "channels": chans, "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped})
-    asyncio.create_task(run_channel_job(jid, accs, chans, b.get("action", "join"), delay, conc))
+    conc, delay = speed_params(b, len(accs)); retries = _retries_param(b, 1)
+    action = b.get("action", "join")
+    spec = {"kind": "channels", "accounts": [a["session_name"] for a in accs], "channels": chans, "action": action,
+            "delay": delay, "conc": conc, "retries": retries}
+    jid = job_new(u["id"], "channels", len(accs), {"action": action, "channels": chans, "speed": b.get("speed", "fast"), "concurrency": conc,
+                                                   "retries": retries, "skipped_dead": skipped, "skipped_weak": weak}, spec)
+    asyncio.create_task(run_channel_job(jid, accs, chans, action, delay, conc, retries))
     return {"job_id": jid}
 
 @app.post("/api/message")
@@ -1637,29 +2425,46 @@ async def message(request: Request):
     u = current_user(request)
     b = await request.json()
     accs, skipped = pick_accounts(u["id"], b.get("accounts"), exclude=b.get("exclude"))
-    if not accs: raise HTTPException(400, "No usable accounts — all selected accounts are dead. Re-add them first.")
+    accs, weak = filter_weak(accs, b.get("min_score"))
+    if not accs: raise HTTPException(400, _no_accounts_msg(weak))
     if not b.get("target") or not b.get("text"): raise HTTPException(400, "Target and message are required.")
-    conc, delay = speed_params(b, len(accs))
-    jid = job_new(u["id"], "message", len(accs), {"target": b["target"], "speed": b.get("speed", "fast"), "concurrency": conc, "skipped_dead": skipped})
-    asyncio.create_task(run_message_job(jid, accs, b["target"], b["text"], delay, conc))
+    conc, delay = speed_params(b, len(accs)); retries = _retries_param(b, 1)
+    spec = {"kind": "message", "accounts": [a["session_name"] for a in accs], "target": b["target"], "text": b["text"],
+            "delay": delay, "conc": conc, "retries": retries}
+    jid = job_new(u["id"], "message", len(accs), {"target": b["target"], "speed": b.get("speed", "fast"), "concurrency": conc,
+                                                  "retries": retries, "skipped_dead": skipped, "skipped_weak": weak}, spec)
+    asyncio.create_task(run_message_job(jid, accs, b["target"], b["text"], delay, conc, retries))
     return {"job_id": jid}
+
+_HIDDEN_JOB_KEYS = ("spec", "heartbeat", "instance", "_id")
+def _public_job(j):
+    return {k: v for k, v in j.items() if k not in _HIDDEN_JOB_KEYS}
 
 @app.get("/api/jobs/{jid}")
 async def job(jid: str, request: Request):
     u = current_user(request)
-    j = JOBS.get(jid) or db()["jobs"].find_one({"id": jid}, {"_id": 0})
+    j = JOBS.get(jid)
+    if not j:
+        # not in this server's memory: maybe waiting to be resumed after a restart, or already finished
+        j = await asyncio.to_thread(lambda: db()["jobs_live"].find_one({"id": jid}, {"_id": 0}) or db()["jobs"].find_one({"id": jid}, {"_id": 0}))
     if not j: raise HTTPException(404, "Job not found (server may have restarted).")
     if j.get("owner") != u["id"] and u["role"] != "owner": raise HTTPException(403, "Not your job.")
-    return j
+    return _public_job(j)
 
 @app.post("/api/jobs/{jid}/cancel")
 async def cancel_job(jid: str, request: Request):
     u = current_user(request)
     j = JOBS.get(jid)
-    if not j: raise HTTPException(404, "Job not found or already finished.")
+    if not j:
+        d = await asyncio.to_thread(lambda: db()["jobs_live"].find_one({"id": jid}, {"_id": 0}))
+        if not d: raise HTTPException(404, "Job not found or already finished.")
+        if d.get("owner") != u["id"] and u["role"] != "owner": raise HTTPException(403, "Not your job.")
+        await asyncio.to_thread(lambda: db()["jobs_live"].update_one({"id": jid}, {"$set": {"cancel": True}}))
+        return {"status": "cancelling"}
     if j.get("owner") != u["id"] and u["role"] != "owner": raise HTTPException(403, "Not your job.")
     if j["status"] != "running": return {"status": "already_finished"}
     j["cancel"] = True
+    _JOB_DIRTY.add(jid)
     return {"status": "cancelling"}
 
 @app.get("/api/health-summary")
@@ -1672,7 +2477,8 @@ async def health_summary(request: Request):
         counts[a.get("health", "unknown")] = counts.get(a.get("health", "unknown"), 0) + 1
     needs = counts["dead"] + counts["banned"]
     last = max([a.get("health_checked") or 0 for a in accs], default=0)
-    return {"total": len(accs), "counts": counts, "needs_attention": needs, "last_checked": last or None}
+    weak = sum(1 for a in accs if a.get("health") not in ("dead", "banned") and health_score(a)[2] and health_score(a)[0] < 55)
+    return {"total": len(accs), "counts": counts, "needs_attention": needs, "weak": weak, "last_checked": last or None}
 
 @app.get("/api/recent-links")
 async def recent_links(request: Request):
@@ -1691,7 +2497,87 @@ async def recent_links(request: Request):
 async def jobs(request: Request):
     u = current_user(request)
     live = sorted([j for j in JOBS.values() if j.get("owner") == u["id"]], key=lambda x: -x["started"])[:10]
-    return {"jobs": [{k: v for k, v in j.items() if k != "results"} for j in live]}
+    return {"jobs": [{k: v for k, v in _public_job(j).items() if k != "results"} for j in live]}
+
+# ── Flow Builder API ─────────────────────────────────────────────
+FLOW_MAX_PER_USER = 30
+
+@app.get("/api/flows")
+async def flows_list(request: Request):
+    u = current_user(request)
+    docs = await asyncio.to_thread(lambda: list(db()["flows"].find({"owner": u["id"]}, {"_id": 0}).sort("updated", -1)))
+    return {"flows": [{k: v for k, v in d.items() if k != "owner"} for d in docs]}
+
+@app.post("/api/flows")
+async def flows_save(request: Request):
+    u = current_user(request)
+    b = await request.json()
+    name = str(b.get("name", "")).strip()[:40]
+    if not name: raise HTTPException(400, "Give the flow a name.")
+    try: steps = normalize_flow_steps(b.get("steps"))
+    except ValueError as e: raise HTTPException(400, str(e))
+    fid = str(b.get("id") or "").strip()[:16]
+    col = db()["flows"]
+    if not fid:
+        if await asyncio.to_thread(col.count_documents, {"owner": u["id"]}) >= FLOW_MAX_PER_USER:
+            raise HTTPException(400, f"You can keep up to {FLOW_MAX_PER_USER} flows. Delete one first.")
+        fid = uuid.uuid4().hex[:8]
+    now = int(time.time())
+    await asyncio.to_thread(lambda: col.update_one({"owner": u["id"], "id": fid},
+        {"$set": {"owner": u["id"], "id": fid, "name": name, "steps": steps, "updated": now}, "$setOnInsert": {"created": now}}, upsert=True))
+    return {"id": fid, "name": name, "steps": steps, "updated": now}
+
+@app.delete("/api/flows/{fid}")
+async def flows_delete(fid: str, request: Request):
+    u = current_user(request)
+    await asyncio.to_thread(lambda: db()["flows"].delete_one({"owner": u["id"], "id": fid}))
+    return {"status": "success"}
+
+# ── Bot Profiles API ─────────────────────────────────────────────
+@app.get("/api/bot-profile")
+async def bot_profile(request: Request):
+    u = current_user(request)
+    link = request.query_params.get("link", "")
+    return profile_summary(await asyncio.to_thread(profile_get, u["id"], link))
+
+@app.get("/api/bot-profiles")
+async def bot_profiles(request: Request):
+    u = current_user(request)
+    docs = await asyncio.to_thread(lambda: list(db()["bot_profiles"].find({"owner": u["id"]}, {"_id": 0}).sort("updated", -1).limit(60)))
+    return {"profiles": [profile_summary(d) for d in docs]}
+
+@app.post("/api/bot-profiles/delete")
+async def bot_profile_delete(request: Request):
+    u = current_user(request)
+    b = await request.json()
+    k = _bot_key(b.get("bot", ""))
+    if not k: raise HTTPException(400, "Bot name is required.")
+    await asyncio.to_thread(lambda: db()["bot_profiles"].delete_one({"owner": u["id"], "bot": k}))
+    return {"status": "success"}
+
+# ── Smart Alerts API ─────────────────────────────────────────────
+@app.get("/api/alerts")
+async def alerts_get(request: Request):
+    u = current_user(request)
+    _ALERT_PREF_CACHE.pop(str(u["id"]), None)
+    return {"prefs": await asyncio.to_thread(alert_prefs, u["id"]), "kinds": list(ALERT_KINDS)}
+
+@app.post("/api/alerts")
+async def alerts_set(request: Request):
+    u = current_user(request)
+    b = await request.json()
+    upd = {k: bool(b[k]) for k in ALERT_KINDS if k in b}
+    if upd:
+        await asyncio.to_thread(lambda: db()["alert_prefs"].update_one({"owner": str(u["id"])}, {"$set": {"owner": str(u["id"]), **upd}}, upsert=True))
+    _ALERT_PREF_CACHE.pop(str(u["id"]), None)
+    return {"prefs": await asyncio.to_thread(alert_prefs, u["id"])}
+
+@app.post("/api/alerts/test")
+async def alerts_test(request: Request):
+    u = current_user(request)
+    ok = await asyncio.to_thread(tg_send, u["id"], "<b>Test alert</b>\nSmart Alerts are working. You will get messages like this when a run finishes, "
+                                 "an account dies, captchas keep failing, or a run resumes after a restart.")
+    return {"sent": bool(ok)}
 
 # ── Analytics ────────────────────────────────────────────────────
 @app.get("/api/stats")
@@ -1986,6 +2872,13 @@ async def _startup():
     asyncio.get_running_loop().set_default_executor(ThreadPoolExecutor(max_workers=48, thread_name_prefix="db"))
     await asyncio.to_thread(migrate)
     asyncio.create_task(storage_watch())
+    asyncio.create_task(job_persist_loop())     # Persistent Job Queue: save running jobs
+    asyncio.create_task(job_resume_loop())      # … and pick up jobs a dead server left behind
+
+@app.on_event("shutdown")
+async def _shutdown():
+    try: await asyncio.to_thread(_persist_jobs_sync)    # last save so the next server resumes from here
+    except Exception as e: print("shutdown persist:", e)
 
 # ── Run ──────────────────────────────────────────────────────────
 if __name__ == "__main__":
