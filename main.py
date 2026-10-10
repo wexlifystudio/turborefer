@@ -3,7 +3,8 @@ Turbo Refer V2 — Mini App Backend
 FastAPI + Telethon + MongoDB + Telegram WebApp auth
 """
 
-import os, re, hmac, json, time, uuid, asyncio, hashlib, random, base64, urllib.request, urllib.parse
+import os, re, hmac, json, time, uuid, asyncio, hashlib, random, base64, threading, urllib.request, urllib.parse
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import parse_qsl
 
 import emoji as emoji_lib
@@ -49,7 +50,8 @@ _mongo = None
 def db():
     global _mongo
     if _mongo is None:
-        _mongo = MongoClient(MONGO_URL, server_api=ServerApi("1"))
+        _mongo = MongoClient(MONGO_URL, server_api=ServerApi("1"), maxPoolSize=60,
+                             serverSelectionTimeoutMS=8000, connectTimeoutMS=8000, socketTimeoutMS=20000)
     return _mongo["turbo_refer"]
 
 def load_accounts(owner=None):
@@ -108,13 +110,47 @@ def migrate():
 def user_list(kind):  # kind: "whitelist" | "banlist"
     return [str(x["user_id"]) for x in db()[kind].find({}, {"_id": 0})]
 
+# ── Auth cache ───────────────────────────────────────────────────
+# current_user() runs on EVERY API call (job polling included). Without a cache it did
+# ~5 MongoDB round-trips each time, directly on the event loop — with many users online
+# the whole server (and every running job) stalled. Ban/whitelist/lockdown lookups are
+# now cached for a few seconds and invalidated the moment an admin changes them.
+_AUTH_TTL = 15
+_AUTH_CACHE = {}
+def _auth_invalidate():
+    _AUTH_CACHE.clear()
+
+def cached_user_set(kind):
+    now = time.time(); hit = _AUTH_CACHE.get(kind)
+    if hit and now - hit[0] < _AUTH_TTL: return hit[1]
+    val = set(user_list(kind)); _AUTH_CACHE[kind] = (now, val); return val
+
+def cached_setting(key, default=None):
+    now = time.time(); ck = "s:" + key; hit = _AUTH_CACHE.get(ck)
+    if hit and now - hit[0] < _AUTH_TTL: return hit[1]
+    val = setting_get(key, default); _AUTH_CACHE[ck] = (now, val); return val
+
+_TOUCHED = {}
+def touch_user_async(user):
+    """last_seen only needs to be roughly right: write it at most once a minute per
+    user, and from a background thread so it never blocks a request."""
+    uid = str(user.get("id")); now = time.time()
+    if now - _TOUCHED.get(uid, 0) < 60: return
+    _TOUCHED[uid] = now
+    def _w():
+        try: touch_user(user)
+        except Exception: pass
+    threading.Thread(target=_w, daemon=True).start()
+
 def user_add(kind, uid, meta=None):
     doc = {"user_id": str(uid), "added_at": int(time.time())}
     if meta: doc.update(meta)
     db()[kind].update_one({"user_id": str(uid)}, {"$set": doc}, upsert=True)
+    _auth_invalidate()
 
 def user_remove(kind, uid):
     db()[kind].delete_one({"user_id": str(uid)})
+    _auth_invalidate()
 
 def setting_get(key, default=None):
     d = db()["settings"].find_one({"key": key})
@@ -122,6 +158,7 @@ def setting_get(key, default=None):
 
 def setting_set(key, value):
     db()["settings"].update_one({"key": key}, {"$set": {"key": key, "value": value}}, upsert=True)
+    _auth_invalidate()
 
 # ── Telegram WebApp auth ──────────────────────────────────────────
 def verify_init_data(init_data: str):
@@ -158,15 +195,14 @@ def current_user(request: Request):
 
     uid = str(user.get("id"))
     name = (user.get("first_name", "") + " " + user.get("last_name", "")).strip() or "User"
-    try: touch_user(user)
-    except Exception: pass
-    if uid in user_list("banlist"):
+    touch_user_async(user)
+    if uid in cached_user_set("banlist"):
         raise HTTPException(403, "You are banned.")
     if is_owner(uid):
         return {"id": uid, "name": name, "role": "owner", "username": user.get("username", "")}
-    if setting_get("lockdown", False) and not is_owner(uid):
-        raise HTTPException(423, setting_get("lockdown_msg") or "The app is temporarily down for maintenance. Please try again soon.")
-    if setting_get("access_mode", "approved") == "open" or uid in user_list("whitelist"):
+    if cached_setting("lockdown", False) and not is_owner(uid):
+        raise HTTPException(423, cached_setting("lockdown_msg") or "The app is temporarily down for maintenance. Please try again soon.")
+    if cached_setting("access_mode", "approved") == "open" or uid in cached_user_set("whitelist"):
         return {"id": uid, "name": name, "role": "user", "username": user.get("username", "")}
     raise HTTPException(403, "no_access")
 
@@ -267,7 +303,14 @@ def pick_accounts(owner, names, skip_dead=True, exclude=None, allow_reserved=Fal
 # ── Job system (background + live polling) ───────────────────────
 JOBS = {}
 
+def _evict_old_jobs():
+    """Finished jobs stay in RAM only for 1h (they're saved in MongoDB anyway)."""
+    cut = time.time() - 3600
+    for k in [k for k, j in JOBS.items() if j.get("ended") and j["ended"] < cut]:
+        JOBS.pop(k, None)
+
 def job_new(owner, kind, total, meta=None):
+    _evict_old_jobs()
     jid = uuid.uuid4().hex[:10]
     JOBS[jid] = {"id": jid, "owner": str(owner), "kind": kind, "status": "running", "total": total,
                  "done": 0, "success": 0, "failed": 0, "results": [],
@@ -581,7 +624,7 @@ def _ocr_local(img):
 def _ocr_space(img):
     data = urllib.parse.urlencode({
         "apikey": OCR_API_KEY, "OCREngine": "2", "scale": "true", "isOverlayRequired": "false",
-        "base64Image": "data:image/jpeg;base64," + base64.b64encode(img).decode(),
+        "base64Image": ("data:image/png;base64," if img[:4] == b"\x89PNG" else "data:image/jpeg;base64,") + base64.b64encode(img).decode(),
     }).encode()
     req = urllib.request.Request("https://api.ocr.space/parse/image", data=data)
     with urllib.request.urlopen(req, timeout=25) as r:
@@ -661,17 +704,27 @@ def _ocr_tesseract(img):
                            capture_output=True, text=True, timeout=15)
     return r.stdout
 
+_OCR_POOL = ThreadPoolExecutor(max_workers=4, thread_name_prefix="ocr")   # OCR must never starve DB threads
+_OCR_SEM = None
+
+async def _ocr_run(fn, *a):
+    return await asyncio.get_running_loop().run_in_executor(_OCR_POOL, fn, *a)
+
 async def _ocr_image(img):
     """Read the captcha with several engines / image variants and take the majority answer."""
+    global _OCR_SEM
     key = hashlib.sha1(img).hexdigest()
     if key in _OCR_CACHE:
         return _OCR_CACHE[key]
-    clean = await asyncio.to_thread(_prep_image, img)
-    jobs = [asyncio.to_thread(_ocr_local, img)]                       # priority order = tie-break
-    if clean:
-        jobs += [asyncio.to_thread(_ocr_tesseract, clean), asyncio.to_thread(_ocr_space, clean)]
-    jobs += [asyncio.to_thread(_ocr_space, img)]
-    res = await asyncio.gather(*jobs, return_exceptions=True)
+    if _OCR_SEM is None: _OCR_SEM = asyncio.Semaphore(4)
+    async with _OCR_SEM:
+        clean = await _ocr_run(_prep_image, img)
+        jobs = [_ocr_run(_ocr_local, img)]                              # priority order = tie-break
+        if clean: jobs += [_ocr_run(_ocr_tesseract, clean)]
+        jobs += [_ocr_run(_ocr_space, clean or img)]                    # one web call (cleaned image)
+        res = await asyncio.gather(*jobs, return_exceptions=True)
+        if clean and not any((not isinstance(r, Exception)) and r and _pick_captcha_answer(r) for r in res):
+            res += [await asyncio.gather(_ocr_run(_ocr_space, img), return_exceptions=True)][0]   # fallback: original
     cands, err = [], None
     for r in res:
         if isinstance(r, Exception): err = err or r; continue
@@ -680,7 +733,6 @@ async def _ocr_image(img):
     if not cands:
         if err: raise err
         return None
-    # majority vote (case-insensitive), earliest engine wins ties
     votes = {}
     for i, a in enumerate(cands):
         k = a.upper(); n, first, _ = votes.get(k, (0, i, a)); votes[k] = (n + 1, first, a if n == 0 else votes[k][2])
@@ -789,6 +841,18 @@ async def run_with_flood_retry(worker, acc, jid):
     except Exception as e:
         return {"account": acc["session_name"], "status": "error", "msg": friendly_error(e)}
 
+# One cap shared by EVERY user's job. Before, each user got their own pool (8–50 Telegram
+# clients each), so many users starting at once opened hundreds of connections on a small
+# free-tier server (RAM/CPU exhausted → everything froze). Now all jobs share these slots,
+# first-come-first-served, so everyone's job keeps moving instead of the server choking.
+MAX_ACTIVE_CLIENTS = int(os.getenv("MAX_ACTIVE_CLIENTS", "16"))
+_GLOBAL_SLOTS = None
+def _global_slots():
+    global _GLOBAL_SLOTS
+    if _GLOBAL_SLOTS is None:
+        _GLOBAL_SLOTS = asyncio.Semaphore(max(1, MAX_ACTIVE_CLIENTS))
+    return _GLOBAL_SLOTS
+
 async def _run_pool(jid, accs, worker, concurrency, delay):
     """Run worker(acc) over accs with N at a time; delay between starts.
     'last_used' timestamps are buffered and flushed to MongoDB in one batched
@@ -823,7 +887,9 @@ async def _run_pool(jid, accs, worker, concurrency, delay):
             if job_cancel_requested(jid):
                 return
             async with _acc_lock(acc):   # never run this same account's session twice at once
-                r = await run_with_flood_retry(worker, acc, jid)
+                async with _global_slots():   # server-wide cap shared by all users' jobs
+                    if job_cancel_requested(jid): return
+                    r = await run_with_flood_retry(worker, acc, jid)
             touched.add(acc["session_name"])
             job_push(jid, r)
             if concurrency == 1:
@@ -832,7 +898,7 @@ async def _run_pool(jid, accs, worker, concurrency, delay):
     await asyncio.gather(*(one(i, a) for i, a in enumerate(accs)))
     flusher.cancel()
     await flush_touched()   # final flush for anything since the last periodic tick
-    job_finish(jid)
+    await asyncio.to_thread(job_finish, jid)   # Mongo writes + Telegram notice: keep off the event loop
 
 async def run_refer_job(jid, accs, link, method, delay, concurrency=1):
     solver = SOLVERS.get(method)
@@ -1212,8 +1278,8 @@ async def health_check_all(request: Request):
                 _dead.append(acc["session_name"])
             job_push(jid, {"account": acc["session_name"], "status": "success" if res["status"] == "ok" else "error", "msg": res["status"] + " — " + res["detail"]})
             await asyncio.sleep(1.5)
-        job_finish(jid)
-        alert_dead_accounts(u["id"], _dead)
+        await asyncio.to_thread(job_finish, jid)
+        await asyncio.to_thread(alert_dead_accounts, u["id"], _dead)
     asyncio.create_task(run())
     return {"job_id": jid}
 
@@ -1916,7 +1982,9 @@ async def storage_watch():
 
 @app.on_event("startup")
 async def _startup():
-    migrate()
+    # default pool is only ~5 threads on a small server; every to_thread() DB call shares it
+    asyncio.get_running_loop().set_default_executor(ThreadPoolExecutor(max_workers=48, thread_name_prefix="db"))
+    await asyncio.to_thread(migrate)
     asyncio.create_task(storage_watch())
 
 # ── Run ──────────────────────────────────────────────────────────
